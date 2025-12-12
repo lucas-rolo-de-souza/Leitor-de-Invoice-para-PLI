@@ -1,0 +1,5 @@
+{
+  "name": "Leitor de Faturas PLI",
+  "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
+  "requestFramePermissions": []
+}

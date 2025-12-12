@@ -1,0 +1,57 @@
+{
+  "name": "leitor-faturas-ai",
+  "displayName": "Leitor de Faturas AI",
+  "version": "1.05.00.14",
+  "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
+  "keywords": [
+    "invoice",
+    "gemini",
+    "ai",
+    "siscomex",
+    "customs",
+    "brazil",
+    "ncm",
+    "import",
+    "export"
+  ],
+  "homepage": "https://github.com/your-username/leitor-faturas-ai",
+  "bugs": {
+    "url": "https://github.com/your-username/leitor-faturas-ai/issues",
+    "email": "support@example.com"
+  },
+  "license": "Proprietary",
+  "private": true,
+  "author": {
+    "name": "Invoice Reader Team"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/leitor-faturas-ai.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@google/genai": "^1.30.0",
+    "jspdf": "^3.0.4",
+    "lucide-react": "^0.555.0",
+    "xlsx": "^0.18.5",
+    "jspdf-autotable": "^5.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8.0.0",
+    "tailwindcss": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
