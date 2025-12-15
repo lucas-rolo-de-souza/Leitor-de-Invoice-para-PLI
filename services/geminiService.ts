@@ -204,10 +204,15 @@ const getModelSpecificPrompt = (modelId: string): string => {
          - *Provenance*: Port of Loading / Shipped From.
          - *Acquisition*: Country of the Seller.
     
-    3. **LINE ITEMS (Detailed Extraction)**:
-       *   **ONE-TO-ONE MAPPING**: Extract every single row from the document's item table as a separate object in the 'lineItems' array.
-       *   **NO GROUPING**: Do NOT group, merge, or summarize identical items. If the document lists the same Part Number 3 times on different lines, you MUST output 3 distinct items in the JSON.
-       For every row in the item table, extract:
+    3. **LINE ITEMS (STRICT LINE-BY-LINE EXTRACTION)**:
+       *   **SEQUENTIAL PROCESSING**: Read the item table row by row, from top to bottom.
+       *   **VISUAL MAPPING**: Every visual row in the table that represents a product must result in ONE item in the JSON array.
+       *   **IGNORE PAGE HEADERS**: If the table spans multiple pages, do **NOT** extract the repeated header rows on the 2nd/3rd page as items.
+       *   **NO GROUPING**: If the invoice lists "Widget A" on Line 1 and "Widget A" again on Line 5, extract TWO separate items. Do not merge them.
+       *   **NO SPLITTING**: If Line 1 says "Qty: 10", extract ONE item with quantity 10. Do NOT create 10 items.
+       *   **DESCRIPTION WRAPPING**: If a description text wraps to the next line visually *without* a new Quantity/Price, append it to the description of the current item. Do not create a new item for wrapped text.
+       
+       For every valid item row, extract:
        *   **PART NUMBER**: Buyer's SKU/Part Number.
        *   **DESCRIPTION**: Full commercial description.
        *   **NCM (HS Code)**: The numeric customs code. MUST be explicitly present.

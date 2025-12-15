@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Database, Edit3, X, FileText, Settings, ShieldCheck, AlertTriangle, Package, Scale, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Database, Edit3, X, FileText, Settings, ShieldCheck, AlertTriangle, Package, Scale, Copy } from 'lucide-react';
 import { InvoiceData, LineItem } from '../../../types';
 import { ValidatedInput, ValidatedTextArea } from '../../ui/FormElements';
 import { isFieldInvalid, isValidNCM } from '../../../utils/validators';
@@ -12,12 +12,13 @@ interface ItemsTableProps {
   onLineItemChange: (index: number, field: keyof LineItem, value: string | number) => void;
   onNCMChange: (index: number, value: string) => void;
   onAdd: () => void;
+  onDuplicate: (index: number) => void;
   onRemove: (index: number) => void;
   isReadOnly: boolean;
   calculatedTotals: CalculatedTotals;
 }
 
-export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, onNCMChange, onAdd, onRemove, isReadOnly }) => {
+export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, onNCMChange, onAdd, onDuplicate, onRemove, isReadOnly }) => {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
     const handleEdit = (index: number) => {
@@ -49,7 +50,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
             
             {/* --- DESKTOP TABLE --- */}
             <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg">
-              <table className="w-full text-xs text-left min-w-[1500px]">
+              <table className="w-full text-xs text-left min-w-[1400px]">
                 <thead className="text-slate-500 font-bold bg-slate-50 border-b border-slate-200 sticky top-0 z-10 uppercase tracking-wider">
                   <tr>
                     <th className="px-3 py-3 w-10 text-center">#</th>
@@ -62,9 +63,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                     <th className="px-3 py-3 w-16 text-center">Und *</th>
                     <th className="px-3 py-3 w-24 text-right">Unit ($) *</th>
                     <th className="px-3 py-3 w-28 text-right">Total ($)</th>
-                    <th className="px-3 py-3 w-24 text-right">Peso Unit. Líq.</th>
-                    <th className="px-3 py-3 w-24 text-right">Peso Líq. Total *</th>
-                    <th className="px-3 py-3 w-20 text-center">Ações</th>
+                    <th className="px-3 py-3 w-24 text-right">Peso Líq. *</th>
+                    <th className="px-3 py-3 w-24 text-center">Ações</th>
                     <th className="px-3 py-3 w-10"></th>
                   </tr>
                 </thead>
@@ -119,21 +119,27 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                              </span>
                           </td>
 
-                          {/* Unit Net Weight */}
-                          <td className="px-2 py-2"><ValidatedInput minimal type="number" step="any" value={item.unitNetWeight || ''} onChange={e => onLineItemChange(index, 'unitNetWeight', e.target.value)} isReadOnly={isReadOnly} placeholder="0.0000" className="text-right" /></td>
-
-                          {/* Total Net Weight (Calculated) */}
-                          <td className="px-2 py-2"><ValidatedInput minimal type="number" step="any" value={item.netWeight || ''} onChange={e => onLineItemChange(index, 'netWeight', e.target.value)} error={!isNumeric(item.netWeight) ? '!' : null} isReadOnly={isReadOnly} placeholder="0.0000" className="text-right font-medium text-slate-800" /></td>
+                          <td className="px-2 py-2"><ValidatedInput minimal type="number" step="any" value={item.netWeight || ''} onChange={e => onLineItemChange(index, 'netWeight', e.target.value)} error={!isNumeric(item.netWeight) ? '!' : null} isReadOnly={isReadOnly} placeholder="0.00" className="text-right" /></td>
                           
-                          {/* Detail Button */}
+                          {/* Actions */}
                           <td className="px-2 py-2 text-center">
-                              <button 
-                                onClick={() => handleEdit(index)}
-                                className={`p-1.5 rounded-md transition-all relative ${missingMandatory && !isReadOnly ? 'text-red-600 bg-red-100 hover:bg-red-200 ring-2 ring-red-200 ring-offset-1' : 'text-brand-600 bg-brand-50 hover:bg-brand-100'}`}
-                                title={missingMandatory ? "Existem campos obrigatórios ou erros de formato. Clique para editar." : "Editar Detalhes"}
-                              >
-                                  {missingMandatory && !isReadOnly ? <AlertTriangle className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
-                              </button>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                    onClick={() => onDuplicate(index)}
+                                    disabled={isReadOnly}
+                                    className={`p-1.5 rounded-md transition-all ${isReadOnly ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50'}`}
+                                    title="Duplicar Item"
+                                >
+                                    <Copy className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                    onClick={() => handleEdit(index)}
+                                    className={`p-1.5 rounded-md transition-all relative ${missingMandatory && !isReadOnly ? 'text-red-600 bg-red-100 hover:bg-red-200 ring-2 ring-red-200 ring-offset-1' : 'text-brand-600 bg-brand-50 hover:bg-brand-100'}`}
+                                    title={missingMandatory ? "Existem campos obrigatórios ou erros de formato. Clique para editar." : "Editar Detalhes"}
+                                >
+                                    {missingMandatory && !isReadOnly ? <AlertTriangle className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
                           </td>
 
                           <td className="px-2 py-2 text-center">
@@ -143,7 +149,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                      );
                   })}
                   {(!data.lineItems || data.lineItems.length === 0) && (
-                    <tr><td colSpan={14} className="px-4 py-16 text-center text-slate-400"><p className="italic">Lista vazia</p></td></tr>
+                    <tr><td colSpan={13} className="px-4 py-16 text-center text-slate-400"><p className="italic">Lista vazia</p></td></tr>
                   )}
                 </tbody>
               </table>
@@ -172,16 +178,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                                          <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">PN: {item.partNumber || '-'}</span>
                                          <span className={`bg-white px-1.5 py-0.5 rounded border ${isNCMValid ? 'border-green-200 text-green-700' : 'border-red-200 text-red-600'}`}>NCM: {item.ncm || '-'}</span>
                                      </div>
-                                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                         <div>
-                                            <span className="text-slate-400 text-[10px] uppercase font-bold">Peso Unit. Líq.</span>
-                                            <ValidatedInput minimal type="number" value={item.unitNetWeight || ''} onChange={e => onLineItemChange(index, 'unitNetWeight', e.target.value)} isReadOnly={isReadOnly} placeholder="0.00" className="text-right" />
-                                         </div>
-                                         <div>
-                                            <span className="text-slate-400 text-[10px] uppercase font-bold">Total Líquido</span>
-                                            <ValidatedInput minimal type="number" value={item.netWeight || ''} onChange={e => onLineItemChange(index, 'netWeight', e.target.value)} isReadOnly={isReadOnly} placeholder="0.00" className="text-right" />
-                                         </div>
-                                     </div>
                                      {missingMandatory && (
                                          <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-red-600">
                                              <AlertTriangle className="w-3 h-3" /> Erros de Conformidade
@@ -190,6 +186,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                                  </div>
                                  <div className="flex flex-col gap-2">
                                     <button onClick={() => onRemove(index)} disabled={isReadOnly} className="text-slate-300 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => onDuplicate(index)} disabled={isReadOnly} className="text-slate-300 hover:text-brand-500 p-1"><Copy className="w-4 h-4" /></button>
                                     <button onClick={() => handleEdit(index)} className={`p-1.5 rounded transition-colors ${missingMandatory ? 'text-red-500 bg-red-100 ring-1 ring-red-200' : 'text-brand-400 hover:text-brand-600 bg-white shadow-sm'}`}>
                                         <Edit3 className="w-4 h-4" />
                                     </button>
@@ -239,11 +236,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onLineItemChange, 
                                     <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                                         <Scale className="w-3.5 h-3.5" /> Quantitativos e Valores
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <ValidatedInput label="Quantidade *" type="number" step="any" value={data.lineItems[editingIndex].quantity || ''} onChange={e => onLineItemChange(editingIndex, 'quantity', e.target.value)} error={!isNumeric(data.lineItems[editingIndex].quantity) ? 'Numérico' : null} isReadOnly={isReadOnly} className="text-right" />
                                         <ValidatedInput label="Unidade *" value={data.lineItems[editingIndex].unitMeasure || ''} onChange={e => onLineItemChange(editingIndex, 'unitMeasure', e.target.value)} error={isFieldInvalid(data.lineItems[editingIndex].unitMeasure) ? 'Erro' : null} isReadOnly={isReadOnly} className="text-center uppercase" />
                                         <ValidatedInput label="Valor Unit. *" type="number" step="any" value={data.lineItems[editingIndex].unitPrice || ''} onChange={e => onLineItemChange(editingIndex, 'unitPrice', e.target.value)} error={!isNumeric(data.lineItems[editingIndex].unitPrice) ? 'Numérico' : null} isReadOnly={isReadOnly} className="text-right" />
-                                        <ValidatedInput label="Peso Unit. Líq." type="number" step="any" value={data.lineItems[editingIndex].unitNetWeight || ''} onChange={e => onLineItemChange(editingIndex, 'unitNetWeight', e.target.value)} isReadOnly={isReadOnly} className="text-right" />
                                         <ValidatedInput label="Peso Líq. Total *" type="number" step="any" value={data.lineItems[editingIndex].netWeight || ''} onChange={e => onLineItemChange(editingIndex, 'netWeight', e.target.value)} error={!isNumeric(data.lineItems[editingIndex].netWeight) ? 'Numérico' : null} isReadOnly={isReadOnly} className="text-right" />
                                     </div>
                                 </div>

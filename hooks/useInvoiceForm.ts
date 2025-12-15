@@ -81,7 +81,7 @@ export const useInvoiceForm = (
     };
 
     // 1. Price Total Calculation (Qty * UnitPrice)
-    // We recalculate whenever Quantity or Price changes
+    // We recalculate whenever Quantity or Price changes, regardless of validity (fallback to 0)
     if (field === 'quantity' || field === 'unitPrice') {
         const qty = getSafeNumber(item.quantity);
         const price = getSafeNumber(item.unitPrice);
@@ -89,15 +89,11 @@ export const useInvoiceForm = (
     }
 
     // 2. Weight Total Calculation (Qty * UnitWeight)
-    // Calculate if Unit Weight is being edited OR if it exists (not empty/null)
     if (field === 'quantity' || field === 'unitNetWeight') {
         const qty = getSafeNumber(item.quantity);
-        const unitWRaw = item.unitNetWeight;
-        const unitW = getSafeNumber(unitWRaw);
-        
-        const hasUnitWeight = unitWRaw !== null && unitWRaw !== '' && unitWRaw !== undefined;
-
-        if (field === 'unitNetWeight' || hasUnitWeight) {
+        const unitW = getSafeNumber(item.unitNetWeight);
+        if (unitW > 0 || field === 'unitNetWeight') {
+             // Only overwrite Net Weight if Unit Weight is set or being edited
              newItems[index].netWeight = parseFloat((qty * unitW).toFixed(4));
         }
     }
@@ -138,6 +134,25 @@ export const useInvoiceForm = (
     onDataChange(newData);
   }, [formData, isReadOnly, onDataChange]);
 
+  const duplicateLineItem = useCallback((index: number) => {
+    if (isReadOnly) return;
+    const items = formData.lineItems || [];
+    if (!items[index]) return;
+
+    // Deep copy using JSON to avoid reference issues
+    const itemToCopy = JSON.parse(JSON.stringify(items[index]));
+    
+    // Insert after current item
+    const newItems = [
+        ...items.slice(0, index + 1),
+        itemToCopy,
+        ...items.slice(index + 1)
+    ];
+
+    const newData = calculateGlobalTotals({ ...formData, lineItems: newItems });
+    onDataChange(newData);
+  }, [formData, isReadOnly, onDataChange]);
+
   const removeLineItem = useCallback((index: number) => {
     if (isReadOnly) return;
     const newItems = (formData.lineItems || []).filter((_, i) => i !== index);
@@ -174,6 +189,7 @@ export const useInvoiceForm = (
     handleLineItemChange,
     handleNCMChange,
     addLineItem,
+    duplicateLineItem,
     removeLineItem,
     calculatedTotals
   };

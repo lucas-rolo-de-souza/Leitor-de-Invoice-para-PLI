@@ -22,7 +22,16 @@ interface InvoiceEditorProps {
 
 export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({ data: externalData, onChange, isReadOnly = false }) => {
   // Now using "Controlled Mode": Passing externalData and onChange directly to the hook
-  const { data, handleChange, handleLineItemChange, handleNCMChange, addLineItem, removeLineItem, calculatedTotals } = useInvoiceForm(externalData, onChange, isReadOnly);
+  const { 
+      data, 
+      handleChange, 
+      handleLineItemChange, 
+      handleNCMChange, 
+      addLineItem, 
+      duplicateLineItem, 
+      removeLineItem, 
+      calculatedTotals 
+  } = useInvoiceForm(externalData, onChange, isReadOnly);
   
   const { fieldErrors, checklist, compliancePercentage } = useCompliance(data);
 
@@ -43,7 +52,16 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({ data: externalData
                     <div className="h-px bg-slate-100 w-full" />
                     <LogisticsSection data={data} handleChange={handleChange} errors={{}} isReadOnly={true} />
                     <div className="h-px bg-slate-100 w-full" />
-                    <ItemsTable data={data} onLineItemChange={handleLineItemChange} onNCMChange={handleNCMChange} onAdd={addLineItem} onRemove={removeLineItem} isReadOnly={true} calculatedTotals={calculatedTotals} />
+                    <ItemsTable 
+                        data={data} 
+                        onLineItemChange={handleLineItemChange} 
+                        onNCMChange={handleNCMChange} 
+                        onAdd={addLineItem} 
+                        onDuplicate={duplicateLineItem}
+                        onRemove={removeLineItem} 
+                        isReadOnly={true} 
+                        calculatedTotals={calculatedTotals} 
+                    />
                     <div className="h-px bg-slate-100 w-full" />
                     <div className="flex justify-end">
                         <FinancialSummary data={data} handleChange={handleChange} errors={{}} isReadOnly={true} calculatedTotals={calculatedTotals} />
@@ -118,6 +136,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({ data: externalData
                     onLineItemChange={handleLineItemChange} 
                     onNCMChange={handleNCMChange} 
                     onAdd={addLineItem} 
+                    onDuplicate={duplicateLineItem}
                     onRemove={removeLineItem} 
                     isReadOnly={isReadOnly} 
                     calculatedTotals={calculatedTotals}
