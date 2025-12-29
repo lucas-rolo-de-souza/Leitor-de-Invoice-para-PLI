@@ -163,6 +163,8 @@ const App: React.FC = () => {
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
               className="bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 cursor-pointer pr-8"
+              aria-label="Selecionar modelo de IA"
+              title="Selecionar modelo de IA"
             >
               <option value="gemini-2.5-flash-lite">
                 Gemini 2.5 Flash Lite
@@ -204,6 +206,7 @@ const App: React.FC = () => {
         {/* Left Side: Back & Title (Promoted z-index to stay above centered elements) */}
         <div className="flex items-center gap-4 relative z-10">
           <button
+            type="button"
             onClick={handleReset}
             className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
             title="Voltar para Upload"
@@ -244,6 +247,7 @@ const App: React.FC = () => {
         <div className="flex items-center gap-2 relative z-10">
           <div className="hidden md:flex items-center gap-2 mr-2">
             <button
+              type="button"
               onClick={handleExportPDF}
               className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
               title="PDF"
@@ -251,6 +255,7 @@ const App: React.FC = () => {
               <FileText className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={handleExportPLIButton}
               className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
               title="PLI (XLS + Validação)"
@@ -259,6 +264,7 @@ const App: React.FC = () => {
             </button>
           </div>
           <button
+            type="button"
             onClick={handleExportExcel}
             className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
           >
@@ -281,18 +287,21 @@ const App: React.FC = () => {
       <footer className="fixed bottom-0 w-full bg-white border-t border-slate-200 px-6 py-2 z-[50] flex justify-between items-center text-[10px] text-slate-400">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => setShowChangelog(true)}
             className="hover:text-slate-600 flex items-center gap-1"
           >
             <GitCommit className="w-3 h-3" /> v{APP_VERSION}
           </button>
           <button
+            type="button"
             onClick={() => logger.downloadLogs()}
             className="hover:text-slate-600 flex items-center gap-1"
           >
             <FileJson className="w-3 h-3" /> Logs
           </button>
           <button
+            type="button"
             onClick={() => setShowLegal(true)}
             className="hover:text-slate-600 flex items-center gap-1"
           >
@@ -322,7 +331,13 @@ const App: React.FC = () => {
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <History className="w-4 h-4" /> Changelog
               </h3>
-              <button onClick={() => setShowChangelog(false)}>
+              <button
+                type="button"
+                onClick={() => setShowChangelog(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Fechar Changelog"
+                title="Fechar Changelog"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>

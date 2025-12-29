@@ -66,6 +66,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           Itens da Fatura
         </h4>
         <button
+          type="button"
           onClick={onAdd}
           disabled={isReadOnly}
           className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold transition-all ${
@@ -93,7 +94,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
               <th className="px-3 py-3 w-16 text-center">Und *</th>
               <th className="px-3 py-3 w-24 text-right">Unit ($) *</th>
               <th className="px-3 py-3 w-28 text-right">Total ($)</th>
-              <th className="px-3 py-3 w-24 text-right">Peso Líq. *</th>
+              <th className="px-3 py-3 w-24 text-right">Peso Líq. Unit.</th>
+              <th className="px-3 py-3 w-24 text-right">Peso Líq. Total</th>
               <th className="px-3 py-3 w-24 text-center">Ações</th>
               <th className="px-3 py-3 w-10"></th>
             </tr>
@@ -279,6 +281,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       minimal
                       type="number"
                       step="any"
+                      value={item.unitNetWeight || ""}
+                      onChange={(e) =>
+                        onLineItemChange(index, "unitNetWeight", e.target.value)
+                      }
+                      error={!isNumeric(item.unitNetWeight) ? "!" : null}
+                      isReadOnly={isReadOnly}
+                      placeholder="0.000"
+                      className="text-right"
+                    />
+                  </td>
+
+                  <td className="px-2 py-2">
+                    <ValidatedInput
+                      minimal
+                      type="number"
+                      step="any"
                       value={item.netWeight || ""}
                       onChange={(e) =>
                         onLineItemChange(index, "netWeight", e.target.value)
@@ -294,6 +312,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   <td className="px-2 py-2 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
+                        type="button"
                         onClick={() => onDuplicate(index)}
                         disabled={isReadOnly}
                         className={`p-1.5 rounded-md transition-all ${
@@ -306,6 +325,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEdit(index)}
                         className={`p-1.5 rounded-md transition-all relative ${
                           missingMandatory && !isReadOnly
@@ -329,6 +349,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                   <td className="px-2 py-2 text-center">
                     <button
+                      type="button"
                       onClick={() => onRemove(index)}
                       disabled={isReadOnly}
                       className={`p-1.5 rounded-md transition-all ${
@@ -336,6 +357,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           ? "text-slate-200 cursor-not-allowed"
                           : "text-slate-300 hover:text-red-500 hover:bg-red-50"
                       }`}
+                      title="Remover Item"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -400,6 +422,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     >
                       NCM: {item.ncm || "-"}
                     </span>
+                    <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                      PL Unit: {item.unitNetWeight || "-"}
+                    </span>
+                    <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                      PL Total: {item.netWeight || "-"}
+                    </span>
                   </div>
                   {missingMandatory && (
                     <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-red-600">
@@ -410,26 +438,36 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 </div>
                 <div className="flex flex-col gap-2">
                   <button
+                    type="button"
                     onClick={() => onRemove(index)}
                     disabled={isReadOnly}
                     className="text-slate-300 hover:text-red-500 p-1"
+                    title="Remover Item"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => onDuplicate(index)}
                     disabled={isReadOnly}
                     className="text-slate-300 hover:text-brand-500 p-1"
+                    title="Duplicar Item"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleEdit(index)}
                     className={`p-1.5 rounded transition-colors ${
                       missingMandatory
                         ? "text-red-500 bg-red-100 ring-1 ring-red-200"
                         : "text-brand-400 hover:text-brand-600 bg-white shadow-sm"
                     }`}
+                    title={
+                      missingMandatory
+                        ? "Existem campos obrigatórios ou erros de formato. Clique para editar."
+                        : "Editar Detalhes"
+                    }
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -457,8 +495,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleCloseModal}
                   className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+                  title="Fechar"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -632,7 +672,27 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         className="text-right"
                       />
                       <ValidatedInput
-                        label="Peso Líq. Total *"
+                        label="Peso Líq. Unit. *"
+                        type="number"
+                        step="any"
+                        value={data.lineItems[editingIndex].unitNetWeight || ""}
+                        onChange={(e) =>
+                          onLineItemChange(
+                            editingIndex,
+                            "unitNetWeight",
+                            e.target.value
+                          )
+                        }
+                        error={
+                          !isNumeric(data.lineItems[editingIndex].unitNetWeight)
+                            ? "Numérico"
+                            : null
+                        }
+                        isReadOnly={isReadOnly}
+                        className="text-right"
+                      />
+                      <ValidatedInput
+                        label="Item Total Net Weight"
                         type="number"
                         step="any"
                         value={data.lineItems[editingIndex].netWeight || ""}

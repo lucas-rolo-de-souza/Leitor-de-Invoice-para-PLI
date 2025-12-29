@@ -1,6 +1,6 @@
 import { InvoiceData } from "../types";
 
-interface ScudError {
+interface PliError {
   line: number;
   messages: string[];
 }
@@ -11,7 +11,7 @@ interface ScudError {
  */
 export const validatePliData = (data: InvoiceData): string | null => {
   const items = data.lineItems || [];
-  const errors: ScudError[] = [];
+  const errors: PliError[] = [];
 
   const isNumeric = (val: any) => {
     if (val === null || val === undefined || val === "") return false;
