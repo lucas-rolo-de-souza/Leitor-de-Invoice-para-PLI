@@ -1,5 +1,7 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { InvoiceData, FilePart } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
+import { InvoiceSchema, LineItemSchema } from "../domain/schemas";
+import { InvoiceData, FilePart, initialInvoiceData } from "../types";
 import { logger } from "./loggerService";
 import { usageService } from "./usageService";
 
@@ -162,489 +164,303 @@ const safeJsonParse = (text: string): any => {
 /**
  * New System Prompt - Customized for Customs Broker (Despachante Aduaneiro) Workflow.
  */
-const getModelSpecificPrompt = (modelId: string): string => {
-  return `
-    ROLE: You are an expert Customs Broker Assistant (Assistente de Despachante Aduaneiro).
-    CONTEXT: The user is a Customs Broker preparing a Brazilian Import Declaration (DI/DUIMP) using the 'PLI' industry standard.
-    
-    GOAL: Extract precise data from the Commercial Invoice/Packing List to perfectly match the PLI Schema, NEVER inferring missing technical details.
 
-    OUTPUT FORMAT: JSON ONLY. Do not include markdown formatting or explanations.
+// --- Retry Logic Helpers ---
 
-    ### CRITICAL: ZERO HALLUCINATION POLICY
-    1. **NO GUESSING**: If a value is not explicitly written in the document, return \`null\`.
-    2. **NO CLASSIFICATION**: **NEVER** guess the NCM (HS Code) based on the description. If the NCM code is not printed on the document, you MUST return \`null\`.
-    3. **NO MATH**: Do not calculate totals unless the field is explicitly asking for a sum of extracted values, but prefer extraction.
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    ### CRITICAL: PART NUMBER & CODE MAPPING RULES (PLI MODEL)
-    You must strictly differentiate between the Buyer's Code and the Seller's Code. DO NOT SWAP THEM.
-
-    1.  **partNumber (Buyer/Customer Part No)**:
-        *   **Definition**: The identifier used by the BUYER (Customer).
-        *   **Look for**: "Customer Part No", "Buyer Part No", "Our Code", "SKU", "Item Code".
-        *   *If the document only has one general 'Part Number', put it here.*
-
-    2.  **manufacturerRef (Seller/Manufacturer Part No)**:
-        *   **Definition**: The identifier used by the SELLER (Manufacturer/Vendor).
-        *   **Look for**: "Seller Part No", "Vendor Part No", "Model No", "Ref", "Cat No", "Mfr Part No".
-
-    ### MANUAL INPUT FIELDS (ALWAYS RETURN NULL)
-    The following fields MUST be left empty (null) for the user to input manually. **DO NOT EXTRACT THESE**:
-    
-    1.  **productCode (Cod Produto)**: Return \`null\`.
-    2.  **productDetail (Detalhe)**: Return \`null\`.
-    3.  **NCM (HS Code)**: Return \`null\`.
-
-    ### CRITICAL: COUNTRY CODES (ISO 3166-1 ALPHA-3)
-    All country fields (Origin, Acquisition, Provenance) MUST be converted to the **3-letter ISO code**.
-    *   China -> **CHN**
-    *   United States -> **USA**
-    *   Brazil -> **BRA**
-    *   Germany -> **DEU**
-    *   *Do not return full names like 'China' or 'United States'. Return 'CHN' or 'USA'.*
-
-    ### EXTRACTION RULES:
-    
-    1. **MANDATORY ENTITIES**:
-       - **EXPORTER**: Extract the Issuer's Name and Address.
-       - **IMPORTER**: Extract the Buyer's Name/Address. If "Bill To" and "Consignee" differ, prioritize "Bill To".
-    
-    2. **LOGISTICS & WEIGHTS**:
-       - **Total Gross Weight (Peso Bruto)**: Look for "Total Gross Weight" or "G.W.".
-       - **Total Net Weight (Peso Líquido)**: Look for "Total Net Weight" or "N.W.".
-       - **UNIT**: Detect if weights are in **KG** or **LB**.
-       - **Countries**:
-         - *Origin*: "Made in" / "Country of Origin".
-         - *Provenance*: Port of Loading / Shipped From.
-         - *Acquisition*: Country of the Seller.
-    
-    3. **LINE ITEMS (STRICT LINE-BY-LINE EXTRACTION)**:
-       *   **SEQUENTIAL PROCESSING**: Read the item table row by row, from top to bottom.
-       *   **VISUAL MAPPING**: Every visual row in the table that represents a product must result in ONE item in the JSON array.
-       *   **IGNORE PAGE HEADERS**: If the table spans multiple pages, do **NOT** extract the repeated header rows on the 2nd/3rd page as items.
-       *   **NO GROUPING**: If the invoice lists "Widget A" on Line 1 and "Widget A" again on Line 5, extract TWO separate items. Do not merge them.
-       *   **NO SPLITTING**: If Line 1 says "Qty: 10", extract ONE item with quantity 10. Do NOT create 10 items.
-       *   **DESCRIPTION WRAPPING**: If a description text wraps to the next line visually *without* a new Quantity/Price, append it to the description of the current item. Do not create a new item for wrapped text.
-       
-       For every valid item row, extract:
-       *   **PART NUMBER**: Buyer's SKU/Part Number.
-       *   **DESCRIPTION**: Full commercial description.
-       *   **NCM (HS Code)**: The numeric customs code. MUST be explicitly present.
-       *   **QTY**: The billed quantity (ignore package counts like 'boxes' or 'pallets' here).
-       *   **UNIT**: e.g., PCS, UN, M.
-       *   **UNIT PRICE**: Value per unit.
-       *   **TOTAL**: Total line value.
-       *   **UNIT NET WEIGHT**: Net weight per unit (if listed), usually found on the packing list.
-       *   **NET WEIGHT**: Total Net weight for the line (if listed).
-
-    4. **FINANCIALS**:
-       - **Currency**: ISO Code (USD, EUR).
-       - **Incoterm**: 3-Letter Code (EXW, FOB, CIF).
-  `;
-};
-
-/**
- * Extracts structured invoice data from one or multiple files using Gemini.
- */
-export const extractInvoiceData = async (
-  files: FilePart[],
-  modelId: string
-): Promise<InvoiceData> => {
-  const startTime = Date.now();
-
-  // Initialize Gemini API client inside the function to avoid top-level process.env access issues
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  // Updated Response Schema - Extended for PLI Model (All Fields)
-  const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-      // --- Identifiers ---
-      invoiceNumber: {
-        type: Type.STRING,
-        description: "Commercial Invoice Number (Fatura Comercial).",
-      },
-      packingListNumber: {
-        type: Type.STRING,
-        description: "Packing List Number.",
-      },
-      date: { type: Type.STRING, description: "Issue Date (YYYY-MM-DD)." },
-      dueDate: {
-        type: Type.STRING,
-        description: "Payment Due Date (YYYY-MM-DD).",
-      },
-
-      // --- Entities ---
-      exporterName: {
-        type: Type.STRING,
-        description: "Exporter/Seller/Issuer Name.",
-      },
-      exporterAddress: { type: Type.STRING, description: "Exporter Address." },
-      importerName: {
-        type: Type.STRING,
-        description:
-          "Importer/Buyer Name. The 'Bill To' entity responsible for the DI.",
-      },
-      importerAddress: {
-        type: Type.STRING,
-        description: "Importer/Buyer Address.",
-      },
-
-      // --- Trade & Logistics ---
-      incoterm: {
-        type: Type.STRING,
-        description:
-          "3-letter Incoterm Code (e.g., FCA, EXW, FOB). Null if not found.",
-      },
-      paymentTerms: {
-        type: Type.STRING,
-        description: "Payment Condition (e.g., Net 30, T/T).",
-      },
-      countryOfOrigin: {
-        type: Type.STRING,
-        description:
-          "Country of Origin (Made in). MUST BE ISO 3166-1 ALPHA-3 CODE (e.g. CHN, USA, DEU).",
-      },
-      countryOfAcquisition: {
-        type: Type.STRING,
-        description:
-          "Country of Acquisition (Sold by). MUST BE ISO 3166-1 ALPHA-3 CODE (e.g. CHN, USA).",
-      },
-      countryOfProvenance: {
-        type: Type.STRING,
-        description:
-          "Country of Provenance (Shipped From). MUST BE ISO 3166-1 ALPHA-3 CODE (e.g. HKG, TWN).",
-      },
-      totalNetWeight: {
-        type: Type.NUMBER,
-        description: "Total Net Weight (N.W.).",
-      },
-      totalGrossWeight: {
-        type: Type.NUMBER,
-        description:
-          "Total Gross Weight (G.W.). Look for 'Total Gross', 'G.W.'.",
-      },
-      weightUnit: {
-        type: Type.STRING,
-        enum: ["KG", "LB"],
-        description:
-          "Weight Unit. Return 'KG' for Kilograms or 'LB' for Pounds.",
-      },
-      totalVolumes: {
-        type: Type.NUMBER,
-        description: "Total Quantity of Packages/Volumes.",
-      },
-      volumeType: {
-        type: Type.STRING,
-        description: "Type of Volume (e.g., Pallets, Cartons).",
-      },
-
-      // --- Financials ---
-      currency: {
-        type: Type.STRING,
-        description: "Currency Code (USD, EUR, BRL).",
-      },
-      subtotal: {
-        type: Type.NUMBER,
-        description: "Subtotal Value (do not calculate).",
-      },
-      freight: {
-        type: Type.NUMBER,
-        description: "International Freight Cost.",
-      },
-      insurance: { type: Type.NUMBER, description: "Insurance Cost." },
-      tax: { type: Type.NUMBER, description: "Tax/Duty Amount." },
-      otherCharges: { type: Type.NUMBER, description: "Other Charges." },
-      grandTotal: {
-        type: Type.NUMBER,
-        description: "Grand Total / Final Amount (do not calculate).",
-      },
-
-      // --- Line Items ---
-      lineItems: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            partNumber: {
-              type: Type.STRING,
-              description:
-                "PART_NUMBER. The Buyer's/Customer's Part Number or SKU. (PLI Col A).",
-            },
-            productCode: {
-              type: Type.STRING,
-              description:
-                "CODIGO_PRODUTO. Secondary internal code. Use only if distinct from Part Number. (PLI Col C).",
-            },
-            manufacturerRef: {
-              type: Type.STRING,
-              description:
-                "REFERENCIA_FABRICANTE. The Seller's/Manufacturer's Part Number/Model. (PLI Col L).",
-            },
-
-            productDetail: {
-              type: Type.STRING,
-              description: "Detail, suffix, or 'Ex' tarifario code.",
-            },
-            description: {
-              type: Type.STRING,
-              description: "DESCRIPTION. Full commercial description.",
-            },
-            quantity: {
-              type: Type.NUMBER,
-              description: "QTY. The billed quantity.",
-            },
-            unitMeasure: {
-              type: Type.STRING,
-              description: "Unit of Measure e.g. PCS, UN, M, KG.",
-            },
-            unitPrice: {
-              type: Type.NUMBER,
-              description: "UNIT PRICE. Price per single unit.",
-            },
-            total: { type: Type.NUMBER, description: "Total Line Price." },
-            unitNetWeight: {
-              type: Type.NUMBER,
-              description: "Unit Net Weight (if available).",
-            },
-            netWeight: {
-              type: Type.NUMBER,
-              description:
-                "ITEM NET WEIGHT. The Total Net Weight for this line item.",
-            },
-            ncm: {
-              type: Type.STRING,
-              description:
-                "HS Code / NCM (e.g. 8471.30.12). MUST BE NUMERIC (dots allowed). Do NOT put Part Numbers here. If missing, return null.",
-            },
-            manufacturerCode: {
-              type: Type.STRING,
-              description: "Manufacturer specific code if available.",
-            },
-            material: {
-              type: Type.STRING,
-              description: "Material composition (e.g. Steel, Plastic).",
-            },
-            manufacturerCountry: {
-              type: Type.STRING,
-              description:
-                "Country of Manufacturer. Use ISO 3166-1 ALPHA-3 Code.",
-            },
-
-            // Regulatory (Ato Legal)
-            legalAct1Type: {
-              type: Type.STRING,
-              description: "Regulatory Act Type (Ato Legal).",
-            },
-            legalAct1Issuer: {
-              type: Type.STRING,
-              description: "Issuer of Regulatory Act.",
-            },
-            legalAct1Number: { type: Type.STRING, description: "Act Number." },
-            legalAct1Year: { type: Type.STRING, description: "Act Year." },
-            legalAct1Ex: {
-              type: Type.STRING,
-              description: "'Ex' code of the Act.",
-            },
-            legalAct1Rate: {
-              type: Type.NUMBER,
-              description: "Ad Valorem Rate (%).",
-            },
-
-            // Attributes
-            complementaryNote: {
-              type: Type.STRING,
-              description: "Complementary Note (Nota Complementar).",
-            },
-
-            attr1Level: {
-              type: Type.STRING,
-              description: "Attribute 1 Level.",
-            },
-            attr1Name: { type: Type.STRING, description: "Attribute 1 Name." },
-            attr1Value: {
-              type: Type.STRING,
-              description: "Attribute 1 Value.",
-            },
-
-            attr2Level: {
-              type: Type.STRING,
-              description: "Attribute 2 Level.",
-            },
-            attr2Name: { type: Type.STRING, description: "Attribute 2 Name." },
-            attr2Value: {
-              type: Type.STRING,
-              description: "Attribute 2 Value.",
-            },
-          },
-          required: ["description"],
-        },
-      },
-    },
-    required: ["lineItems"],
-    // IMPORTANT: Enforce ordering to ensure Headers come first, and Line Items (which can be truncated) come last.
-    propertyOrdering: [
-      "invoiceNumber",
-      "packingListNumber",
-      "date",
-      "dueDate",
-      "exporterName",
-      "exporterAddress",
-      "importerName",
-      "importerAddress",
-      "incoterm",
-      "paymentTerms",
-      "countryOfOrigin",
-      "countryOfAcquisition",
-      "countryOfProvenance",
-      "totalNetWeight",
-      "totalGrossWeight",
-      "weightUnit",
-      "totalVolumes",
-      "volumeType",
-      "currency",
-      "subtotal",
-      "freight",
-      "insurance",
-      "tax",
-      "otherCharges",
-      "grandTotal",
-      "lineItems",
-    ],
-  };
-
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  onProgress?: (msg: string) => void,
+  attempt = 1,
+  maxRetries = 3
+): Promise<T> {
   try {
-    const promptParts = files.map((file) => {
-      if (file.mimeType === "text/csv") {
-        const decodedText = new TextDecoder().decode(
-          Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0))
-        );
-        return {
-          text: `[STRUCTURED DATA (CSV/EXCEL)]:\n${decodedText}\n[END DATA]\n`,
-        };
-      } else {
-        return {
-          inlineData: {
-            mimeType: file.mimeType,
-            data: file.data,
-          },
-        };
+    return await operation();
+  } catch (error: any) {
+    // Check for 429 or Resource Exhausted
+    const isRateLimit =
+      error?.status === 429 ||
+      error?.message?.includes("429") ||
+      error?.message?.includes("RESOURCE_EXHAUSTED");
+
+    if (isRateLimit && attempt <= maxRetries) {
+      // Try to parse "retry in X seconds" from message, or use exponential backoff
+      // Default backoff: 2s, 4s, 8s...
+      let delay = 2000 * Math.pow(2, attempt - 1);
+
+      // Simple regex to find "retry in X.XXs" or similar if provided by API message
+      const match = error?.message?.match(/retry in\s+(\d+(\.\d+)?)s/i);
+      if (match) {
+        delay = parseFloat(match[1]) * 1000;
       }
-    });
 
-    const config: any = {
-      responseMimeType: "application/json",
-      responseSchema: responseSchema,
-      temperature: 0, // Zero temperature for maximum determinism
-    };
+      const waitSeconds = Math.ceil(delay / 1000);
+      onProgress?.(
+        `⚠️ Limite de cota (429). Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`
+      );
 
-    // Optimization for Gemini 2.5
-    if (modelId.includes("gemini-2.5")) {
-      config.thinkingConfig = { thinkingBudget: 0 };
-    }
-
-    const systemPrompt = getModelSpecificPrompt(modelId);
-
-    const response = await ai.models.generateContent({
-      model: modelId,
-      contents: {
-        parts: [
-          ...promptParts,
-          {
-            text: systemPrompt,
-          },
-        ],
-      },
-      config: config,
-    });
-
-    const text = response.text;
-
-    // Metrics
-    const endTime = Date.now();
-    const latency = endTime - startTime;
-    const inputTokens = response.usageMetadata?.promptTokenCount || 0;
-    const outputTokens = response.usageMetadata?.candidatesTokenCount || 0;
-
-    usageService.logTransaction(modelId, inputTokens, outputTokens, latency);
-
-    if (!text) throw new Error("No data returned from Gemini");
-
-    // Use Robust Parser
-    const rawData = safeJsonParse(text);
-    const cleaned = cleanData(rawData);
-
-    // Basic array safety
-    if (!cleaned.lineItems || !Array.isArray(cleaned.lineItems)) {
-      cleaned.lineItems = [];
-    }
-
-    // Default unit to KG if not found
-    if (!cleaned.weightUnit) {
-      cleaned.weightUnit = "KG";
-    }
-
-    const result = cleaned as InvoiceData;
-
-    // Fix for TS error: convert string|number|null to number|null safely
-    const parseCurrency = (val: string | number | null): number | null => {
-      if (val === null || val === undefined || val === "") return null;
-      if (typeof val === "number") return val;
-      const parsed = parseFloat(val);
-      return isNaN(parsed) ? null : parsed;
-    };
-
-    result.originalSubtotal = parseCurrency(result.subtotal);
-    result.originalGrandTotal = parseCurrency(result.grandTotal);
-
-    // Post-Process: Ensure Line Item Totals & Weights are consistent
-    if (result.lineItems && Array.isArray(result.lineItems)) {
-      result.lineItems = result.lineItems.map((item) => {
-        const qty =
-          typeof item.quantity === "number"
-            ? item.quantity
-            : parseFloat(item.quantity || "0");
-
-        const unitNetWeight =
-          typeof item.unitNetWeight === "number"
-            ? item.unitNetWeight
-            : parseFloat(item.unitNetWeight || "0");
-
-        // 1. Calculate Total Price if missing or update it?
-        // Ideally we trust the extraction, but for weights we want strict calculation as requested.
-
-        // 2. Strict Net Weight Calculation (Bi-directional)
-        // Priority: Trust the extracted Total Net Weight if available.
-        // If Total is missing but Unit is present, calculate Total.
-
-        let finalNetWeight = item.netWeight;
-        let finalUnitWeight = unitNetWeight;
-
-        // If we have a Total Weight, use it to derive Unit Weight (more common in invoices to have accurate line totals)
-        if (
-          !isNaN(parseFloat(String(item.netWeight))) &&
-          parseFloat(String(item.netWeight)) > 0
-        ) {
-          finalNetWeight = parseFloat(String(item.netWeight));
-          if (qty > 0) {
-            finalUnitWeight = parseFloat((finalNetWeight / qty).toFixed(6));
-          }
-        }
-        // Fallback: If Total is missing, but we have Unit, calculate Total
-        else if (unitNetWeight > 0 && qty > 0) {
-          finalNetWeight = parseFloat((qty * unitNetWeight).toFixed(4));
-        }
-
-        item.netWeight = finalNetWeight;
-        item.unitNetWeight = finalUnitWeight;
-
-        return item;
+      logger.warn(`Rate Limit hit. Retrying in ${delay}ms`, {
+        attempt,
+        maxRetries,
       });
-    }
+      await sleep(delay);
 
-    return result;
-  } catch (error) {
-    logger.error("Gemini Extraction Error:", error);
+      return withRetry(operation, onProgress, attempt + 1, maxRetries);
+    }
     throw error;
   }
-};
+}
+
+/**
+ * Orchestrates the Chunked Extraction Strategy.
+ * 1. Parallel calls for Metadata (fast, low output) and Line Items (high output).
+ * 2. Merges results into a single InvoiceData object.
+ */
+export async function extractInvoiceData(
+  fileParts: FilePart[],
+  onProgress?: (msg: string) => void,
+  modelId: string = "gemini-2.5-flash-lite"
+): Promise<InvoiceData> {
+  // 1. Prepare Prompts
+  const metadataPrompt = getMetadataPrompt();
+  const lineItemsPrompt = getLineItemsPrompt();
+
+  // Initialize AI Client
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  // Helper for generation with Retry Logic
+  const generate = async (prompt: string, schema?: any) => {
+    // Configuration for Gemini 2.5 (New SDK Style)
+    const config = {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0,
+    };
+
+    // Map FileParts to SDK InlineData format
+    const mediaParts = fileParts.map((part) => ({
+      inlineData: { mimeType: part.mimeType, data: part.data },
+    }));
+
+    // Inner execution function
+    const execute = async () => {
+      return await ai.models.generateContent({
+        model: modelId,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              ...mediaParts,
+              {
+                text: `[SYSTEM: ATTACHED FILES CONTEXT]\n${fileParts
+                  .map((f, i) => `${i + 1}. ${f.filename || "Unknown File"}`)
+                  .join("\n")}\n\n${prompt}`,
+              },
+            ],
+          },
+        ],
+        config: config,
+      });
+    };
+
+    return withRetry(execute, onProgress);
+  };
+
+  const startTime = Date.now();
+
+  // Task A: Metadata
+  onProgress?.("Extraindo Cabeçalho e Metadados...");
+  let metadataResult;
+  try {
+    metadataResult = await generate(metadataPrompt);
+  } catch (e) {
+    console.error("Metadata extraction failed", e);
+    throw e;
+  }
+
+  // Rate Limit Buffer: Sleep 1s to ensure we don't hit the 2 Requests/Second burst limit
+  await sleep(1000);
+
+  // Task B: Line Items
+  onProgress?.("Extraindo Itens e Produtos...");
+  let lineItemsResult;
+  try {
+    lineItemsResult = await generate(lineItemsPrompt);
+  } catch (e) {
+    console.error("Line items extraction failed", e);
+    throw e;
+  }
+
+  const endTime = Date.now();
+  const duration = endTime - startTime;
+
+  // 3. Log Usage (Approximate - we sum tokens)
+  // Note: usageService.logTransaction is fire-and-forget or we await it if we want strict logging
+  const totalInputTokens =
+    (metadataResult.usageMetadata?.promptTokenCount || 0) +
+    (lineItemsResult.usageMetadata?.promptTokenCount || 0);
+  const totalOutputTokens =
+    (metadataResult.usageMetadata?.candidatesTokenCount || 0) +
+    (lineItemsResult.usageMetadata?.candidatesTokenCount || 0);
+
+  usageService.logTransaction(
+    modelId,
+    totalInputTokens,
+    totalOutputTokens,
+    duration
+  );
+
+  // 4. Parse & Merge
+  onProgress?.("Processando e mesclando resultados...");
+
+  const metadata = safeJsonParse(metadataResult.text || "{}");
+  const itemsData = safeJsonParse(lineItemsResult.text || "{}");
+
+  // Merge: Metadata takes precedence for headers, ItemsData provides the list
+  const combinedData: InvoiceData = {
+    ...initialInvoiceData, // Defaults
+    ...metadata, // Overwrite with metadata
+    lineItems: Array.isArray(itemsData.lineItems) ? itemsData.lineItems : [], // Explicitly take items
+  };
+
+  // 5. Post-Processing (Normalization)
+  // Existing logic to normalize numbers, dates, weights...
+  const finalResult = postProcessInvoiceData(combinedData);
+
+  // 6. Validation (Soft Force)
+  const validation = InvoiceSchema.safeParse(finalResult);
+  if (validation.success) {
+    logger.info("✅ Zod Validation Passed: Data is strictly compliant.");
+  } else {
+    logger.warn("⚠️ Zod Validation Failed: Data structure has mismatches.", {
+      errors: validation.error.format(),
+    });
+    // We do NOT throw here yet, to avoid breaking the UI for minor mismatches.
+    // In the future, we can return 'validation.data' if we want to enforce strictness.
+  }
+
+  return finalResult;
+}
+
+// --- Prompt Generators (Split) ---
+
+function getMetadataPrompt(): string {
+  // Create a subset schema effectively by picking fields from InvoiceSchema
+  // Note: For simplicity in this step, we use the FULL InvoiceSchema but instruct the AI to ignore lineItems.
+  // In a stricter implementation, we would define a specific MetadataSchema.
+
+  // Use Zod 4 native JSON Schema generation
+  // @ts-ignore - Assuming z.toJSONSchema is available in v4 but might miss types in some envs
+  const jsonSchema = z.toJSONSchema(InvoiceSchema);
+
+  // We manually override the description for lineItems in the prompt text or rely on the schema
+  // But strictly speaking, the prompt text instructions take precedence for "what" to extract.
+
+  return `
+  You are an expert Customs Data Analyst (Despachante Aduaneiro) AI.
+  
+  YOUR TASK: Extract the global metadata from the provided Commercial Invoice.
+  
+  SCOPE:
+  - **Header**: Invoice Number, Issue Date, Purchase Order (PO) references, and total page count.
+  - **Entities**: Comprehensive details for Exporter (Seller), Importer (Buyer), Consignee, and Manufacturer. Include full legal names, physical addresses, and Tax Identification Numbers (VAT, CNPJ, EIN, etc.).
+  - **Geographic Context**:
+    - **Country of Origin**: The nation where the goods were produced/manufactured. Use ISO 3166-1 alpha-3 codes.
+    - **Country of Acquisition**: The nation where the seller is legally established. Use ISO 3166-1 alpha-3 codes.
+    - **Country of Provenance**: The nation from which the goods were physically dispatched. Use ISO 3166-1 alpha-3 codes.
+  - **Logistics & Ports**:
+    - **Port of Loading**: The specific point where goods are loaded for export.
+    - **Port of Discharge**: The final destination point where goods are unloaded.
+    - **Transshipment**: Any intermediate locations or hubs where cargo is transferred.
+    - **Incoterm**: The 3-letter commercial term and its associated named place.
+    - **Weights/Volumes**: Total Net Weight, Total Gross Weight, and Total Package count.
+  - **Financials**: Currency (ISO code), Total Invoice Value, Payment Terms, and a breakdown of non-item costs (Freight, Insurance, Packing, and Miscellaneous Charges).
+
+  EXCLUSION:
+  - **DO NOT EXTRACT LINE ITEMS.** The "lineItems" array must be empty []. This is handled by a separate process.
+
+  FIELD GUIDELINES:
+  You are a specialized Invoice Data Extractor.
+  OBJECTIVE: Extract ONLY the Header, Entities, Logistics, and Financials.
+  
+  CRITICAL INSTRUCTION: **IGNORE THE LINE ITEMS TABLE.** Do not extract the list of products. Return "lineItems": [] in your JSON.
+
+  [PACKING LIST INSTRUCTION]
+  If a "Packing List" or "Lista de Empaque" is attached:
+  1. PRIORITIZE it for extracting **Total Net Weight**, **Total Gross Weight**, **Total Volumes** (Count), and **Volume Type**.
+  2. Packing Lists are often the source of truth for logistics data. use them!
+  
+  OUTPUT SCHEMA (JSON ONLY):
+  ${JSON.stringify(jsonSchema, null, 2)}
+  `;
+}
+
+function getLineItemsPrompt(): string {
+  // Use Zod 4 native JSON Schema generation
+  // @ts-ignore
+  const lineItemJsonSchema = z.toJSONSchema(LineItemSchema);
+
+  return `
+  You are a specialized Invoice Data Extractor.
+  OBJECTIVE: Extract ONLY the LINE ITEMS table from the invoice.
+  
+  CRITICAL INSTRUCTION: **IGNORE Headers, Footer, Entities, and Totals.** Focus PURELY on extracting the table rows.
+  
+  RULES:
+  1. Extract ALL rows. Do not skip any.
+  2. For "productCode", "ncm", and "productDetail", ALWAYS return null (Manual Input forced).
+  3. "netWeight" is the TOTAL NET WEIGHT for the line.
+  4. **PACKING LIST CROSS-REFERENCE**: Check attached Packing List (if any) to find the "Unit Net Weight" or "Total Net Weight" for each item if missing from the Invoice.
+  
+  OUTPUT SCHEMA (JSON ONLY):
+  {
+    "lineItems": [
+       ${JSON.stringify(lineItemJsonSchema, null, 2)}
+    ]
+  }
+  `;
+}
+
+/**
+ * Shared Post-Processing to normalize data types and calculated fields.
+ * Refactored from the original extractInvoiceData logic.
+ */
+function postProcessInvoiceData(data: any): InvoiceData {
+  // Ensure safe defaults
+  const result: InvoiceData = { ...initialInvoiceData, ...data };
+
+  // 1. Dates
+  // ... (Existing date normalization if not already handled by JSON parse)
+
+  // 2. Line Items Normalization
+  if (result.lineItems && Array.isArray(result.lineItems)) {
+    result.lineItems = result.lineItems.map((item: any) => {
+      const qty = parseFloat(item.quantity) || 0;
+      let netWeight = parseFloat(item.netWeight) || 0;
+      let unitNetWeight = parseFloat(item.unitNetWeight) || 0;
+
+      // Weight Logic: Prioritize Total, derive Unit if missing
+      if (netWeight > 0 && qty > 0) {
+        unitNetWeight = parseFloat((netWeight / qty).toFixed(6));
+      } else if (unitNetWeight > 0 && qty > 0) {
+        netWeight = parseFloat((unitNetWeight * qty).toFixed(4));
+      }
+
+      return {
+        ...item,
+        quantity: qty,
+        unitPrice: parseFloat(item.unitPrice) || 0,
+        total: parseFloat(item.total) || 0,
+        netWeight,
+        unitNetWeight,
+        // Enforce nulls just in case
+        productCode: null,
+        ncm: null,
+        productDetail: null,
+      };
+    });
+  }
+
+  return result;
+}

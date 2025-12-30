@@ -10,6 +10,7 @@
 export interface FilePart {
   mimeType: string;
   data: string; // base64 string
+  filename?: string;
 }
 
 export interface LineItem {

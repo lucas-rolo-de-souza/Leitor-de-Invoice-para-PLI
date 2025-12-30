@@ -74,7 +74,11 @@ const App: React.FC = () => {
 
     try {
       const fileParts = await processFilesToBase64(selectedFiles);
-      const extractedData = await extractInvoiceData(fileParts, selectedModel);
+      const extractedData = await extractInvoiceData(
+        fileParts,
+        (msg) => logger.info(msg),
+        selectedModel
+      );
 
       setOriginalData(extractedData);
       setData(extractedData);

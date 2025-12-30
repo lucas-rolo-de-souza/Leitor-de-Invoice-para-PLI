@@ -34,6 +34,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -44,7 +45,9 @@
     "nvm": "^0.0.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.0",
-    "xlsx": "^0.18.5"
+    "type-check": "^0.4.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",
@@ -54,8 +57,8 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.0.0",
-    "postcss": "^8.0.0",
-    "tailwindcss": "^3.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "^7.3.0"
   },
