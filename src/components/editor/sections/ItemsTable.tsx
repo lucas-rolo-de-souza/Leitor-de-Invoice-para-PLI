@@ -94,7 +94,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
               <th className="px-3 py-3 w-16 text-center">Und *</th>
               <th className="px-3 py-3 w-24 text-right">Unit ($) *</th>
               <th className="px-3 py-3 w-28 text-right">Total ($)</th>
-              <th className="px-3 py-3 w-24 text-right">Peso Líq. Unit.</th>
               <th className="px-3 py-3 w-24 text-right">Peso Líq. Total</th>
               <th className="px-3 py-3 w-24 text-center">Ações</th>
               <th className="px-3 py-3 w-10"></th>
@@ -281,22 +280,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       minimal
                       type="number"
                       step="any"
-                      value={item.unitNetWeight || ""}
-                      onChange={(e) =>
-                        onLineItemChange(index, "unitNetWeight", e.target.value)
-                      }
-                      error={!isNumeric(item.unitNetWeight) ? "!" : null}
-                      isReadOnly={isReadOnly}
-                      placeholder="0.000"
-                      className="text-right"
-                    />
-                  </td>
-
-                  <td className="px-2 py-2">
-                    <ValidatedInput
-                      minimal
-                      type="number"
-                      step="any"
                       value={item.netWeight || ""}
                       onChange={(e) =>
                         onLineItemChange(index, "netWeight", e.target.value)
@@ -368,7 +351,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             {(!data.lineItems || data.lineItems.length === 0) && (
               <tr>
                 <td
-                  colSpan={13}
+                  colSpan={12}
                   className="px-4 py-16 text-center text-slate-400"
                 >
                   <p className="italic">Lista vazia</p>
@@ -421,9 +404,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       }`}
                     >
                       NCM: {item.ncm || "-"}
-                    </span>
-                    <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      PL Unit: {item.unitNetWeight || "-"}
                     </span>
                     <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
                       PL Total: {item.netWeight || "-"}

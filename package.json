@@ -42,7 +42,7 @@
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.555.0",
     "nvm": "^0.0.4",
-    "react": "^19.2.0",
+    "react": "^19.2.3",
     "react-dom": "^19.2.0",
     "xlsx": "^0.18.5"
   },

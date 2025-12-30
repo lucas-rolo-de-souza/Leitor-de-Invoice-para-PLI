@@ -256,20 +256,21 @@ const App: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={handleExportPLIButton}
+              onClick={handleExportExcel}
               className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
-              title="PLI (XLS + Validação)"
+              title="Excel (Tabela Completa)"
             >
-              <FileSpreadsheet className="w-4 h-4" />
+              <Download className="w-4 h-4" />
             </button>
           </div>
           <button
             type="button"
-            onClick={handleExportExcel}
+            onClick={handleExportPLIButton}
             className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+            title="Gerar PLI Final (XLS + Validação)"
           >
-            <Download className="w-3.5 h-3.5" />{" "}
-            <span className="hidden sm:inline">Exportar Excel</span>
+            <FileSpreadsheet className="w-3.5 h-3.5" />{" "}
+            <span className="hidden sm:inline">Exportar PLI</span>
           </button>
         </div>
       </header>

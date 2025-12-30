@@ -1,4 +1,3 @@
-
 // Version: 1.08.00.02
 /**
  * Type definitions for Invoice and Packing List data structures.
@@ -14,26 +13,31 @@ export interface FilePart {
 }
 
 export interface LineItem {
-  description: string;       
-  partNumber: string | null; 
-  productCode: string | null; 
-  productDetail: string | null; 
-  
-  quantity: number | string | null;   
-  unitMeasure: string | null; 
-  
-  unitPrice: number | string | null;  
-  total: number | string | null;      
-  
-  unitNetWeight: number | string | null; 
-  netWeight: number | string | null;  
-  
-  ncm: string | null;        
-  
-  manufacturerCode: string | null; 
-  material: string | null;         
-  manufacturerRef: string | null;  
-  manufacturerCountry: string | null; 
+  description: string;
+  partNumber: string | null;
+  productCode: string | null;
+  productDetail: string | null;
+
+  quantity: number | string | null;
+  unitMeasure: string | null;
+
+  unitPrice: number | string | null;
+  total: number | string | null;
+
+  unitNetWeight: number | string | null;
+  /**
+   * PRIMARY WEIGHT FIELD FOR PLI.
+   * Represents the Total Net Weight of the line item.
+   * If extracted, this value takes precedence over unitNetWeight.
+   */
+  netWeight: number | string | null;
+
+  ncm: string | null;
+
+  manufacturerCode: string | null;
+  material: string | null;
+  manufacturerRef: string | null;
+  manufacturerCountry: string | null;
 
   legalAct1Type: string | null;
   legalAct1Issuer: string | null;
@@ -65,72 +69,72 @@ export interface LineItem {
 }
 
 export interface InvoiceData {
-  invoiceNumber: string | null;      
-  packingListNumber: string | null;  
-  date: string | null;               
-  dueDate: string | null;            
+  invoiceNumber: string | null;
+  packingListNumber: string | null;
+  date: string | null;
+  dueDate: string | null;
 
-  exporterName: string | null;       
-  exporterAddress: string | null;    
-  importerName: string | null;       
-  importerAddress: string | null;    
-  
-  incoterm: string | null;           
-  paymentTerms: string | null;       
-  countryOfOrigin: string | null;    
-  countryOfAcquisition: string | null; 
-  countryOfProvenance: string | null;  
-  
-  totalNetWeight: number | string | null;     
-  totalGrossWeight: number | string | null;   
-  weightUnit: 'KG' | 'LB' | null;    
-  totalVolumes: number | string | null;       
-  volumeType: string | null;         
+  exporterName: string | null;
+  exporterAddress: string | null;
+  importerName: string | null;
+  importerAddress: string | null;
 
-  currency: string;                  
-  subtotal: number | string | null;           
-  freight: number | string | null;            
-  insurance: number | string | null;          
-  tax: number | string | null;                
-  otherCharges: number | string | null;       
-  grandTotal: number | string | null;         
+  incoterm: string | null;
+  paymentTerms: string | null;
+  countryOfOrigin: string | null;
+  countryOfAcquisition: string | null;
+  countryOfProvenance: string | null;
 
-  originalSubtotal?: number | null;  
+  totalNetWeight: number | string | null;
+  totalGrossWeight: number | string | null;
+  weightUnit: "KG" | "LB" | null;
+  totalVolumes: number | string | null;
+  volumeType: string | null;
+
+  currency: string;
+  subtotal: number | string | null;
+  freight: number | string | null;
+  insurance: number | string | null;
+  tax: number | string | null;
+  otherCharges: number | string | null;
+  grandTotal: number | string | null;
+
+  originalSubtotal?: number | null;
   originalGrandTotal?: number | null;
 
-  lineItems: LineItem[];             
+  lineItems: LineItem[];
 }
 
 export const initialInvoiceData: InvoiceData = {
-  invoiceNumber: '',
-  packingListNumber: '',
-  date: '',
-  dueDate: '',
-  
-  exporterName: '',
-  exporterAddress: '',
-  importerName: '',
-  importerAddress: '',
-  
-  incoterm: '',
-  paymentTerms: '',
-  countryOfOrigin: '',
-  countryOfAcquisition: '',
-  countryOfProvenance: '',
-  
-  totalNetWeight: '',
-  totalGrossWeight: '',
-  weightUnit: 'KG', 
-  totalVolumes: '',
-  volumeType: '',
-  
-  currency: 'USD',
-  subtotal: '',
-  freight: '',
-  insurance: '',
-  tax: '',
-  otherCharges: '',
-  grandTotal: '',
-  
+  invoiceNumber: "",
+  packingListNumber: "",
+  date: "",
+  dueDate: "",
+
+  exporterName: "",
+  exporterAddress: "",
+  importerName: "",
+  importerAddress: "",
+
+  incoterm: "",
+  paymentTerms: "",
+  countryOfOrigin: "",
+  countryOfAcquisition: "",
+  countryOfProvenance: "",
+
+  totalNetWeight: "",
+  totalGrossWeight: "",
+  weightUnit: "KG",
+  totalVolumes: "",
+  volumeType: "",
+
+  currency: "USD",
+  subtotal: "",
+  freight: "",
+  insurance: "",
+  tax: "",
+  otherCharges: "",
+  grandTotal: "",
+
   lineItems: [],
 };

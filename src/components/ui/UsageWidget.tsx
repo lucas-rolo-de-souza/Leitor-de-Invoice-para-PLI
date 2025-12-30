@@ -4,7 +4,6 @@ import {
   SessionStats,
   UsageLog,
 } from "../../services/usageService";
-import { currencyService } from "../../services/currencyService";
 import {
   Activity,
   X,
@@ -35,7 +34,6 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
   const [viewMode, setViewMode] = useState<"current" | "all">("current");
   const [searchTerm, setSearchTerm] = useState("");
   const [logs, setLogs] = useState<UsageLog[]>([]);
-  const [brlRate, setBrlRate] = useState<number | null>(null);
 
   // Fetch stats and logs
   useEffect(() => {
@@ -43,19 +41,6 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
     setLifetimeStats(usageService.getLifetimeStats());
     setLogs(usageService.getLogs(viewMode));
   }, [refreshTrigger, isOpen, viewMode]);
-
-  // Fetch Currency on Mount with Safety Catch
-  useEffect(() => {
-    const fetchRate = async () => {
-      try {
-        const rate = await currencyService.getUSDtoBRLRate();
-        if (rate) setBrlRate(rate);
-      } catch (error) {
-        console.warn("Failed to load currency rate in widget:", error);
-      }
-    };
-    fetchRate();
-  }, []);
 
   const handleClearHistory = () => {
     if (confirm("Tem certeza que deseja apagar todo o histórico de uso?")) {
@@ -80,14 +65,16 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
 
   // Footer Display (Always Current Session)
   const currentCost = stats.totalCost;
-  const formattedCurrentBrl = (
-    brlRate ? currentCost * brlRate : 0
-  ).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const currentBrl = stats.totalCostInBrl;
+  const formattedCurrentBrl = currentBrl.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 
   // Modal Display (Depends on View Mode)
   const activeStats = viewMode === "current" ? stats : lifetimeStats;
   const activeCost = activeStats.totalCost;
-  const activeBrl = brlRate ? activeCost * brlRate : 0;
+  const activeBrl = activeStats.totalCostInBrl;
   const formattedActiveBrl = activeBrl.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -136,6 +123,8 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                  title="Fechar Monitor"
+                  aria-label="Fechar Monitor"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -213,16 +202,14 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
                 </div>
 
                 {/* BRL Display */}
-                {brlRate && (
-                  <div className="mt-2 pt-2 border-t border-slate-50 flex items-center justify-between">
-                    <div className="text-xs font-bold text-green-700">
-                      {formattedActiveBrl}
-                    </div>
-                    <span className="text-[9px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                      PTAX
-                    </span>
+                <div className="mt-2 pt-2 border-t border-slate-50 flex items-center justify-between">
+                  <div className="text-xs font-bold text-green-700">
+                    {formattedActiveBrl}
                   </div>
-                )}
+                  <span className="text-[9px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                    Real (R$)
+                  </span>
+                </div>
               </div>
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-brand-200 transition-colors">
                 <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-wider">
@@ -277,8 +264,9 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
                     <th className="px-6 py-3 bg-slate-50">Modelo</th>
                     <th className="px-6 py-3 text-right bg-slate-50">Tokens</th>
                     <th className="px-6 py-3 text-right bg-slate-50">Tempo</th>
+                    <th className="px-6 py-3 text-right bg-slate-50">PTAX</th>
                     <th className="px-6 py-3 text-right bg-slate-50">
-                      Custo (USD)
+                      Custo (USD/BRL)
                     </th>
                   </tr>
                 </thead>
@@ -336,8 +324,16 @@ export const UsageWidget: React.FC<UsageWidgetProps> = ({ refreshTrigger }) => {
                         <td className="px-6 py-3 text-right text-slate-600 text-xs font-mono">
                           {(log.latencyMs / 1000).toFixed(2)}s
                         </td>
+                        <td className="px-6 py-3 text-right text-slate-500 text-xs font-mono">
+                          {log.ptax ? `R$${log.ptax.toFixed(4)}` : "-"}
+                        </td>
                         <td className="px-6 py-3 text-right font-bold text-slate-700 font-mono text-xs">
-                          ${log.cost.toFixed(5)}
+                          <div>${log.cost.toFixed(5)}</div>
+                          {log.costInBrl ? (
+                            <div className="text-[10px] text-green-600">
+                              R${log.costInBrl.toFixed(4)}
+                            </div>
+                          ) : null}
                         </td>
                       </tr>
                     ))

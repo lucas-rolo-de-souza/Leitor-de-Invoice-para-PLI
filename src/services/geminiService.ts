@@ -188,13 +188,12 @@ const getModelSpecificPrompt = (modelId: string): string => {
         *   **Definition**: The identifier used by the SELLER (Manufacturer/Vendor).
         *   **Look for**: "Seller Part No", "Vendor Part No", "Model No", "Ref", "Cat No", "Mfr Part No".
 
-    3.  **productCode (Cod Produto)**:
-        *   **Definition**: Internal product classification code.
-        *   *Only fill this if there is a 3rd distinct code separate from the two above. Otherwise leave null.*
-
-    4.  **NCM (HS Code)**:
-        *   **Definition**: Customs Classification. STRICTLY NUMERIC (e.g. 8542.31.00).
-        *   *NEVER put alphanumeric part numbers in the NCM field.*
+    ### MANUAL INPUT FIELDS (ALWAYS RETURN NULL)
+    The following fields MUST be left empty (null) for the user to input manually. **DO NOT EXTRACT THESE**:
+    
+    1.  **productCode (Cod Produto)**: Return \`null\`.
+    2.  **productDetail (Detalhe)**: Return \`null\`.
+    3.  **NCM (HS Code)**: Return \`null\`.
 
     ### CRITICAL: COUNTRY CODES (ISO 3166-1 ALPHA-3)
     All country fields (Origin, Acquisition, Provenance) MUST be converted to the **3-letter ISO code**.
