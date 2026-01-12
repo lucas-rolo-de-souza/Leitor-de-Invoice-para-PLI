@@ -39,13 +39,16 @@ export const validatePliData = (data: InvoiceData): string | null => {
     }
 
     // Product Detail: Check existence OR Length
-    if (!item.productDetail || item.productDetail.trim() === "") {
+    if (
+      !item.taxClassificationDetail ||
+      item.taxClassificationDetail.trim() === ""
+    ) {
       lineMessages.push(
         "O campo DETALHE_PRODUTO deve ser formatado com o tipo: Texto"
       );
-    } else if (item.productDetail.length > 4) {
+    } else if (item.taxClassificationDetail.length > 4) {
       lineMessages.push(
-        `O campo DETALHE_PRODUTO excedeu o tamnho máximo permitido. Atual:${item.productDetail.length}, Máximo 4.`
+        `O campo DETALHE_PRODUTO excedeu o tamnho máximo permitido. Atual:${item.taxClassificationDetail.length}, Máximo 4.`
       );
     }
 

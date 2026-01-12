@@ -248,7 +248,7 @@ export const useCompliance = (data: InvoiceData) => {
     // 4. PESO_LIQUIDO: Numeric
     const itemsInvalidPli = items.filter((i) => {
       const hasInvalidProdDetail =
-        !i.productDetail || i.productDetail.length > 4;
+        !i.taxClassificationDetail || i.taxClassificationDetail.length > 4;
       const hasInvalidMfrCode =
         !i.manufacturerCode || isNaN(Number(i.manufacturerCode));
       const hasInvalidMfrRef =
@@ -281,7 +281,7 @@ export const useCompliance = (data: InvoiceData) => {
       // Hint for the first invalid item
       const i = itemsInvalidPli[0];
       let hint = "";
-      if (!i.productDetail || i.productDetail.length > 4)
+      if (!i.taxClassificationDetail || i.taxClassificationDetail.length > 4)
         hint = "Detalhe (Tam)";
       else if (!i.manufacturerCode || isNaN(Number(i.manufacturerCode)))
         hint = "Cód. Fabr. (Num)";

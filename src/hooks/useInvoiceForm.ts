@@ -196,7 +196,7 @@ export const useInvoiceForm = (
       description: "",
       partNumber: "",
       productCode: "",
-      productDetail: "",
+      taxClassificationDetail: null,
       quantity: "",
       unitMeasure: "UN",
       unitPrice: "",

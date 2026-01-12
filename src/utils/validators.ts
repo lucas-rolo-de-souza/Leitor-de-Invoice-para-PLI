@@ -224,9 +224,9 @@ export const generateValidationErrors = (
           message: `${idxStr}: Código Produto ausente`,
           code: "MISSING_FIELD",
         });
-      if (isFieldInvalid(item.productDetail))
+      if (isFieldInvalid(item.taxClassificationDetail))
         errors.push({
-          field: `lineItem[${index}].productDetail`,
+          field: `lineItem[${index}].taxClassificationDetail`,
           message: `${idxStr}: Detalhe Produto ausente`,
           code: "MISSING_FIELD",
         });
