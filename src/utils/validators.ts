@@ -52,6 +52,7 @@ export const isValidReference = (
 export interface ValidationError {
   field: string;
   message: string;
+  code: string;
 }
 
 export const generateValidationErrors = (
@@ -64,10 +65,14 @@ export const generateValidationErrors = (
 ): ValidationError[] => {
   const errors: ValidationError[] = [];
 
-  const check = (field: keyof InvoiceData, msg: string) => {
+  const check = (
+    field: keyof InvoiceData,
+    msg: string,
+    code: string = "MISSING_FIELD"
+  ) => {
     // @ts-ignore
     if (isFieldInvalid(data[field])) {
-      errors.push({ field: String(field), message: msg });
+      errors.push({ field: String(field), message: msg, code });
     }
   };
 
@@ -82,6 +87,7 @@ export const generateValidationErrors = (
       errors.push({
         field: "dueDate",
         message: "Vencimento anterior à emissão",
+        code: "INVALID_DATE_RANGE",
       });
     }
   }
@@ -95,7 +101,11 @@ export const generateValidationErrors = (
   // Trade
   check("incoterm", "Incoterm ausente");
   if (data.incoterm && !isValidReference(data.incoterm, lists.incoterms)) {
-    errors.push({ field: "incoterm", message: "Incoterm inválido" });
+    errors.push({
+      field: "incoterm",
+      message: "Incoterm inválido",
+      code: "INVALID_VALUE",
+    });
   }
 
   check("paymentTerms", "Condição de pagamento ausente");
@@ -105,6 +115,7 @@ export const generateValidationErrors = (
     errors.push({
       field: "currency",
       message: "Moeda inválida (Use ISO 4217 ou Nome)",
+      code: "INVALID_VALUE",
     });
   }
 
@@ -118,9 +129,13 @@ export const generateValidationErrors = (
     // @ts-ignore
     const val = data[field];
     if (isFieldInvalid(val)) {
-      errors.push({ field, message: "País ausente" });
+      errors.push({ field, message: "País ausente", code: "MISSING_FIELD" });
     } else if (!isValidReference(val, lists.countries)) {
-      errors.push({ field, message: `País inválido (${field})` });
+      errors.push({
+        field,
+        message: `País inválido (${field})`,
+        code: "INVALID_VALUE",
+      });
     }
   });
 
@@ -130,23 +145,40 @@ export const generateValidationErrors = (
   const volumes = Number(data.totalVolumes) || 0;
 
   if (netWeight <= 0)
-    errors.push({ field: "totalNetWeight", message: "Peso líquido inválido" });
+    errors.push({
+      field: "totalNetWeight",
+      message: "Peso líquido inválido",
+      code: "INVALID_NUMBER",
+    });
   if (grossWeight <= 0)
-    errors.push({ field: "totalGrossWeight", message: "Peso bruto inválido" });
+    errors.push({
+      field: "totalGrossWeight",
+      message: "Peso bruto inválido",
+      code: "INVALID_NUMBER",
+    });
 
   if (netWeight > grossWeight) {
     errors.push({
       field: "totalNetWeight",
       message: "Peso Líquido > Peso Bruto",
+      code: "LOGIC_ERROR",
     });
   }
 
   if (volumes <= 0)
-    errors.push({ field: "totalVolumes", message: "Qtd volumes inválida" });
+    errors.push({
+      field: "totalVolumes",
+      message: "Qtd volumes inválida",
+      code: "INVALID_NUMBER",
+    });
 
   // Items
   if (!data.lineItems || data.lineItems.length === 0) {
-    errors.push({ field: "lineItems", message: "Nenhum item na fatura" });
+    errors.push({
+      field: "lineItems",
+      message: "Nenhum item na fatura",
+      code: "NO_ITEMS",
+    });
   } else {
     data.lineItems.forEach((item, index) => {
       const idxStr = `Item ${index + 1}`;
@@ -156,21 +188,25 @@ export const generateValidationErrors = (
         errors.push({
           field: `lineItem[${index}].description`,
           message: `${idxStr}: Descrição Técnica ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.partNumber))
         errors.push({
           field: `lineItem[${index}].partNumber`,
           message: `${idxStr}: Part Number ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.quantity) || Number(item.quantity) <= 0)
         errors.push({
           field: `lineItem[${index}].quantity`,
           message: `${idxStr}: Quantidade inválida`,
+          code: "INVALID_NUMBER",
         });
       if (isFieldInvalid(item.unitPrice) || Number(item.unitPrice) < 0)
         errors.push({
           field: `lineItem[${index}].unitPrice`,
           message: `${idxStr}: Preço unitário inválido`,
+          code: "INVALID_NUMBER",
         });
 
       const isNcmValid = isValidNCM(item.ncm);
@@ -178,6 +214,7 @@ export const generateValidationErrors = (
         errors.push({
           field: `lineItem[${index}].ncm`,
           message: `${idxStr}: Código NCM inválido`,
+          code: "INVALID_NCM",
         });
 
       // PLI Mandatory Fields
@@ -185,31 +222,37 @@ export const generateValidationErrors = (
         errors.push({
           field: `lineItem[${index}].productCode`,
           message: `${idxStr}: Código Produto ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.productDetail))
         errors.push({
           field: `lineItem[${index}].productDetail`,
           message: `${idxStr}: Detalhe Produto ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.unitMeasure))
         errors.push({
           field: `lineItem[${index}].unitMeasure`,
           message: `${idxStr}: Unidade ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.netWeight) || Number(item.netWeight) <= 0)
         errors.push({
           field: `lineItem[${index}].netWeight`,
           message: `${idxStr}: Peso Líquido inválido`,
+          code: "INVALID_NUMBER",
         });
       if (isFieldInvalid(item.manufacturerCode))
         errors.push({
           field: `lineItem[${index}].manufacturerCode`,
           message: `${idxStr}: Código Fabricante ausente`,
+          code: "MISSING_FIELD",
         });
       if (isFieldInvalid(item.manufacturerRef))
         errors.push({
           field: `lineItem[${index}].manufacturerRef`,
           message: `${idxStr}: Ref. Fabricante ausente`,
+          code: "MISSING_FIELD",
         });
     });
   }

@@ -151,8 +151,19 @@ export const handlePLIExport = (data: InvoiceData) => {
   const errorReport = validatePliData(data);
 
   if (errorReport) {
+    // Generate Timestamp: YYYYMMDD_HHmm
+    const now = new Date();
+    const YYYY = now.getFullYear();
+    const MM = String(now.getMonth() + 1).padStart(2, "0");
+    const DD = String(now.getDate()).padStart(2, "0");
+    const HH = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+
+    const timestamp = `${YYYY}${MM}${DD}_${HH}${mm}`;
+    const filename = `relatorio_erros_${timestamp}.txt`;
+
     // 2a. If errors, download Text File
-    downloadTextReport(errorReport, "relatorio_erros.txt");
+    downloadTextReport(errorReport, filename);
   }
 
   // 2b. Always download XLS regardless of errors
