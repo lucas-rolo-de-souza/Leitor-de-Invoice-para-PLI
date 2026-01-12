@@ -19,7 +19,11 @@ export interface LineItem {
   description: string;
   partNumber: string | null;
   productCode: string | null;
-  productDetail: string | null;
+  /**
+   * "Detalhe da Classificação Fiscal" (NCM Description).
+   * Not present in Invoice. Must be manually input.
+   */
+  taxClassificationDetail: string | null;
 
   quantity: number | string | null;
   unitMeasure: string | null;
@@ -35,9 +39,21 @@ export interface LineItem {
    */
   netWeight: number | string | null;
 
+  /**
+   * NCM Code (Nomenclatura Comum do Mercosul).
+   * Not present in Invoice. Manual Input.
+   */
   ncm: string | null;
 
+  /**
+   * Internal Manufacturer Code (Código do Fabricante).
+   * Manual Input.
+   */
   manufacturerCode: string | null;
+  /**
+   * Raw Material description (Matéria Prima).
+   * Manual Input.
+   */
   material: string | null;
   manufacturerRef: string | null;
   manufacturerCountry: string | null;

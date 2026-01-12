@@ -111,8 +111,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 isFieldInvalid(item.description) ||
                 !isNCMValid ||
                 // Strict PLI Checks
-                !item.productDetail ||
-                item.productDetail.length > 4 ||
+                !item.taxClassificationDetail ||
+                item.taxClassificationDetail.length > 4 ||
                 !item.manufacturerCode ||
                 !isNumeric(item.manufacturerCode) ||
                 !item.manufacturerRef ||
@@ -202,12 +202,17 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   <td className="px-2 py-2">
                     <ValidatedInput
                       minimal
-                      value={item.productDetail || ""}
+                      value={item.taxClassificationDetail || ""}
                       onChange={(e) =>
-                        onLineItemChange(index, "productDetail", e.target.value)
+                        onLineItemChange(
+                          index,
+                          "taxClassificationDetail",
+                          e.target.value
+                        )
                       }
                       error={
-                        !item.productDetail || item.productDetail.length > 4
+                        !item.taxClassificationDetail ||
+                        item.taxClassificationDetail.length > 4
                           ? "!"
                           : null
                       }
@@ -371,8 +376,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             isFieldInvalid(item.productCode) ||
             isFieldInvalid(item.description) ||
             !isNCMValid ||
-            !item.productDetail ||
-            item.productDetail.length > 4 ||
+            !item.taxClassificationDetail ||
+            item.taxClassificationDetail.length > 4 ||
             !item.manufacturerCode ||
             !isNumeric(item.manufacturerCode) ||
             !item.manufacturerRef ||
@@ -565,18 +570,23 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                       </div>
                       <ValidatedInput
-                        label="Detalhe Produto *"
-                        value={data.lineItems[editingIndex].productDetail || ""}
+                        label="Detalhe (Classif. Fiscal) *"
+                        value={
+                          data.lineItems[editingIndex]
+                            .taxClassificationDetail || ""
+                        }
                         onChange={(e) =>
                           onLineItemChange(
                             editingIndex,
-                            "productDetail",
+                            "taxClassificationDetail",
                             e.target.value
                           )
                         }
                         error={
-                          !data.lineItems[editingIndex].productDetail ||
-                          data.lineItems[editingIndex].productDetail.length > 4
+                          !data.lineItems[editingIndex]
+                            .taxClassificationDetail ||
+                          data.lineItems[editingIndex].taxClassificationDetail!
+                            .length > 4
                             ? "Max 4 chars"
                             : null
                         }

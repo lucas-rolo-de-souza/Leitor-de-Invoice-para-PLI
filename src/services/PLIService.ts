@@ -91,7 +91,7 @@ const generateAndDownloadXls = (data: InvoiceData) => {
       cell(item.description), // ESPECIFICAÇÃO_TECNICA
       cell(item.productCode, "s"), // CODIGO_PRODUTO
       cell(item.ncm ? item.ncm.replace(/\./g, "") : "", "s"), // CODIGO_NCM
-      cell(item.productDetail, "s"), // DETALHE_PRODUTO
+      cell(item.taxClassificationDetail, "s"), // DETALHE_PRODUTO
       cell(item.unitMeasure, "s"), // UNIDADE
       cell(item.netWeight, "n"), // PESO_LIQUIDO
       cell(item.quantity, "n"), // QUANTIDADE
@@ -136,10 +136,8 @@ const generateAndDownloadXls = (data: InvoiceData) => {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  // Export as XLS (BIFF8)
-  XLSX.writeFile(wb, `IMPORTACAO_MODELO_INDUSTRIA_PLI.xls`, {
-    bookType: "xls",
-  });
+  // Export as XLSX (Modern Excel)
+  XLSX.writeFile(wb, `IMPORTACAO_MODELO_INDUSTRIA_PLI.xlsx`);
 };
 
 /**

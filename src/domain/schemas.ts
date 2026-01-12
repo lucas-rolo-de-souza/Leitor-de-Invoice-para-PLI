@@ -19,10 +19,10 @@ export const LineItemSchema = z.object({
     .default(null)
     .describe("Product Code (Internal) - Forced NULL"),
   ncm: z.literal(null).default(null).describe("NCM Code - Forced NULL"),
-  productDetail: z
+  taxClassificationDetail: z
     .literal(null)
     .default(null)
-    .describe("Detailed Specs - Forced NULL"),
+    .describe("Detalhe da Classificação Fiscal (NCM) - Forced NULL"),
 
   quantity: z.number().nullable().describe("Billed quantity"),
   unitMeasure: z.string().nullable().describe("Unit of Measure (UN, PCS, etc)"),

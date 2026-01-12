@@ -1,6 +1,6 @@
 # Invoice Reader AI (Leitor de Faturas) v1.05
 
-**Version:** 1.05.00.36
+**Version:** 1.05.00.37
 **Status:** Production Ready
 
 An intelligent, regulatory-compliant web application designed to automate the extraction, validation, and processing of **Commercial Invoices** and **Packing Lists** for international trade (specifically optimized for Brazilian Customs/Receita Federal).
@@ -24,7 +24,7 @@ For detailed technical information, please refer to the specific documentation f
 - **Multimodal AI Extraction**: Drag & drop PDF, Images, or Excel files. The app uses Gemini 2.5 to visually analyze documents and extract structured data.
 - **SCUD Industry Model Compliance**: Full support for the rigorous "SCUD" data model, including mandatory Manufacturer Codes, Product Details, and Regulatory Acts (Atos Legais).
 - **Customs Compliance Engine**: Real-time validation against Brazilian regulations (Art. 557).
-  - **NCM Validation**: Offline-first database checking for 8-digit HS Codes.
+  - **NCM Validation**: robust **Stale-While-Revalidate** database (always keeps the official Siscomex list updated).
   - **Logistics**: Logic checks for Net vs. Gross Weight and Volume types.
   - **Entities**: Distinguishes Exporter/Importer based on "Bill To" vs "Ship To".
 - **Version Control System**: Toggle between _Original (AI)_, _Saved (Checkpoint)_, and _Current (Draft)_ versions of the data.

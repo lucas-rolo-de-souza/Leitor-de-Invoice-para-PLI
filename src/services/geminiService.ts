@@ -44,11 +44,25 @@ const cleanData = (obj: any): any => {
  * Robust JSON parser that handles Markdown fences and aggressive truncation.
  */
 const safeJsonParse = (text: string): any => {
-  // 1. Strip Markdown Code Blocks
-  const clean = text
+  // 1. Strip Markdown Code Blocks & aggressively find JSON start/end
+  let clean = text
     .replace(/```json\s*/gi, "")
     .replace(/```\s*$/g, "")
     .trim();
+
+  // If text starts with non-JSON character, try to find the first '[' or '{'
+  const firstBracket = clean.search(/[\{\[]/);
+  if (firstBracket > 0) {
+    clean = clean.substring(firstBracket);
+  }
+
+  // Find the last closing bracket
+  const lastBracket = Math.max(clean.lastIndexOf("}"), clean.lastIndexOf("]"));
+  if (lastBracket > -1 && lastBracket < clean.length - 1) {
+    clean = clean.substring(0, lastBracket + 1);
+  }
+
+  clean = clean.trim();
 
   // 2. Try Standard Parse
   try {
@@ -357,7 +371,7 @@ export async function extractInvoiceData(
           // Default fields
           productCode: null,
           ncm: null,
-          productDetail: null,
+          taxClassificationDetail: null,
           unitNetWeight: 0, // Calculated later
           manufacturerRef: row[7] || null,
         };
@@ -484,6 +498,7 @@ function getLineItemsPrompt(): string {
   2. Use \`null\` for missing string values. Use \`0\` for missing numbers.
   3. Extract ALL rows.
   4. **PACKING LIST**: Cross-reference Packing List for Net Weights if valid.
+  5. **NO MARKDOWN**: Do not use \`\`\`json or backticks. Return RAW JSON only.
 
   OUTPUT FORMAT: JSON Array of Arrays ONLY.
   `;
@@ -524,7 +539,7 @@ function postProcessInvoiceData(data: any): InvoiceData {
         // Enforce nulls just in case
         productCode: null,
         ncm: null,
-        productDetail: null,
+        taxClassificationDetail: null,
       };
     });
   }

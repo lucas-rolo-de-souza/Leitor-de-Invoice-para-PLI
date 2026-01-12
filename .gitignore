@@ -25,3 +25,4 @@ apikey.json
 *.sw?
 
 .agent/workflows/ai-extraction-standard.md
+logfiles/

@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+html.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  :root {
+    /* Light Mode Tokens (High Contrast) */
+    --page: 248 250 252; /* slate-50 */
+    --surface: 255 255 255; /* white */
+    --surface-highlight: 241 245 249; /* slate-100 */
+
+    --text-primary: 15 23 42; /* slate-900 */
+    --text-secondary: 71 85 105; /* slate-600 */
+    --text-tertiary: 148 163 184; /* slate-400 */
+
+    --border: 226 232 240; /* slate-200 */
+    --primary: 2 132 199; /* brand-600 (sky-600 adjusted) */
+    --primary-fg: 255 255 255;
+  }
+
+  .dark {
+    /* Dark Mode Tokens (OLED/Eye-Care) */
+    --page: 2 6 23; /* slate-950 */
+    --surface: 15 23 42; /* slate-900 */
+    --surface-highlight: 30 41 59; /* slate-800 */
+
+    --text-primary: 241 245 249; /* slate-100 */
+    --text-secondary: 148 163 184; /* slate-400 */
+    --text-tertiary: 100 116 139; /* slate-500 */
+
+    --border: 30 41 59; /* slate-800 */
+    --primary: 14 165 233; /* sky-500 */
+    --primary-fg: 255 255 255;
+  }
+}
+
 /* Custom scrollbar for better aesthetics */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

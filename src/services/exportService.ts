@@ -20,6 +20,13 @@ const calculateSubtotal = (items: any[] | undefined): number => {
 };
 
 /**
+ * Helper to sanitize filenames (remove slashes, etc)
+ */
+const sanitizeFilename = (name: string): string => {
+  return name.replace(/[\\/:*?"<>|]/g, "_");
+};
+
+/**
  * Helper to display weight in both units (KG and LB)
  */
 const formatDualWeight = (value: number | string | null, unit: string) => {
@@ -124,7 +131,8 @@ export const exportToExcel = (data: InvoiceData) => {
   const wsItems = XLSX.utils.json_to_sheet(itemsData);
   XLSX.utils.book_append_sheet(wb, wsItems, "Itens");
 
-  XLSX.writeFile(wb, `Invoice_${data.invoiceNumber || "Draft"}.xlsx`);
+  const safeInvoiceNumber = sanitizeFilename(data.invoiceNumber || "Draft");
+  XLSX.writeFile(wb, `Invoice_${safeInvoiceNumber}.xlsx`);
 };
 
 /**
@@ -269,5 +277,6 @@ export const exportToPDF = (data: InvoiceData) => {
     finalY + 15
   );
 
-  doc.save(`Invoice_${data.invoiceNumber || "Draft"}.pdf`);
+  const safeInvoiceNumber = sanitizeFilename(data.invoiceNumber || "Draft");
+  doc.save(`Invoice_${safeInvoiceNumber}.pdf`);
 };
