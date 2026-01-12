@@ -23,6 +23,5 @@ apikey.json
 *.njsproj
 *.sln
 *.sw?
-apikey.json
-apikey.json
+
 .agent/workflows/ai-extraction-standard.md

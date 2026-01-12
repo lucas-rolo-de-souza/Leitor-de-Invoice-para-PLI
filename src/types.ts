@@ -13,6 +13,8 @@ export interface FilePart {
   filename?: string;
 }
 
+export type OnProgressCallback = (message: string) => void;
+
 export interface LineItem {
   description: string;
   partNumber: string | null;

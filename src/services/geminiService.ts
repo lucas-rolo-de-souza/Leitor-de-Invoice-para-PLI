@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { InvoiceSchema, LineItemSchema } from "../domain/schemas";
+import { InvoiceSchema } from "../domain/schemas";
 import { InvoiceData, FilePart, initialInvoiceData } from "../types";
 import { logger } from "./loggerService";
 import { usageService } from "./usageService";
@@ -178,31 +178,44 @@ async function withRetry<T>(
   try {
     return await operation();
   } catch (error: any) {
-    // Check for 429 or Resource Exhausted
-    const isRateLimit =
-      error?.status === 429 ||
-      error?.message?.includes("429") ||
-      error?.message?.includes("RESOURCE_EXHAUSTED");
+    // Check for 429 (Rate Limit) or 503 (Overloaded)
+    const status = error?.status;
+    const msg = error?.message || "";
 
-    if (isRateLimit && attempt <= maxRetries) {
-      // Try to parse "retry in X seconds" from message, or use exponential backoff
-      // Default backoff: 2s, 4s, 8s...
+    const isRateLimit =
+      status === 429 ||
+      msg.includes("429") ||
+      msg.includes("RESOURCE_EXHAUSTED");
+
+    const isOverloaded =
+      status === 503 ||
+      msg.includes("503") ||
+      msg.includes("overloaded") ||
+      msg.includes("UNAVAILABLE");
+
+    if ((isRateLimit || isOverloaded) && attempt <= maxRetries) {
+      // Exponential backoff: 2s, 4s, 8s...
       let delay = 2000 * Math.pow(2, attempt - 1);
 
       // Simple regex to find "retry in X.XXs" or similar if provided by API message
-      const match = error?.message?.match(/retry in\s+(\d+(\.\d+)?)s/i);
+      const match = msg.match(/retry in\s+(\d+(\.\d+)?)s/i);
       if (match) {
         delay = parseFloat(match[1]) * 1000;
       }
 
       const waitSeconds = Math.ceil(delay / 1000);
+      const reason = isOverloaded
+        ? "Servidor ocupado (503)"
+        : "Limite de cota (429)";
+
       onProgress?.(
-        `⚠️ Limite de cota (429). Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`
+        `⚠️ ${reason}. Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`
       );
 
-      logger.warn(`Rate Limit hit. Retrying in ${delay}ms`, {
+      logger.warn(`${reason}. Retrying in ${delay}ms`, {
         attempt,
         maxRetries,
+        error: msg,
       });
       await sleep(delay);
 
@@ -270,7 +283,9 @@ export async function extractInvoiceData(
   const startTime = Date.now();
 
   // Task A: Metadata
-  onProgress?.("Extraindo Cabeçalho e Metadados...");
+  onProgress?.(
+    `🚀 Solicitando extração de Cabeçalho e Metadados (${modelId})...`
+  );
   let metadataResult;
   try {
     metadataResult = await generate(metadataPrompt);
@@ -283,7 +298,7 @@ export async function extractInvoiceData(
   await sleep(1000);
 
   // Task B: Line Items
-  onProgress?.("Extraindo Itens e Produtos...");
+  onProgress?.(`📦 Extraindo e analisando Linhas de Itens (${modelId})...`);
   let lineItemsResult;
   try {
     lineItemsResult = await generate(lineItemsPrompt);
@@ -312,16 +327,60 @@ export async function extractInvoiceData(
   );
 
   // 4. Parse & Merge
-  onProgress?.("Processando e mesclando resultados...");
+  onProgress?.("🔧 Processando, limpando e unificando dados...");
 
   const metadata = safeJsonParse(metadataResult.text || "{}");
-  const itemsData = safeJsonParse(lineItemsResult.text || "{}");
+
+  // Parse Minified Line Items
+  const rawItemsData = safeJsonParse(lineItemsResult.text || "[]");
+  let lineItemsObj: any[] = [];
+
+  // Check if we received the expected Array-of-Arrays format
+  if (Array.isArray(rawItemsData)) {
+    // Check if it's the new Minified format (Array of Arrays)
+    if (rawItemsData.length > 0 && Array.isArray(rawItemsData[0])) {
+      // Map Minified Arrays back to Objects
+      // Column Order: [Description, PartNumber, Quantity, UnitMeasure, UnitPrice, Total, NetWeight]
+      lineItemsObj = rawItemsData.map((row: any[]) => {
+        // Safety check for row length (fallback if AI hallucinates cols)
+        return {
+          description: row[0]?.toString() || "Item Desconhecido",
+          partNumber: row[1] || null, // Can be string or null
+          quantity:
+            typeof row[2] === "number" ? row[2] : parseFloat(row[2]) || 0,
+          unitMeasure: row[3] || "UN",
+          unitPrice:
+            typeof row[4] === "number" ? row[4] : parseFloat(row[4]) || 0,
+          total: typeof row[5] === "number" ? row[5] : parseFloat(row[5]) || 0,
+          netWeight:
+            typeof row[6] === "number" ? row[6] : parseFloat(row[6]) || 0,
+          // Default fields
+          productCode: null,
+          ncm: null,
+          productDetail: null,
+          unitNetWeight: 0, // Calculated later
+          manufacturerRef: row[7] || null,
+        };
+      });
+      logger.info(
+        `Parsed ${lineItemsObj.length} items from Minified Array format.`
+      );
+    } else {
+      // Fallback: It might be the old object format (if model ignored instructions, rare but possible)
+      // OR it handles the wrapper object case { "lineItems": [...] }
+      if (!Array.isArray(rawItemsData) && (rawItemsData as any).lineItems) {
+        lineItemsObj = (rawItemsData as any).lineItems;
+      } else {
+        lineItemsObj = rawItemsData as any[]; // Assume it's array of objects
+      }
+    }
+  }
 
   // Merge: Metadata takes precedence for headers, ItemsData provides the list
   const combinedData: InvoiceData = {
     ...initialInvoiceData, // Defaults
     ...metadata, // Overwrite with metadata
-    lineItems: Array.isArray(itemsData.lineItems) ? itemsData.lineItems : [], // Explicitly take items
+    lineItems: Array.isArray(lineItemsObj) ? lineItemsObj : [],
   };
 
   // 5. Post-Processing (Normalization)
@@ -397,28 +456,36 @@ function getMetadataPrompt(): string {
 }
 
 function getLineItemsPrompt(): string {
-  // Use Zod 4 native JSON Schema generation
-  // @ts-ignore
-  const lineItemJsonSchema = z.toJSONSchema(LineItemSchema);
-
   return `
   You are a specialized Invoice Data Extractor.
-  OBJECTIVE: Extract ONLY the LINE ITEMS table from the invoice.
+  OBJECTIVE: Extract the LINE ITEMS table using a MINIFIED JSON ARRAY format to save tokens.
   
-  CRITICAL INSTRUCTION: **IGNORE Headers, Footer, Entities, and Totals.** Focus PURELY on extracting the table rows.
+  CRITICAL INSTRUCTION: Return a SINGLE JSON Array of Arrays (Matrix).
+  Each inner array represents ONE row from the table.
+  
+  [COLUMN ORDER - STRICTLY FOLLOW THIS INDEX]:
+  0. **Description**: (String) Full description of goods.
+  1. **Buyer Part Number**: (String or null) The Importer/Buyer's Item Code or Main SKU.
+  2. **Quantity**: (Number) Pure number.
+  3. **Unit**: (String) PCS, KG, SET, etc.
+  4. **Unit Price**: (Number) 
+  5. **Total Value**: (Number)
+  6. **Net Weight**: (Number) Total Net Weight for the line (Check Packing List if needed).
+  7. **Manufacturer Part Number**: (String or null) The Manufacturer/Seller's Part Number (Referência).
+  
+  [EXAMPLE OUTPUT]:
+  [
+    ["iPhone 15 Pro Max 256GB", "BUYER-SKU-001", 50, "PCS", 1199.00, 59950.00, 12.5, "A2894"],
+    ["Samsung Galaxy S24 Ultra", "BUYER-SKU-002", 30, "PCS", 1299.00, 38970.00, 8.2, "SM-S928"]
+  ]
   
   RULES:
-  1. Extract ALL rows. Do not skip any.
-  2. For "productCode", "ncm", and "productDetail", ALWAYS return null (Manual Input forced).
-  3. "netWeight" is the TOTAL NET WEIGHT for the line.
-  4. **PACKING LIST CROSS-REFERENCE**: Check attached Packing List (if any) to find the "Unit Net Weight" or "Total Net Weight" for each item if missing from the Invoice.
-  
-  OUTPUT SCHEMA (JSON ONLY):
-  {
-    "lineItems": [
-       ${JSON.stringify(lineItemJsonSchema, null, 2)}
-    ]
-  }
+  1. DO NOT use keys (like "description": ...). ONLY VALUES.
+  2. Use \`null\` for missing string values. Use \`0\` for missing numbers.
+  3. Extract ALL rows.
+  4. **PACKING LIST**: Cross-reference Packing List for Net Weights if valid.
+
+  OUTPUT FORMAT: JSON Array of Arrays ONLY.
   `;
 }
 

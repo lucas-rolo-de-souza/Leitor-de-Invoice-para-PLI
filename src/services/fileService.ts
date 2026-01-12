@@ -92,7 +92,15 @@ export const readFileToBase64 = async (file: File): Promise<FilePart> => {
  * Processes multiple files in parallel.
  */
 export const processFilesToBase64 = async (
-  files: File[]
+  files: File[],
+  onProgress?: (msg: string) => void
 ): Promise<FilePart[]> => {
-  return Promise.all(files.map((file) => readFileToBase64(file)));
+  onProgress?.(`📂 Preparando ${files.length} arquivo(s)...`);
+  // Map files to promises and execute them
+  const promises = files.map(async (file, index) => {
+    onProgress?.(`📂 Lendo arquivo ${index + 1}/${files.length}: ${file.name}`);
+    return await readFileToBase64(file);
+  });
+
+  return Promise.all(promises);
 };
