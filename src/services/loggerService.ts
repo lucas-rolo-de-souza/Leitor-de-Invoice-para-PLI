@@ -15,9 +15,66 @@ export interface LogEntry {
   data?: any;
 }
 
+const STORAGE_KEY = "app_logs";
+const RETENTION_DAYS = 7;
+
 class LoggerService {
   private logs: LogEntry[] = [];
-  private maxLogs = 1000;
+  private maxLogs = 2000; // Increased limit for persisted history
+
+  constructor() {
+    this.loadLogs();
+    this.cleanupOldLogs();
+  }
+
+  /**
+   * Loads logs from LocalStorage
+   */
+  private loadLogs() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        this.logs = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to load logs from storage", e);
+      this.logs = [];
+    }
+  }
+
+  /**
+   * Saves logs to LocalStorage
+   */
+  private saveLogs() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs));
+    } catch (e) {
+      console.error("Failed to save logs to storage (quota exceeded?)", e);
+    }
+  }
+
+  /**
+   * Removes logs older than RETENTION_DAYS
+   */
+  private cleanupOldLogs() {
+    const now = new Date();
+    const cutoff = new Date(
+      now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000
+    );
+
+    const originalCount = this.logs.length;
+    this.logs = this.logs.filter((log) => new Date(log.timestamp) > cutoff);
+
+    if (this.logs.length < originalCount) {
+      this.saveLogs();
+      this.info(
+        `System`,
+        `Logs cleaned up. Removed ${
+          originalCount - this.logs.length
+        } expired entries.`
+      );
+    }
+  }
 
   /**
    * Adds a new log entry.
@@ -40,6 +97,9 @@ class LoggerService {
     if (this.logs.length > this.maxLogs) {
       this.logs.shift();
     }
+
+    // Persist
+    this.saveLogs();
 
     // Console output mirror with visible time
     const timeString = now.toLocaleTimeString("pt-BR");
@@ -117,6 +177,7 @@ class LoggerService {
 
   public clear() {
     this.logs = [];
+    this.saveLogs();
   }
 
   /**
