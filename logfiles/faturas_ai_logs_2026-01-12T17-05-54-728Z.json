@@ -1,0 +1,271 @@
+{
+  "appVersion": "1.05.00.01",
+  "exportedAt": "12/01/2026, 13:05:54",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+  "logs": [
+    {
+      "timestamp": "2026-01-12T17:04:24.192Z",
+      "formattedTimestamp": "12/01/2026, 13:04:24",
+      "level": "INFO",
+      "message": "[UsageService] Session started: fe166523-d219-4ae3-af02-60e24d25c4bb"
+    },
+    {
+      "timestamp": "2026-01-12T17:04:24.272Z",
+      "formattedTimestamp": "12/01/2026, 13:04:24",
+      "level": "INFO",
+      "message": "App Initialized. Version: 1.05.00.42"
+    },
+    {
+      "timestamp": "2026-01-12T17:04:24.273Z",
+      "formattedTimestamp": "12/01/2026, 13:04:24",
+      "level": "INFO",
+      "message": "App Initialized. Version: 1.05.00.42"
+    },
+    {
+      "timestamp": "2026-01-12T17:04:24.281Z",
+      "formattedTimestamp": "12/01/2026, 13:04:24",
+      "level": "INFO",
+      "message": "SuggestionService (AI Memory) Initialized"
+    },
+    {
+      "timestamp": "2026-01-12T17:04:24.283Z",
+      "formattedTimestamp": "12/01/2026, 13:04:24",
+      "level": "INFO",
+      "message": "[NCM Service] Cache ausente ou expirado. Iniciando download..."
+    },
+    {
+      "timestamp": "2026-01-12T17:04:41.531Z",
+      "formattedTimestamp": "12/01/2026, 13:04:41",
+      "level": "WARN",
+      "message": "[NCM Service] Falha API Oficial, tentando mirror..."
+    },
+    {
+      "timestamp": "2026-01-12T17:04:43.320Z",
+      "formattedTimestamp": "12/01/2026, 13:04:43",
+      "level": "DEBUG",
+      "message": "[NCM Service] Cache atualizado. Tamanho: 0.88 MB"
+    },
+    {
+      "timestamp": "2026-01-12T17:04:43.320Z",
+      "formattedTimestamp": "12/01/2026, 13:04:43",
+      "level": "INFO",
+      "message": "[NCM Service] Banco de dados atualizado: 15141 registros."
+    },
+    {
+      "timestamp": "2026-01-12T17:05:17.090Z",
+      "formattedTimestamp": "12/01/2026, 13:05:17",
+      "level": "INFO",
+      "message": "Parsed 23 items from Minified Array format."
+    },
+    {
+      "timestamp": "2026-01-12T17:05:17.092Z",
+      "formattedTimestamp": "12/01/2026, 13:05:17",
+      "level": "WARN",
+      "message": "⚠️ Zod Validation Failed: Data structure has mismatches.",
+      "data": {
+        "errors": {
+          "_errors": [],
+          "lineItems": {
+            "0": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "1": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "2": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "3": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "4": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "5": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "6": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "7": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "8": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "9": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "10": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "11": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "12": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "13": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "14": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "15": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "16": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "17": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "18": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "19": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "20": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "21": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "22": {
+              "_errors": [],
+              "manufacturer": {
+                "_errors": [
+                  "Invalid input: expected string, received undefined"
+                ]
+              }
+            },
+            "_errors": []
+          }
+        }
+      }
+    },
+    {
+      "timestamp": "2026-01-12T17:05:18.835Z",
+      "formattedTimestamp": "12/01/2026, 13:05:18",
+      "level": "INFO",
+      "message": "[Currency] Taxa PTAX encontrada para 01-12-2026: R$ 5.376"
+    },
+    {
+      "timestamp": "2026-01-12T17:05:18.835Z",
+      "formattedTimestamp": "12/01/2026, 13:05:18",
+      "level": "INFO",
+      "message": "[Usage] gemini-2.5-flash | 45522ms | In: 15574 | Out: 2426 | $0.001896 | R$0.0102"
+    }
+  ]
+}
