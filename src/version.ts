@@ -16,6 +16,7 @@ export const CHANGE_LOG: ChangeLogItem[] = [
     changes: [
       'Design Doc: Created dedicated `DESIGN_SYSTEM.md` to document the "Flux" design philosophy and Material Design 3 specifications.',
       "Documentation: Updated `ARCHITECTURE.md` to reflect recent codebase refactoring (Types vs Interfaces), inclusion of `LogViewer`, and new documentation structure.",
+      "Version Bump: Incrementing version to reflect documentation consolidation.",
     ],
   },
   {
