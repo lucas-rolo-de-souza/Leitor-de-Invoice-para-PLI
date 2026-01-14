@@ -431,9 +431,30 @@ export const useCompliance = (data: InvoiceData) => {
     ];
   }, [data, fieldErrors, itemIssues]);
 
-  const compliancePercentage = Math.round(
-    (checklist.filter((i) => i.status === "ok").length / checklist.length) * 100
-  );
+  const compliancePercentage = useMemo(() => {
+    if (checklist.length === 0) return 0;
+
+    const pliItem = checklist.find((i) => i.id === "pli_details");
+    const otherItems = checklist.filter((i) => i.id !== "pli_details");
+
+    const pliScore = pliItem?.status === "ok" ? 1 : 0;
+
+    const otherOkCount = otherItems.filter((i) => i.status === "ok").length;
+    const otherScore =
+      otherItems.length > 0 ? otherOkCount / otherItems.length : 0;
+
+    // Constraint Weighting Strategy:
+    // -------------------------------------------------------------------------
+    // 1. General Compliance (80%): Covers critical Art. 557 fields (Importer, Exporter, NCM, etc).
+    //    These are the legal "must-haves" for any customs clearance.
+    // 2. PLI Specifics (20%): Covers the "Product List Information" (PLI) model details
+    //    (Manufacturer Code, Product Details). While important for the industry model,
+    //    missing them is less critical than missing the Importer/Exporter.
+    // -------------------------------------------------------------------------
+    const weighted = otherScore * 0.8 + pliScore * 0.2;
+
+    return Math.round(weighted * 100);
+  }, [checklist]);
 
   return { fieldErrors, checklist, compliancePercentage };
 };

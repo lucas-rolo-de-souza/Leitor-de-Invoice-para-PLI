@@ -7,17 +7,31 @@
 /**
  * Represents a file part to be sent to Gemini.
  */
-export interface FilePart {
+/**
+ * Represents a file part to be sent to Gemini.
+ */
+export type FilePart = {
   mimeType: string;
   data: string; // base64 string
   filename?: string;
-}
+};
 
 export type OnProgressCallback = (message: string) => void;
 
-export interface LineItem {
+/**
+ * LineItem Type
+ *
+ * Represents a single product or merchandise line within the Invoice.
+ *
+ * Key Fields:
+ * - `ncm`: Nomenclature Commum du Mercosur (8 digits). Critical for Customs.
+ * - `partNumber`: The buyer's SKU/Part Number.
+ * - `manufacturerCode`: The code used by the manufacturer (required by PLI).
+ * - `unitNetWeight` & `netWeight`: Vital for logistics validation.
+ */
+export type LineItem = {
   description: string;
-  partNumber: string | null;
+  partNumber: string | null; // SKU / Buyer Part Number
   productCode: string | null;
   /**
    * "Detalhe da Classificação Fiscal" (NCM Description).
@@ -85,9 +99,22 @@ export interface LineItem {
   attr3Level: string | null;
   attr3Name: string | null;
   attr3Value: string | null;
-}
+};
 
-export interface InvoiceData {
+/**
+ * InvoiceData Type
+ *
+ * The Root Aggregate for the entire invoice application state.
+ *
+ * Structure:
+ * - **Header**: Invoice Number, Dates, PL Number.
+ * - **Entities**: Exporter (Seller) and Importer (Buyer).
+ * - **Logistics**: Weights, Volumes, Country of Origin.
+ * - **Financials**: Totals, Currency, Incoterm, Payment Terms.
+ * - **Items**: Array of `LineItem` containing the detailed merchandise.
+ */
+export type InvoiceData = {
+  // Header
   invoiceNumber: string | null;
   packingListNumber: string | null;
   date: string | null;
@@ -122,7 +149,7 @@ export interface InvoiceData {
   originalGrandTotal?: number | null;
 
   lineItems: LineItem[];
-}
+};
 
 export const initialInvoiceData: InvoiceData = {
   invoiceNumber: "",

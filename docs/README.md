@@ -21,15 +21,19 @@ For detailed technical information, please refer to the specific documentation f
 
 ## 🚀 Key Features
 
+- **Premium Enterprise UI**: A polished, data-focused interface inspired by high-end fintech applications.
+  - **Glassmorphism Header**: Clean navigation with blur effects.
+  - **Dynamic Footer**: Floating status pill for version tracking and operational health.
+- **Advanced Compliance Engine**:
+  - **Weighted Scoring**: 80% weight on General Article 557 items, 20% on granular PLI item validity.
+  - **Gradient Indicator**: Visual conformity pill that transitions from Red to Amber to Green based on score.
+- **AI Consumption Monitor (Full Size)**:
+  - **Detailed Metrics**: Track Token Input/Output, Latency, and Estimated Costs (USD/BRL).
+  - **Session & Lifetime Stats**: View usage for the current session or historical totals.
+  - **Fullscreen Analysis**: Expanded view in the editor for deep diving into logs without obstruction.
 - **Multimodal AI Extraction**: Drag & drop PDF, Images, or Excel files. The app uses Gemini 2.5 to visually analyze documents and extract structured data.
-- **SCUD Industry Model Compliance**: Full support for the rigorous "SCUD" data model, including mandatory Manufacturer Codes, Product Details, and Regulatory Acts (Atos Legais).
-- **Customs Compliance Engine**: Real-time validation against Brazilian regulations (Art. 557).
-  - **NCM Validation**: robust **Stale-While-Revalidate** database (always keeps the official Siscomex list updated).
-  - **Logistics**: Logic checks for Net vs. Gross Weight and Volume types.
-  - **Entities**: Distinguishes Exporter/Importer based on "Bill To" vs "Ship To".
-- **Version Control System**: Toggle between _Original (AI)_, _Saved (Checkpoint)_, and _Current (Draft)_ versions of the data.
-- **Mobile-First Design**: Optimized for tablets and phones with card views and large touch targets.
-- **Export**: Generates structured Excel (.xlsx) and PDF reports with embedded error logs.
+- **PLI Industry Model Compliance**: Full support for the rigorous "PLI" data model.
+- **Version Control System**: Toggle between _Original (AI)_, _Saved (Checkpoint)_, and _Current (Draft)_ versions.
 
 ## 🛠 Quick Start
 

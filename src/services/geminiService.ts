@@ -41,7 +41,15 @@ const cleanData = (obj: any): any => {
 };
 
 /**
- * Robust JSON parser that handles Markdown fences and aggressive truncation.
+ * Robust JSON parser designed to handle LLM output "hallucinations" and formatting errors.
+ *
+ * Strategy:
+ * 1. **Strip Markdown**: Removes ```json fences.
+ * 2. **Aggressive Trimming**: Finds the first '{' or '[' and last '}' or ']'.
+ * 3. **Token Balancing**: If parsing fails, it counts braces and strings to reconstruct
+ *    valid JSON structure (e.g., closing missing braces).
+ * 4. **Truncation Fallback**: If balancing fails, it aggressively cuts back to the
+ *    last known valid closing position to salvage partial data.
  */
 const safeJsonParse = (text: string): any => {
   // 1. Strip Markdown Code Blocks & aggressively find JSON start/end
@@ -240,9 +248,19 @@ async function withRetry<T>(
 }
 
 /**
- * Orchestrates the Chunked Extraction Strategy.
- * 1. Parallel calls for Metadata (fast, low output) and Line Items (high output).
- * 2. Merges results into a single InvoiceData object.
+ * Orchestrates the AI Extraction Workflow using the "Flash-Chunking" strategy.
+ *
+ * Process:
+ * 1. **Parallel Execution**: Dispatches two concurrent prompts:
+ *    - `metadataPrompt`: Extracts Header, Entities, Logistics (Fast, structured).
+ *    - `lineItemsPrompt`: Extracts Table Data in a Minified JSON Array format (High volume).
+ * 2. **Rate Limiting**: Implements a buffer sleep to respect Gemini's Requests Per Second (RPS) limits.
+ * 3. **Merging**: Combines the Metadata object with the parsed Line Items array.
+ * 4. **Post-Processing**: Normalizes numbers, weights, and dates.
+ *
+ * @param fileParts - Array of base64 file data.
+ * @param onProgress - Callback for UI updates.
+ * @param modelId - The Gemini model version to use.
  */
 export async function extractInvoiceData(
   fileParts: FilePart[],

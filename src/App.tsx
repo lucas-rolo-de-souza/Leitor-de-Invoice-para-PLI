@@ -20,6 +20,9 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { UsageWidget } from "./components/ui/UsageWidget";
 import { LegalModal } from "./components/ui/LegalModal";
 import { LogViewer } from "./components/ui/LogViewer";
+import { LanguageSelector } from "./components/ui/LanguageSelector";
+import { useLanguage } from "./contexts/TranslationContext";
+import { useTranslation } from "./hooks/useTranslation";
 import {
   FileText,
   Download,
@@ -57,6 +60,8 @@ const App: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const { language, setLanguage } = useLanguage();
+  const t = useTranslation();
 
   // --- Initialization ---
   useEffect(() => {
@@ -75,7 +80,7 @@ const App: React.FC = () => {
     setFiles(selectedFiles);
     setIsLoading(true);
     setError(null);
-    setProgressMessage("Iniciando...");
+    setProgressMessage(t.app.starting);
 
     try {
       const fileParts = await processFilesToBase64(selectedFiles, (msg) =>
@@ -93,10 +98,7 @@ const App: React.FC = () => {
       setHasProcessed(true);
       setRefreshUsage((prev) => prev + 1);
     } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Erro desconhecido ao processar arquivos.";
+      const msg = err instanceof Error ? err.message : t.app.error;
       setError(msg);
       logger.error("Processing failed", { error: msg });
     } finally {
@@ -124,9 +126,7 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (
-      window.confirm("Voltar para o início? Dados não salvos serão perdidos.")
-    ) {
+    if (window.confirm(t.app.actions.reset)) {
       const cleanData = JSON.parse(JSON.stringify(initialInvoiceData));
       setData(cleanData);
       setOriginalData(cleanData);
@@ -157,84 +157,147 @@ const App: React.FC = () => {
   );
   const isValid = validationErrors.length === 0;
 
-  // --- Landing Screen (Aether Design) ---
+  // --- Landing Screen (Premium Enterprise Design) ---
   if (!hasProcessed) {
     return (
-      <div className="min-h-screen bg-page flex flex-col font-sans text-text-primary selection:bg-brand-100 selection:text-brand-900 dark:selection:bg-brand-900 dark:selection:text-brand-100">
-        {/* Glass Header */}
-        {/* Solid Header (iLovePDF Style) */}
-        <header className="fixed top-0 w-full z-50 bg-surface shadow-md px-8 py-4 flex justify-between items-center border-b border-border">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold tracking-tighter text-brand-600 flex items-center gap-2">
-              <span className="bg-brand-600 text-white p-1 rounded">AI</span>
-              Invoice
-            </span>
-          </div>
+      <div className="min-h-screen bg-surface flex flex-col font-sans text-on-surface selection:bg-primary/20 selection:text-primary">
+        {/* Premium Header */}
+        <header className="fixed top-0 w-full z-50 border-b border-outline-variant/10 bg-surface/80 backdrop-blur-md supports-[backdrop-filter]:bg-surface/50">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/10 p-1.5 rounded-lg">
+                <FileSpreadsheet className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-lg font-bold tracking-tight text-on-surface">
+                PLI<span className="text-primary">.ai</span>
+              </span>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold text-text-tertiary hidden sm:block">
-              Extração Inteligente para PLI
-            </span>
-            <div className="h-6 w-px bg-border hidden sm:block"></div>
+            <div className="flex items-center gap-6">
+              {/* Moved to footer */}
 
-            <ThemeToggle />
-
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-page border-none text-sm font-bold text-text-secondary rounded-lg cursor-pointer hover:bg-surface-highlight transition-colors py-2 pl-3 pr-8"
-              aria-label="Selecionar modelo de IA"
-            >
-              <option value="gemini-2.5-flash-lite">Flash Lite 2.5</option>
-              <option value="gemini-2.5-flash">Flash 2.5</option>
-              <option value="gemini-2.0-flash">Flash 2.0</option>
-            </select>
+              <div className="flex items-center gap-3">
+                <div className="relative group">
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    title={t.app.actions.selectModel}
+                    aria-label={t.app.actions.selectModel}
+                    className="appearance-none bg-surface-container-low border border-outline-variant/30 text-xs font-medium text-on-surface rounded-lg cursor-pointer hover:border-primary/30 transition-all py-2 pl-3 pr-8 focus:ring-2 focus:ring-primary/10 outline-none shadow-sm"
+                  >
+                    <option value="gemini-2.5-flash-lite">
+                      Flash Lite 2.5
+                    </option>
+                    <option value="gemini-2.5-flash">
+                      Flash 2.5 (Enterprise)
+                    </option>
+                    <option value="gemini-2.0-flash">Flash 2.0</option>
+                  </select>
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+                    <svg
+                      width="8"
+                      height="5"
+                      viewBox="0 0 8 5"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1 1L4 4L7 1"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <ThemeToggle />
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Main Content - Centered & Animated */}
-        {/* Main Content - Centered & Solid */}
-        <main className="flex-1 w-full max-w-5xl mx-auto p-6 flex flex-col items-center justify-center pt-32 animate-fade-in">
-          <div className="flex flex-col items-center mb-12 text-center space-y-4 animate-slide-up">
-            <h2 className="text-4xl md:text-5xl font-black text-text-primary tracking-tight">
-              Extração de Faturas & PLI
-            </h2>
-            <p className="text-xl text-text-secondary max-w-2xl font-medium">
-              Transforme seus documentos em dados estruturados instantaneamente.
-            </p>
-          </div>
+        {/* Main Content - Enterprise Hero */}
+        <main className="flex-1 w-full flex flex-col justify-center items-center relative overflow-hidden pt-32 pb-20">
+          {/* Subtle Background Grid */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear_gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
 
-          {error && (
-            <div className="w-full max-w-2xl mb-8 bg-red-100 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-r shadow-sm flex items-center gap-3 animate-slide-up">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-              <span className="font-semibold text-lg">{error}</span>
+          <div className="w-full max-w-2xl mx-auto px-6 flex flex-col items-center z-10">
+            <div className="flex flex-col items-center text-center space-y-8 mb-12 animate-fade-in-up">
+              <div className="space-y-4">
+                <h2 className="text-4xl md:text-5xl font-bold text-on-surface tracking-tight leading-tight">
+                  {t.app.headline}
+                </h2>
+                <p className="text-lg text-on-surface-variant/80 max-w-xl mx-auto leading-relaxed">
+                  {t.app.description}
+                </p>
+              </div>
             </div>
-          )}
 
-          <div className="w-full max-w-4xl transform transition-all duration-500 animate-slide-up [animation-delay:100ms]">
-            <FileUpload
-              onFilesSelect={handleFilesSelect}
-              isLoading={isLoading}
-              progressMessage={progressMessage}
-            />
+            {error && (
+              <div className="w-full mb-8 bg-error-container/10 border border-error/20 text-on-error-container px-4 py-3 rounded-lg shadow-sm flex items-center gap-3 animate-fade-in">
+                <AlertTriangle className="w-5 h-5 text-error" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            )}
+
+            <div className="w-full transform transition-all duration-500 animate-fade-in-up [animation-delay:100ms]">
+              <div className="bg-surface border border-outline-variant/30 rounded-2xl shadow-xl shadow-black/5 overflow-hidden ring-1 ring-white/20 dark:ring-white/5">
+                <div className="p-1 bg-surface-container-low/50">
+                  <FileUpload
+                    onFilesSelect={handleFilesSelect}
+                    isLoading={isLoading}
+                    progressMessage={progressMessage}
+                  />
+                </div>
+                <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant/10 text-center">
+                  <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold flex items-center justify-center gap-2">
+                    <Scale className="w-3 h-3" />
+                    {t.app.complianceBadge}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
 
-        <footer className="py-6 text-center text-[11px] text-text-tertiary border-t border-border bg-surface/30 backdrop-blur-sm">
-          <div className="flex justify-center items-center gap-4 mb-2">
-            <span>&copy; 2025 Invoice AI</span>
-            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-            <UsageWidget refreshTrigger={refreshUsage} />
+        <footer className="py-6 border-t border-outline-variant/10 bg-surface-container-lowest/50">
+          <div className="max-w-7xl mx-auto px-6 h-full flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-on-surface-variant">
+            <div className="flex items-center gap-4">
+              <span className="font-semibold">&copy; 2025 PLI.ai</span>
+              <span className="hidden md:inline text-outline-variant">|</span>
 
-            <div className="mx-4 h-4 w-px bg-border/50"></div>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"></span>
+                {t.app.status.operational}
+              </span>
+              <span className="hidden md:inline text-outline-variant">|</span>
+              <LanguageSelector
+                currentLang={language}
+                onLanguageChange={setLanguage}
+                placement="top"
+              />
+              <span className="text-outline-variant">|</span>
+              <span>v{APP_VERSION}</span>
 
-            <button
-              onClick={handleDevBypass}
-              className="flex items-center gap-1 text-xs text-text-tertiary hover:text-brand-600 transition-colors"
-              title="Dev Mode: Bypass API"
-            >
-              <Code2 className="w-3 h-3" />
-            </button>
+              <span className="hidden md:inline text-outline-variant">|</span>
+              <UsageWidget refreshTrigger={refreshUsage} />
+            </div>
+
+            <div className="flex items-center gap-6">
+              <button
+                onClick={handleDevBypass}
+                className="hover:text-primary transition-colors flex items-center gap-1.5"
+              >
+                <Code2 className="w-3.5 h-3.5" /> {t.app.actions.devConsole}
+              </button>
+              <a href="#" className="hover:text-primary transition-colors">
+                {t.app.footer.docs}
+              </a>
+              <a href="#" className="hover:text-primary transition-colors">
+                {t.app.footer.support}
+              </a>
+            </div>
           </div>
         </footer>
       </div>
@@ -243,47 +306,46 @@ const App: React.FC = () => {
 
   // --- Editor View (Aether Design) ---
   return (
-    <div className="min-h-screen bg-page flex flex-col font-sans text-text-primary selection:bg-brand-100 selection:text-brand-900">
-      {/* Glass Sticky Header */}
-      <header className="sticky top-0 z-[40] bg-surface/80 backdrop-blur-xl border-b border-border/60 shadow-sm transition-all">
-        <div className="px-6 py-3 flex justify-between items-center max-w-screen-2xl mx-auto w-full">
+    <div className="min-h-screen bg-surface flex flex-col font-sans text-on-surface selection:bg-primary selection:text-on-primary">
+      {/* Aura Sticky Header */}
+      <header className="sticky top-4 z-[40] px-4 transition-all">
+        <div className="bg-surface-container/90 backdrop-blur-xl border border-outline-variant/50 shadow-sm rounded-m3-full px-6 py-3 flex justify-between items-center max-w-screen-2xl mx-auto w-full">
           {/* Left: Nav & Context */}
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={handleReset}
-              className="relative z-50 p-2.5 rounded-xl bg-surface border border-border/50 text-text-tertiary hover:text-brand-600 hover:border-brand-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
-              title="Voltar para Upload"
+              className="p-3 rounded-m3-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
+              title={t.app.actions.backToUpload}
             >
-              <RotateCcw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+              <RotateCcw className="w-4 h-4 group-hover:-rotate-180 transition-transform duration-500" />
             </button>
 
-            <div className="h-8 w-px bg-border/80 mx-1"></div>
+            <div className="h-8 w-px bg-outline-variant mx-2"></div>
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                  {activeData.invoiceNumber || "Documento Sem Número"}
+                <h1 className="text-base font-serif font-black text-on-surface flex items-center gap-2">
+                  {activeData.invoiceNumber || t.app.status.docNoNumber}
                 </h1>
                 {!isValid && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-[10px] font-bold text-amber-600 border border-amber-100">
-                    <AlertTriangle className="w-3 h-3" /> Atenção
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-m3-full bg-error-container text-[10px] font-bold text-on-error-container border border-error/10 uppercase tracking-wide">
+                    <AlertTriangle className="w-3 h-3" />{" "}
+                    {t.app.status.attention}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] text-text-secondary font-medium flex items-center gap-1.5">
-                <FileText className="w-3 h-3 text-brand-400" />
+              <span className="text-[11px] text-on-surface-variant font-medium flex items-center gap-1.5 bg-surface-container-highest px-2 py-0.5 rounded-m3-sm w-fit mt-1">
+                <FileText className="w-3 h-3 text-primary" />
                 {files.length}{" "}
-                {files.length === 1
-                  ? "arquivo processado"
-                  : "arquivos processados"}
+                {files.length === 1 ? t.app.status.file : t.app.status.files}
               </span>
             </div>
           </div>
 
           {/* Center: Version Control (Floating Pill) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20">
-            <div className="pointer-events-auto shadow-sm hover:shadow-md transition-shadow duration-300 rounded-full">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:block">
+            <div className="shadow-none hover:shadow-sm transition-shadow duration-300 rounded-m3-full bg-surface-container-high p-1 border border-outline-variant">
               <VersionBar
                 showOriginal={showOriginal}
                 onToggle={setShowOriginal}
@@ -292,22 +354,22 @@ const App: React.FC = () => {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center bg-surface-highlight/50 p-1 rounded-xl border border-border/50 mr-2">
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center bg-surface-container-highest p-1.5 rounded-m3-full border border-outline-variant/30">
               <button
                 type="button"
                 onClick={handleExportPDF}
-                className="p-2 hover:bg-surface rounded-lg text-text-secondary hover:text-red-500 hover:shadow-sm transition-all"
-                title="Exportar PDF"
+                className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-error hover:shadow-sm transition-all"
+                title={t.app.actions.exportPDF}
               >
                 <FileText className="w-4 h-4" />
               </button>
-              <div className="w-px h-4 bg-border mx-1"></div>
+              <div className="w-px h-4 bg-outline-variant mx-1"></div>
               <button
                 type="button"
                 onClick={handleExportExcel}
-                className="p-2 hover:bg-surface rounded-lg text-text-secondary hover:text-green-600 hover:shadow-sm transition-all"
-                title="Exportar Excel"
+                className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-primary hover:shadow-sm transition-all"
+                title={t.app.actions.exportExcel}
               >
                 <Download className="w-4 h-4" />
               </button>
@@ -316,18 +378,20 @@ const App: React.FC = () => {
             <button
               type="button"
               onClick={handleExportPLIButton}
-              className="group flex items-center gap-2 bg-slate-900 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-slate-900/10 hover:shadow-brand-500/20 transition-all active:scale-95 duration-300"
+              className="group flex items-center gap-2 bg-primary hover:bg-primary/90 text-on-primary px-6 py-3 rounded-m3-full text-xs font-bold shadow-none active:scale-95 transition-all duration-300"
             >
-              <FileSpreadsheet className="w-4 h-4 group-hover:animate-bounce" />
-              <span className="hidden sm:inline">Exportar PLI</span>
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {t.app.actions.exportPLI}
+              </span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Workspace */}
-      <main className="flex-1 w-full max-w-[90rem] mx-auto p-4 sm:p-6 lg:p-8 pb-32 animate-fade-in">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden min-h-[80vh]">
+      <main className="flex-1 w-full max-w-[95rem] mx-auto p-4 sm:p-6 pb-32 animate-fade-in mt-4">
+        <div className="bg-surface-container-low rounded-[2rem] shadow-none border border-outline-variant/50 overflow-hidden min-h-[80vh]">
           <InvoiceEditor
             data={activeData}
             onChange={(newData) => !showOriginal && setData(newData)}
@@ -336,49 +400,59 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Functional Footer */}
+      {/* Functional Footer - Floating Pill */}
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[50]">
-        <div className="flex items-center gap-1 bg-surface/90 backdrop-blur-md border border-border/60 shadow-xl shadow-slate-200/20 px-4 py-2 rounded-full text-xs font-medium text-text-secondary hover:scale-105 transition-transform duration-300 cursor-default">
+        <div className="flex items-center gap-1 bg-surface-container-highest/90 backdrop-blur-md border border-outline-variant shadow-md px-5 py-2.5 rounded-m3-full text-xs font-medium text-on-surface hover:scale-105 transition-transform duration-300 cursor-default">
           <button
             onClick={() => setShowChangelog(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-full transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
           >
-            <GitCommit className="w-3.5 h-3.5 text-text-tertiary" />
+            <GitCommit className="w-3.5 h-3.5 text-primary" />
             <span>v{APP_VERSION}</span>
           </button>
 
-          <div className="w-px h-4 bg-slate-200"></div>
+          <div className="w-px h-4 bg-on-surface/20"></div>
 
           <button
             onClick={() => setShowLogs(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-full transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
           >
-            <FileJson className="w-3.5 h-3.5 text-text-tertiary" />
-            <span>Logs</span>
+            <FileJson className="w-3.5 h-3.5 text-outline" />
+            <span>{t.app.footer.logs}</span>
           </button>
 
-          <div className="w-px h-4 bg-slate-200"></div>
+          <div className="w-px h-4 bg-on-surface/20"></div>
 
           <button
             onClick={() => setShowLegal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-50 rounded-full transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
           >
-            <Scale className="w-3.5 h-3.5 text-text-tertiary" />
-            <span>Legal</span>
+            <Scale className="w-3.5 h-3.5 text-outline" />
+            <span>{t.app.footer.legal}</span>
           </button>
 
-          <div className="w-px h-4 bg-slate-200"></div>
+          <div className="w-px h-4 bg-on-surface/20"></div>
 
-          <div className="flex items-center gap-2 px-3">
+          <LanguageSelector
+            currentLang={language}
+            onLanguageChange={setLanguage}
+            placement="top"
+          />
+
+          <div className="w-px h-4 bg-on-surface/20"></div>
+
+          <UsageWidget refreshTrigger={refreshUsage} fullSize={true} />
+
+          <div className="w-px h-4 bg-on-surface/20"></div>
+
+          <div className="flex items-center gap-2 px-4">
             <div
-              className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)] ${
-                ncmService.getStatus().isReady
-                  ? "bg-green-500 shadow-green-500/50"
-                  : "bg-amber-400"
+              className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.4)] ${
+                ncmService.getStatus().isReady ? "bg-green-400" : "bg-amber-400"
               }`}
             ></div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary">
-              DB
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+              {t.app.status.dbReady}
             </span>
           </div>
         </div>
@@ -388,46 +462,49 @@ const App: React.FC = () => {
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
       {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
       {showChangelog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden animate-slide-up">
-            <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-surface-highlight/50">
-              <h3 className="font-bold text-text-primary flex items-center gap-2">
-                <History className="w-5 h-5 text-brand-500" /> Histórico de
-                Versões
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-slide-up border border-outline-variant">
+            <div className="px-8 py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container">
+              <h3 className="font-serif font-bold text-xl text-on-surface flex items-center gap-3">
+                <History className="w-6 h-6 text-primary" />{" "}
+                {t.app.history.title}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowChangelog(false)}
-                className="p-1 rounded-lg hover:bg-border/50 text-text-tertiary hover:text-text-secondary transition-colors"
-                aria-label="Fechar histórico de versões"
-                title="Fechar"
+                className="p-2 rounded-m3-full hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors"
+                title={t.app.history.close}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto custom-scrollbar space-y-8">
+            <div className="p-8 overflow-y-auto custom-scrollbar space-y-10 bg-surface">
               {CHANGE_LOG.map((log, i) => (
-                <div key={i} className="relative pl-6 border-l border-border">
+                <div
+                  key={i}
+                  className="relative pl-8 border-l-2 border-outline-variant"
+                >
                   <div
-                    className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white ${
-                      i === 0 ? "bg-brand-500" : "bg-border"
+                    className={`absolute -left-[9px] top-1.5 w-4 h-4 rounded-full ring-4 ring-surface ${
+                      i === 0 ? "bg-primary" : "bg-outline"
                     }`}
                   ></div>
-                  <div className="mb-2">
-                    <span className="text-sm font-bold text-text-primary">
+                  <div className="mb-3">
+                    <span className="text-lg font-serif font-bold text-on-surface block">
                       v{log.version}
                     </span>
-                    <span className="ml-2 text-xs text-text-tertiary bg-surface-highlight px-2 py-0.5 rounded-full">
+                    <span className="inline-block mt-1 text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-m3-full uppercase tracking-wide">
                       {log.date}
                     </span>
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {log.changes.map((c, idx) => (
                       <li
                         key={idx}
-                        className="text-sm text-text-secondary leading-relaxed flex items-start gap-2"
+                        className="text-sm text-on-surface-variant leading-relaxed flex items-start gap-3"
                       >
-                        <span className="text-text-tertiary mt-1.5">•</span> {c}
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-2 shrink-0"></span>
+                        {c}
                       </li>
                     ))}
                   </ul>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "../../../hooks/useTranslation";
 import {
   Plus,
   Trash2,
@@ -19,7 +20,7 @@ import { isFieldInvalid, isValidNCM } from "../../../utils/validators";
 import { ncmService } from "../../../services/ncmService";
 import { CalculatedTotals } from "./types";
 
-interface ItemsTableProps {
+type ItemsTableProps = {
   data: InvoiceData;
   onLineItemChange: (
     index: number,
@@ -32,7 +33,7 @@ interface ItemsTableProps {
   onRemove: (index: number) => void;
   isReadOnly: boolean;
   calculatedTotals: CalculatedTotals;
-}
+};
 
 export const ItemsTable: React.FC<ItemsTableProps> = ({
   data,
@@ -42,7 +43,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   onDuplicate,
   onRemove,
   isReadOnly,
+  calculatedTotals,
 }) => {
+  const t = useTranslation();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const handleEdit = (index: number) => {
@@ -62,44 +65,66 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   return (
     <section className="flex flex-col relative" id="items-section">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-          Itens da Fatura
+        <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">
+          {t.editor.items.title}
         </h4>
         <button
           type="button"
           onClick={onAdd}
           disabled={isReadOnly}
-          className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold transition-all ${
+          className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-m3-full font-bold transition-all ${
             isReadOnly
-              ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-              : "bg-slate-900 text-white hover:bg-slate-800"
+              ? "bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed"
+              : "bg-primary text-on-primary hover:bg-primary/90 hover:shadow-md"
           }`}
         >
-          <Plus className="w-3 h-3" /> Adicionar
+          <Plus className="w-3 h-3" /> {t.editor.items.actions.addItem}
         </button>
       </div>
 
       {/* --- DESKTOP TABLE --- */}
-      <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg">
+      <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar border border-outline-variant/30 rounded-m3-md">
         <table className="w-full text-xs text-left min-w-[1400px]">
-          <thead className="text-slate-500 font-bold bg-slate-50 border-b border-slate-200 sticky top-0 z-10 uppercase tracking-wider">
+          <thead className="text-on-surface-variant font-bold bg-surface-container border-b border-outline-variant/50 sticky top-0 z-10 uppercase tracking-wider">
             <tr>
               <th className="px-3 py-3 w-10 text-center">#</th>
-              <th className="px-3 py-3 w-28">Part Number *</th>
-              <th className="px-3 py-3 w-28">Cód. Prod. *</th>
-              <th className="px-3 py-3 min-w-[200px]">Descrição Técnica *</th>
-              <th className="px-3 py-3 w-32">NCM *</th>
-              <th className="px-3 py-3 w-28">Detalhe *</th>
-              <th className="px-3 py-3 w-20 text-right">Qtd *</th>
-              <th className="px-3 py-3 w-16 text-center">Und *</th>
-              <th className="px-3 py-3 w-24 text-right">Unit ($) *</th>
-              <th className="px-3 py-3 w-28 text-right">Total ($)</th>
-              <th className="px-3 py-3 w-24 text-right">Peso Líq. Total</th>
-              <th className="px-3 py-3 w-24 text-center">Ações</th>
+              <th className="px-3 py-3 w-28">
+                {t.editor.items.columns.partNumber} *
+              </th>
+              <th className="px-3 py-3 w-28">
+                {t.editor.fields.productCode || "Cód. Prod."} *
+              </th>
+              <th className="px-3 py-3 min-w-[200px]">
+                {t.editor.items.columns.description} *
+              </th>
+              <th className="px-3 py-3 w-32">
+                {t.editor.fields.ncm || "NCM"} *
+              </th>
+              <th className="px-3 py-3 w-28">
+                {t.editor.fields.taxClassificationDetail || "Detalhe"} *
+              </th>
+              <th className="px-3 py-3 w-28 text-right">
+                {t.editor.items.columns.qty} *
+              </th>
+              <th className="px-3 py-3 w-24 text-center">
+                {t.editor.fields.unitMeasure || "Und"} *
+              </th>
+              <th className="px-3 py-3 w-28 text-right">
+                {t.editor.items.columns.unitPrice} *
+              </th>
+              <th className="px-3 py-3 w-28 text-right">
+                {t.editor.items.columns.totalPrice}
+              </th>
+              <th className="px-3 py-3 w-24 text-right">
+                {t.editor.items.columns.weight}
+              </th>
+              <th className="px-3 py-3 w-24 text-center">
+                {t.editor.items.columns.actions}
+              </th>
               <th className="px-3 py-3 w-10"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody className="divide-y divide-outline-variant/20 bg-surface">
             {(data.lineItems || []).map((item, index) => {
               const isNCMValid = isValidNCM(item.ncm);
               const ncmDesc = ncmService.getDescription(item.ncm);
@@ -128,11 +153,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   key={index}
                   className={`group transition-colors ${
                     missingMandatory && !isReadOnly
-                      ? "bg-red-50/30"
-                      : "hover:bg-slate-50/50"
+                      ? "bg-error-container/10"
+                      : "hover:bg-surface-container-highest/30"
                   }`}
                 >
-                  <td className="px-3 py-2 text-center text-slate-300 font-mono">
+                  <td className="px-3 py-2 text-center text-on-surface-variant/50 font-mono">
                     {index + 1}
                   </td>
                   <td className="px-2 py-2">
@@ -269,7 +294,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   <td className="px-3 py-2 text-right">
                     <span
                       className={`font-mono font-medium ${
-                        !item.total ? "text-slate-300" : "text-slate-700"
+                        !item.total
+                          ? "text-on-surface-variant/40"
+                          : "text-on-surface"
                       }`}
                     >
                       {item.total
@@ -303,10 +330,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         type="button"
                         onClick={() => onDuplicate(index)}
                         disabled={isReadOnly}
-                        className={`p-1.5 rounded-md transition-all ${
+                        className={`p-1.5 rounded-m3-full transition-all ${
                           isReadOnly
-                            ? "text-slate-200 cursor-not-allowed"
-                            : "text-slate-400 hover:text-brand-500 hover:bg-brand-50"
+                            ? "text-on-surface-variant/30 cursor-not-allowed"
+                            : "text-on-surface-variant hover:text-primary hover:bg-primary/10"
                         }`}
                         title="Duplicar Item"
                       >
@@ -315,10 +342,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       <button
                         type="button"
                         onClick={() => handleEdit(index)}
-                        className={`p-1.5 rounded-md transition-all relative ${
+                        className={`p-1.5 rounded-m3-full transition-all relative ${
                           missingMandatory && !isReadOnly
-                            ? "text-red-600 bg-red-100 hover:bg-red-200 ring-2 ring-red-200 ring-offset-1"
-                            : "text-brand-600 bg-brand-50 hover:bg-brand-100"
+                            ? "text-error bg-error-container text-on-error-container"
+                            : "text-primary hover:bg-primary/10"
                         }`}
                         title={
                           missingMandatory
@@ -340,10 +367,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       type="button"
                       onClick={() => onRemove(index)}
                       disabled={isReadOnly}
-                      className={`p-1.5 rounded-md transition-all ${
+                      className={`p-1.5 rounded-m3-full transition-all ${
                         isReadOnly
-                          ? "text-slate-200 cursor-not-allowed"
-                          : "text-slate-300 hover:text-red-500 hover:bg-red-50"
+                          ? "text-on-surface-variant/30 cursor-not-allowed"
+                          : "text-on-surface-variant hover:text-error hover:bg-error/10"
                       }`}
                       title="Remover Item"
                     >
@@ -359,7 +386,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   colSpan={12}
                   className="px-4 py-16 text-center text-slate-400"
                 >
-                  <p className="italic">Lista vazia</p>
+                  <p className="italic">
+                    {t.editor.items.empty || "Lista vazia"}
+                  </p>
                 </td>
               </tr>
             )}
@@ -386,38 +415,41 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           return (
             <div
               key={index}
-              className={`rounded-xl border p-4 relative transition-colors ${
+              className={`rounded-m3-md border p-4 relative transition-colors ${
                 missingMandatory
-                  ? "bg-red-50/50 border-red-200"
-                  : "bg-slate-50 border-slate-200"
+                  ? "bg-error-container/5 border-error/50"
+                  : "bg-surface-container-low border-outline-variant/30"
               }`}
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 pr-4">
-                  <div className="font-bold text-sm text-slate-800 mb-1 line-clamp-2">
-                    {item.description || "Sem Descrição"}
+                  <div className="font-bold text-sm text-on-surface mb-1 line-clamp-2">
+                    {item.description ||
+                      t.app.status.docNoNumber ||
+                      "Sem Descrição"}
                   </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-slate-500 font-mono">
-                    <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      PN: {item.partNumber || "-"}
+                  <div className="flex flex-wrap gap-2 text-xs text-on-surface-variant font-mono">
+                    <span className="bg-surface px-1.5 py-0.5 rounded-m3-xs border border-outline-variant/50">
+                      {t.editor.items.columns.partNumber}:{" "}
+                      {item.partNumber || "-"}
                     </span>
                     <span
-                      className={`bg-white px-1.5 py-0.5 rounded border ${
+                      className={`bg-surface px-1.5 py-0.5 rounded-m3-xs border ${
                         isNCMValid
-                          ? "border-green-200 text-green-700"
-                          : "border-red-200 text-red-600"
+                          ? "border-outline-variant/50 text-primary"
+                          : "border-error text-error"
                       }`}
                     >
-                      NCM: {item.ncm || "-"}
+                      {t.editor.fields.ncm}: {item.ncm || "-"}
                     </span>
-                    <span className="bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      PL Total: {item.netWeight || "-"}
+                    <span className="bg-surface px-1.5 py-0.5 rounded-m3-xs border border-outline-variant/50">
+                      {t.editor.items.columns.weight}: {item.netWeight || "-"}
                     </span>
                   </div>
                   {missingMandatory && (
-                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-red-600">
-                      <AlertTriangle className="w-3 h-3" /> Erros de
-                      Conformidade
+                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-error">
+                      <AlertTriangle className="w-3 h-3" />{" "}
+                      {t.app.status.attention}
                     </div>
                   )}
                 </div>
@@ -426,8 +458,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     type="button"
                     onClick={() => onRemove(index)}
                     disabled={isReadOnly}
-                    className="text-slate-300 hover:text-red-500 p-1"
-                    title="Remover Item"
+                    className="text-on-surface-variant hover:text-error p-1"
+                    title={t.editor.items.actions.remove}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -435,24 +467,20 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     type="button"
                     onClick={() => onDuplicate(index)}
                     disabled={isReadOnly}
-                    className="text-slate-300 hover:text-brand-500 p-1"
-                    title="Duplicar Item"
+                    className="text-on-surface-variant hover:text-primary p-1"
+                    title={t.editor.items.actions.duplicate}
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleEdit(index)}
-                    className={`p-1.5 rounded transition-colors ${
+                    className={`p-1.5 rounded-m3-full transition-colors ${
                       missingMandatory
-                        ? "text-red-500 bg-red-100 ring-1 ring-red-200"
-                        : "text-brand-400 hover:text-brand-600 bg-white shadow-sm"
+                        ? "text-on-error-container bg-error-container"
+                        : "text-primary bg-primary-container shadow-sm"
                     }`}
-                    title={
-                      missingMandatory
-                        ? "Existem campos obrigatórios ou erros de formato. Clique para editar."
-                        : "Editar Detalhes"
-                    }
+                    title={t.editor.items.actions.addItem || "Editar"}
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -467,38 +495,40 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
       {editingIndex !== null &&
         data.lineItems &&
         data.lineItems[editingIndex] && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+              <div className="px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container">
                 <div>
-                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-brand-600" />
-                    Editor de Item #{editingIndex + 1}
+                  <h3 className="font-bold text-on-surface flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    {t.editor.items.actions.edit || "Editor de Item"} #
+                    {editingIndex + 1}
                   </h3>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  <p className="text-xs text-on-surface-variant font-mono mt-0.5">
                     {data.lineItems[editingIndex].partNumber}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600"
+                  className="p-2 hover:bg-surface-container-highest rounded-m3-full text-on-surface-variant hover:text-on-surface"
                   title="Fechar"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto custom-scrollbar">
+              <div className="p-6 overflow-y-auto custom-scrollbar bg-surface">
                 <div className="space-y-8">
                   {/* 0. General Data (Added to ensure completeness in Modal View) */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                      <Package className="w-3.5 h-3.5" /> Dados Principais
+                    <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
+                      <Package className="w-3.5 h-3.5" />{" "}
+                      {t.editor.sections.items || "Dados do Item"}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <ValidatedInput
-                        label="Part Number *"
+                        label={t.editor.items.columns.partNumber + " *"}
                         value={data.lineItems[editingIndex].partNumber || ""}
                         onChange={(e) =>
                           onLineItemChange(
@@ -511,13 +541,16 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           isFieldInvalid(
                             data.lineItems[editingIndex].partNumber
                           )
-                            ? "Obrigatório"
+                            ? t.editor.items.validation.required ||
+                              "Obrigatório"
                             : null
                         }
                         isReadOnly={isReadOnly}
                       />
                       <ValidatedInput
-                        label="Cód. Produto *"
+                        label={
+                          (t.editor.fields.productCode || "Cód. Produto") + " *"
+                        }
                         value={data.lineItems[editingIndex].productCode || ""}
                         onChange={(e) =>
                           onLineItemChange(
@@ -528,27 +561,28 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !data.lineItems[editingIndex].productCode
-                            ? "Texto Obrigatório"
+                            ? t.editor.items.validation.required ||
+                              "Obrigatório"
                             : null
                         }
                         isReadOnly={isReadOnly}
                       />
                       <ValidatedInput
-                        label="NCM *"
+                        label={(t.editor.fields.ncm || "NCM") + " *"}
                         value={data.lineItems[editingIndex].ncm || ""}
                         onChange={(e) =>
                           onNCMChange(editingIndex, e.target.value)
                         }
                         error={
                           !isValidNCM(data.lineItems[editingIndex].ncm)
-                            ? "Inválido"
+                            ? t.editor.items.validation.ncm || "Inválido"
                             : null
                         }
                         isReadOnly={isReadOnly}
                       />
                       <div className="col-span-full">
                         <ValidatedInput
-                          label="Descrição Técnica *"
+                          label={t.editor.items.columns.description + " *"}
                           value={data.lineItems[editingIndex].description || ""}
                           onChange={(e) =>
                             onLineItemChange(
@@ -570,7 +604,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                       </div>
                       <ValidatedInput
-                        label="Detalhe (Classif. Fiscal) *"
+                        label={
+                          (t.editor.fields.taxClassificationDetail ||
+                            "Detalhe") + " *"
+                        }
                         value={
                           data.lineItems[editingIndex]
                             .taxClassificationDetail || ""
@@ -790,7 +827,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       (Regulatório)
                     </div>
 
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
+                    <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/30 space-y-3">
                       <span className="text-xs font-bold text-brand-600">
                         Ato Legal 1
                       </span>
@@ -809,7 +846,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -825,7 +862,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -841,7 +878,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -857,7 +894,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -871,7 +908,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -887,12 +924,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
+                    <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/30 space-y-3">
                       <span className="text-xs font-bold text-slate-600">
                         Ato Legal 2
                       </span>
@@ -911,7 +948,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -927,7 +964,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -943,7 +980,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -959,7 +996,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -973,7 +1010,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -989,7 +1026,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                       </div>
                     </div>
@@ -1003,7 +1040,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                      <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">
                           Atributo 1
                         </span>
@@ -1019,7 +1056,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1033,7 +1070,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1047,10 +1084,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                       </div>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                      <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">
                           Atributo 2
                         </span>
@@ -1066,7 +1103,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1080,7 +1117,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1094,10 +1131,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                       </div>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2">
+                      <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">
                           Atributo 3
                         </span>
@@ -1113,7 +1150,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1127,7 +1164,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                         <ValidatedInput
                           minimal
@@ -1141,7 +1178,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             )
                           }
                           isReadOnly={isReadOnly}
-                          className="bg-white"
+                          className="bg-surface-container-high"
                         />
                       </div>
                     </div>
@@ -1166,7 +1203,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <div className="p-4 border-t border-outline-variant/30 bg-surface-container flex justify-end">
                 <button
                   onClick={handleCloseModal}
                   className="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors"

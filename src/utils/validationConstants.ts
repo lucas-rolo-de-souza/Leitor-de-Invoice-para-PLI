@@ -1,14 +1,13 @@
-
 // Version: 1.05.00.45
 /**
  * Standardized lists for validation and autocomplete.
  * Stores both Code and Name to allow flexibility in data entry.
  */
 
-export interface ReferenceItem {
+export type ReferenceItem = {
   code: string;
   name: string;
-}
+};
 
 // --- VOLUME TYPES (Logistics Packaging) ---
 export const VOLUME_TYPES_LIST: ReferenceItem[] = [
@@ -25,7 +24,7 @@ export const VOLUME_TYPES_LIST: ReferenceItem[] = [
   { code: "Pieces", name: "Pieces / Peças Soltas (PCS)" },
   { code: "IBC", name: "IBC / Container Intermediário" },
   { code: "Totes", name: "Totes / Caixas Plásticas" },
-  { code: "Reels", name: "Reels / Carretéis" }
+  { code: "Reels", name: "Reels / Carretéis" },
 ];
 
 // --- INCOTERMS 2020 ---
@@ -40,7 +39,7 @@ export const INCOTERMS_LIST: ReferenceItem[] = [
   { code: "FAS", name: "Free Alongside Ship" },
   { code: "FOB", name: "Free on Board" },
   { code: "CFR", name: "Cost and Freight" },
-  { code: "CIF", name: "Cost, Insurance and Freight" }
+  { code: "CIF", name: "Cost, Insurance and Freight" },
 ];
 
 // --- PAYMENT TERMS (Common) ---
@@ -58,7 +57,7 @@ export const PAYMENT_TERMS_LIST: ReferenceItem[] = [
   { code: "COD", name: "Cash on Delivery" },
   { code: "LC", name: "Letter of Credit" },
   { code: "T/T", name: "Telegraphic Transfer" },
-  { code: "50/50", name: "50% Advance / 50% Shipment" }
+  { code: "50/50", name: "50% Advance / 50% Shipment" },
 ];
 
 // --- CURRENCIES (ISO 4217) ---
@@ -231,7 +230,7 @@ export const CURRENCIES_LIST: ReferenceItem[] = [
   { code: "VND", name: "Dong" },
   { code: "YER", name: "Yemeni Rial" },
   { code: "ZMW", name: "Zambian Kwacha" },
-  { code: "ZWL", name: "Zimbabwe Dollar" }
+  { code: "ZWL", name: "Zimbabwe Dollar" },
 ];
 
 // --- COUNTRIES (ISO 3166-1 alpha-3) ---
@@ -484,5 +483,5 @@ export const COUNTRIES_LIST: ReferenceItem[] = [
   { code: "YEM", name: "Yemen" },
   { code: "ZAF", name: "South Africa" },
   { code: "ZMB", name: "Zambia" },
-  { code: "ZWE", name: "Zimbabwe" }
+  { code: "ZWE", name: "Zimbabwe" },
 ];

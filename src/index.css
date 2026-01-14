@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,33 +10,157 @@ html.dark {
 
 @layer base {
   :root {
-    /* Light Mode Tokens (High Contrast) */
-    --page: 248 250 252; /* slate-50 */
-    --surface: 255 255 255; /* white */
-    --surface-highlight: 241 245 249; /* slate-100 */
+    /* Material 3 Light Theme (Baseline/Aura Adapted) */
+    --surface-dim: #ded8e1;
+    --surface: #fef7ff;
+    --surface-bright: #fef7ff;
 
-    --text-primary: 15 23 42; /* slate-900 */
-    --text-secondary: 71 85 105; /* slate-600 */
-    --text-tertiary: 148 163 184; /* slate-400 */
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f7f2fa;
+    --surface-container: #f3edf7;
+    --surface-container-high: #ece6f0;
+    --surface-container-highest: #e6e0e9;
 
-    --border: 226 232 240; /* slate-200 */
-    --primary: 2 132 199; /* brand-600 (sky-600 adjusted) */
-    --primary-fg: 255 255 255;
+    --on-surface: #1d1b20;
+    --on-surface-variant: #49454f;
+
+    --outline: #79747e;
+    --outline-variant: #cac4d0;
+
+    --primary: #2551b8; /* Aura Blue (Key) */
+    --on-primary: #ffffff;
+    --primary-container: #e0e7ff; /* lighter Aura */
+    --on-primary-container: #000e40; /* deeply dark blue */
+
+    --secondary: #625b71;
+    --on-secondary: #ffffff;
+    --secondary-container: #e8def8;
+    --on-secondary-container: #1d192b;
+
+    --error: #b3261e;
+    --on-error: #ffffff;
+    --error-container: #f9dedc;
+    --on-error-container: #410e0b;
   }
 
   .dark {
-    /* Dark Mode Tokens (OLED/Eye-Care) */
-    --page: 2 6 23; /* slate-950 */
-    --surface: 15 23 42; /* slate-900 */
-    --surface-highlight: 30 41 59; /* slate-800 */
+    /* Material 3 Dark Theme (Baseline/Aura Adapted) */
+    --surface-dim: #141218;
+    --surface: #141218; /* M3 Dark Background */
+    --surface-bright: #3b383e;
 
-    --text-primary: 241 245 249; /* slate-100 */
-    --text-secondary: 148 163 184; /* slate-400 */
-    --text-tertiary: 100 116 139; /* slate-500 */
+    --surface-container-lowest: #0f0d13;
+    --surface-container-low: #1d1b20;
+    --surface-container: #211f26;
+    --surface-container-high: #2b2930;
+    --surface-container-highest: #36343b;
 
-    --border: 30 41 59; /* slate-800 */
-    --primary: 14 165 233; /* sky-500 */
-    --primary-fg: 255 255 255;
+    --on-surface: #e6e1e5;
+    --on-surface-variant: #cac4d0;
+
+    --outline: #938f99;
+    --outline-variant: #49454f;
+
+    /* Aura Blue adapted for M3 Dark (200 tonal) */
+    --primary: #a8c7fa; /* Desaturated Blue */
+    --on-primary: #002568; /* Dark Blue Text */
+    --primary-container: #003a94; /* Mid-tone Blue */
+    --on-primary-container: #d6e3ff;
+
+    --secondary: #ccc2dc;
+    --on-secondary: #332d41;
+    --secondary-container: #4a4458;
+    --on-secondary-container: #e8def8;
+
+    --error: #f2b8b5;
+    --on-error: #601410;
+    --error-container: #8c1d18;
+    --on-error-container: #f9dedc;
+  }
+  /* Text Utility Overrides to use opacity variables */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif font-bold tracking-tight;
+    color: var(--text-primary);
+  }
+
+  body {
+    @apply font-sans bg-page transition-colors duration-200;
+    color: var(--text-secondary); /* Default body text is medium emphasis */
+  }
+}
+
+/* Material Design Elevation Overlays (Dark Mode Only) 
+   In Material, elevation is expressed as a semi-transparent white overlay 
+   on top of the #121212 surface. 
+*/
+@layer utilities {
+  .dark .elevation-0 {
+    background-image: none;
+  }
+  .dark .elevation-1 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05)
+    );
+  }
+  .dark .elevation-2 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.07)
+    );
+  }
+  .dark .elevation-3 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.08)
+    );
+  }
+  .dark .elevation-4 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.09)
+    );
+  }
+  .dark .elevation-6 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.11),
+      rgba(255, 255, 255, 0.11)
+    );
+  }
+  .dark .elevation-8 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.12)
+    );
+  }
+  .dark .elevation-12 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.14)
+    );
+  }
+  .dark .elevation-16 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.15)
+    );
+  }
+  .dark .elevation-24 {
+    background-image: linear-gradient(
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.16)
+    );
+  }
+
+  /* Helper to apply surface color with elevation */
+  .surface-card {
+    @apply bg-surface rounded-card border border-border/10 dark:border-none;
+    /* In dark mode, rely on elevation overlay. In light mode, maybe just white or slight shadow */
   }
 }
 

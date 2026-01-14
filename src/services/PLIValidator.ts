@@ -1,9 +1,9 @@
 import { InvoiceData } from "../types";
 
-interface PliError {
+type PliError = {
   line: number;
   messages: string[];
-}
+};
 
 /**
  * Validates data against strict PLI Industry Model constraints.

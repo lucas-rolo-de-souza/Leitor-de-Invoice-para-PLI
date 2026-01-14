@@ -40,10 +40,16 @@ const formatDualWeight = (value: number | string | null, unit: string) => {
 };
 
 /**
- * Exports the InvoiceData to a standard Excel (.xlsx) file with:
- * 1. General Data
- * 2. Itens (Standard)
- * 3. Errors (if any)
+ * Exports the InvoiceData to a standard Excel (.xlsx) file.
+ *
+ * Structure:
+ * 1. **Data Sheet**: Key/Value pairs for Header, Entities, and Financials.
+ * 2. **Items Sheet**: Tabular data for Line Items (rows).
+ * 3. **Errors Sheet**: (Conditional) Generated ONLY if validation fails, listing specific fields to fix.
+ *
+ * Logic:
+ * - Recalculates Subtotal locally to ensure consistency with Items.
+ * - Prioritizes `TotalNetWeight` > `UnitNetWeight` logic for accuracy.
  */
 export const exportToExcel = (data: InvoiceData) => {
   const wb = XLSX.utils.book_new();
@@ -136,7 +142,13 @@ export const exportToExcel = (data: InvoiceData) => {
 };
 
 /**
- * Exports the InvoiceData to a PDF document using jsPDF.
+ * Exports the InvoiceData to a clean, printable PDF document using jsPDF.
+ *
+ * Features:
+ * - **Validation Report**: If the invoice has errors (e.g., missing NCM), the FIRST page will be
+ *   a red-highlighted "Compliance Report" listing all issues.
+ * - **Layout**: Follows standard Commercial Invoice layout (Header -> Entities -> Table -> Footer).
+ * - **Auto-Table**: Handles pagination for long lists of items automatically.
  */
 export const exportToPDF = (data: InvoiceData) => {
   const doc = new jsPDF();
@@ -171,12 +183,12 @@ export const exportToPDF = (data: InvoiceData) => {
   doc.text("Fatura Comercial / Packing List", 14, 20);
 
   doc.setFontSize(10);
-  doc.text('Fatura: ${data.invoiceNumber || "-"}', 14, 30);
-  doc.text('Data Emissão: ${data.date || "-"}', 14, 35);
-  doc.text('Data Vencimento: ${data.dueDate || "-"}', 100, 35);
+  doc.text(`Fatura: ${data.invoiceNumber || "-"}`, 14, 30);
+  doc.text(`Data Emissão: ${data.date || "-"}`, 14, 35);
+  doc.text(`Data Vencimento: ${data.dueDate || "-"}`, 100, 35);
 
-  doc.text('Incoterm: ${data.incoterm || "-"}', 14, 40);
-  doc.text('Pagamento: ${data.paymentTerms || "-"}', 100, 40);
+  doc.text(`Incoterm: ${data.incoterm || "-"}`, 14, 40);
+  doc.text(`Pagamento: ${data.paymentTerms || "-"}`, 100, 40);
 
   // Entities
   doc.setFontSize(12);

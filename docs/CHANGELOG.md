@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.05.00.39] - 2026-01-13
+
+### Changed
+
+- **Codebase Refactoring**: Replace all `interface` declarations with `type` definitions across the `src` directory for consistency and modern TypeScript practices.
+- **Internal**: Improved type safety and consistency in services, components, and utility modules.
+
+## [1.05.00.38] - 2026-01-13
+
+### Added
+
+- **Premium Enterprise Design**: Completa reformulação visual da Landing Page e Header, removendo elementos "Aura" em favor de um estilo corporativo limpo.
+- **Conformity Weighting**: Nova lógica de cálculo de conformidade:
+  - **80%**: Itens gerais (Art. 557, Entidades, Logística).
+  - **20%**: Detalhes técnicos do PLI (proporção de itens válidos).
+- **Gradient Conformity Indicator**: Indicador visual (Pílula) que transita entre Vermelho, Amarelo e Verde.
+
+### Fixed
+
+- **Usage Widget (Full Size)**: Resolvido problema de clipping no modal de uso. Agora ele utiliza `React Portal` para renderizar em tela cheia sobre a aplicação, ignorando restrições do rodapé.
+- **Layout Adjustments**: Correção de sobreposição do Header fixo e ajustes de padding na Landing Page.
+
 ## [1.05.00.37] - 2026-01-12
 
 ### Added

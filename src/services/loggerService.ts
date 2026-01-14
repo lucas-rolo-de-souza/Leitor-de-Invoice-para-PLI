@@ -7,13 +7,13 @@
 
 export type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 
-export interface LogEntry {
+export type LogEntry = {
   timestamp: string; // ISO String (Machine readable / Sorting)
   formattedTimestamp: string; // Local String (Human readable: DD/MM/YYYY HH:MM:SS)
   level: LogLevel;
   message: string;
   data?: any;
-}
+};
 
 const STORAGE_KEY = "app_logs";
 const RETENTION_DAYS = 7;
@@ -85,7 +85,15 @@ class LoggerService {
 
     const entry: LogEntry = {
       timestamp: now.toISOString(),
-      formattedTimestamp: now.toLocaleString("pt-BR"),
+      formattedTimestamp: now.toLocaleString("pt-BR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+      }),
       level,
       message,
       data: data ? this.sanitize(data) : undefined,
@@ -102,7 +110,9 @@ class LoggerService {
     this.saveLogs();
 
     // Console output mirror with visible time
-    const timeString = now.toLocaleTimeString("pt-BR");
+    const timeString = now.toLocaleTimeString("pt-BR", {
+      fractionalSecondDigits: 3,
+    });
     const consoleMsg = `[${timeString}] ${message}`;
     const consoleArgs = [consoleMsg];
 

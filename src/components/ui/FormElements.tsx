@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import React from "react";
+import { AlertCircle } from "lucide-react";
 
 export const ErrorTooltip: React.FC<{ message: string }> = ({ message }) => (
   <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 group">
@@ -13,78 +12,93 @@ export const ErrorTooltip: React.FC<{ message: string }> = ({ message }) => (
   </div>
 );
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string | null;
   isReadOnly?: boolean;
   label?: string;
   minimal?: boolean; // For table cells
-}
+};
 
-export const ValidatedInput = React.forwardRef<HTMLInputElement, InputProps>(({ error, isReadOnly, className, label, minimal, ...props }, ref) => {
-  // Minimalist Style:
-  // Default: bg-slate-50, no border.
-  // Hover: slightly darker gray.
-  // Focus: White bg, Brand ring, no border.
-  // Error: Red ring, Red bg tint.
-  
-  const baseClass = `w-full ${minimal ? 'h-8 text-xs' : 'h-10 sm:h-11 text-base sm:text-sm'} px-3 rounded-lg transition-all duration-200 outline-none`;
-  
-  const stateClass = isReadOnly
-    ? 'bg-transparent text-slate-500 font-medium cursor-default placeholder-transparent' // Read-only is very clean, almost like text
-    : error
-      ? 'bg-red-50 text-red-900 placeholder-red-300 ring-1 ring-inset ring-red-200 focus:ring-2 focus:ring-red-400'
-      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:shadow-sm placeholder-slate-400';
+export const ValidatedInput = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ error, isReadOnly, className, label, minimal, ...props }, ref) => {
+    // Aura Style:
+    // Default: bg-surface, border-transparent (shadow-inner optionally).
+    // Hover: bg-white.
+    // Focus: White bg, Aura Blue ring (thick), no border.
 
-  return (
-    <div className="relative w-full group">
-      {label && <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5 ml-1">{label}</label>}
-      <div className="relative">
-        <input 
-          ref={ref}
-          disabled={isReadOnly}
-          className={`${baseClass} ${stateClass} ${className || ''}`} 
-          {...props} 
-        />
-        {error && !isReadOnly && !minimal && <ErrorTooltip message={error} />}
-        {/* Visual cue for editable fields on hover */}
-        {!isReadOnly && !error && <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-slate-900/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />}
-      </div>
-    </div>
-  );
-});
+    const baseClass = `w-full ${
+      minimal ? "h-8 text-xs px-2" : "h-14 text-base"
+    } px-4 rounded-m3-xs transition-all duration-200 outline-none font-sans border`;
 
-ValidatedInput.displayName = 'ValidatedInput';
-
-interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  error?: string | null;
-  isReadOnly?: boolean;
-  label?: string;
-}
-
-export const ValidatedTextArea: React.FC<TextAreaProps> = ({ error, isReadOnly, className, label, ...props }) => {
-    const baseClass = `w-full px-3 py-2 rounded-lg text-base sm:text-sm transition-all duration-200 outline-none resize-none min-h-[80px]`;
     const stateClass = isReadOnly
-      ? 'bg-transparent text-slate-500 font-medium cursor-default placeholder-transparent'
+      ? "bg-transparent text-on-surface-variant font-medium cursor-default border-transparent placeholder-transparent"
       : error
-        ? 'bg-red-50 text-red-900 placeholder-red-300 ring-1 ring-inset ring-red-200 focus:ring-2 focus:ring-red-400'
-        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:shadow-sm placeholder-slate-400';
-  
+      ? "bg-error-container border-error text-on-surface placeholder-error/50 hover:bg-error-container/20 focus:border-error focus:ring-1 focus:ring-error"
+      : "bg-surface-container-high border-outline-variant/50 text-on-surface placeholder-on-surface-variant/50 hover:border-on-surface focus:border-primary focus:ring-1 focus:ring-primary";
+
     return (
-      <div className="relative w-full group">
-        {label && <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5 ml-1">{label}</label>}
+      <div className="relative w-full group mb-1">
+        {/* Floating Label (M3 Style logic would go here, simplified for now to Standard Label) */}
+        {label && !minimal && (
+          <label className="absolute -top-2 left-3 bg-surface-container-low px-1 text-[11px] text-on-surface-variant group-focus-within:text-primary z-10 transition-colors">
+            {label}
+          </label>
+        )}
         <div className="relative">
-            <textarea 
+          <input
+            ref={ref}
             disabled={isReadOnly}
-            className={`${baseClass} ${stateClass} ${className || ''}`} 
-            {...props} 
-            />
-            {!isReadOnly && !error && <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-slate-900/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />}
-             {error && !isReadOnly && (
-                <div className="absolute right-3 top-3" title={error}>
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                </div>
-            )}
+            className={`${baseClass} ${stateClass} ${className || ""}`}
+            {...props}
+          />
+          {error && !isReadOnly && !minimal && <ErrorTooltip message={error} />}
         </div>
       </div>
     );
+  }
+);
+
+ValidatedInput.displayName = "ValidatedInput";
+
+type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  error?: string | null;
+  isReadOnly?: boolean;
+  label?: string;
+};
+
+export const ValidatedTextArea: React.FC<TextAreaProps> = ({
+  error,
+  isReadOnly,
+  className,
+  label,
+  ...props
+}) => {
+  const baseClass = `w-full px-4 py-3 rounded-m3-xs text-base transition-all duration-200 outline-none resize-none min-h-[100px] font-sans border`;
+  const stateClass = isReadOnly
+    ? "bg-transparent text-on-surface-variant font-medium cursor-default border-transparent placeholder-transparent"
+    : error
+    ? "bg-error-container/10 border-error text-on-surface placeholder-error/50 hover:bg-error-container/20 focus:border-error focus:ring-1 focus:ring-error"
+    : "bg-transparent border-outline text-on-surface placeholder-on-surface-variant/50 hover:border-on-surface focus:border-primary focus:ring-1 focus:ring-primary";
+
+  return (
+    <div className="relative w-full group pt-2">
+      {label && (
+        <label className="absolute -top-0 left-3 bg-surface px-1 text-[11px] text-on-surface-variant group-focus-within:text-primary z-10 transition-colors">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <textarea
+          disabled={isReadOnly}
+          className={`${baseClass} ${stateClass} ${className || ""}`}
+          {...props}
+        />
+        {error && !isReadOnly && (
+          <div className="absolute right-3 top-3" title={error}>
+            <AlertCircle className="w-5 h-5 text-error" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };

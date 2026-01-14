@@ -1,7 +1,7 @@
 // Version: 1.05.00.11
 import { logger } from "./loggerService";
 
-export interface UsageLog {
+export type UsageLog = {
   id: string;
   sessionId: string; // The "Auto-Key" for the session
   timestamp: string; // Changed to string for serialization stability
@@ -12,9 +12,9 @@ export interface UsageLog {
   cost: number;
   ptax?: number | null; // Historical PTAX at moment of request
   costInBrl?: number; // Historical Cost in BRL
-}
+};
 
-export interface SessionStats {
+export type SessionStats = {
   sessionId: string;
   totalRequests: number;
   totalInputTokens: number;
@@ -22,7 +22,7 @@ export interface SessionStats {
   totalCost: number;
   totalCostInBrl: number;
   averageLatency: number;
-}
+};
 // Pricing Configuration (Estimated per 1 Million Tokens in USD)
 const PRICING_MAP: Record<string, { input: number; output: number }> = {
   // Gemini 2.5 Series (Stable IDs)
@@ -100,7 +100,12 @@ class UsageService {
   }
 
   /**
-   * Logs a transaction, calculates cost, and stores it.
+   * Logs a transaction, calculates estimated cost, and persists to storage.
+   * cost is calculated based on Input/Output tokens and the model's specific pricing.
+   *
+   * Side Effects:
+   * - Fetches current PTAX (Dollar Rate) async for BRL conversion.
+   * - Saves to LocalStorage immediately.
    */
   public async logTransaction(
     modelId: string,

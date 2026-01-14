@@ -7,25 +7,57 @@ import {
   Info,
   AlertTriangle,
   Bug,
+  Trash2,
 } from "lucide-react";
 import { logger, LogEntry } from "../../services/loggerService";
 
-interface LogViewerProps {
+type LogViewerProps = {
   onClose: () => void;
-}
+};
 
+/**
+ * LogViewer Component
+ *
+ * A visual interface for the `loggerService`. Displays system logs in a modal
+ * with filtering, detailed payload inspection, and export capabilities.
+ *
+ * Features:
+ * - **Filtering**: Filter logs by level (INFO, WARN, ERROR, DEBUG).
+ * - **Safe Clear**: "Click twice" safety mechanism to prevent accidental history deletion.
+ * - **Export**: Download full log history as JSON.
+ * - **Inspection**: Expandable `<details>` view for complex JSON data payloads.
+ */
 export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>("ALL");
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
-    setLogs(logger.getLogs().reverse()); // Show newest first
+    setLogs([...logger.getLogs()].reverse()); // Show newest first (safe copy)
   }, []);
+
+  // Reset confirmation state after 3 seconds
+  useEffect(() => {
+    if (confirmClear) {
+      const timer = setTimeout(() => setConfirmClear(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [confirmClear]);
 
   const filteredLogs = logs.filter((log) => {
     if (filter === "ALL") return true;
     return log.level === filter;
   });
+
+  const handleClear = () => {
+    if (confirmClear) {
+      logger.clear();
+      setLogs([]);
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+    }
+  };
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -59,12 +91,12 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden border border-border animate-slide-up">
+      <div className="bg-surface-container-high rounded-m3-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden border border-border animate-slide-up">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-surface-highlight/30">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-surface-container-high">
           <div className="flex items-center gap-3">
-            <div className="bg-slate-100 p-2 rounded-lg">
-              <Terminal className="w-5 h-5 text-slate-700" />
+            <div className="bg-surface-container-highest p-2 rounded-lg">
+              <Terminal className="w-5 h-5 text-on-surface" />
             </div>
             <div>
               <h3 className="font-bold text-lg text-text-primary">
@@ -77,11 +109,25 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleClear}
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors shadow-sm ${
+                confirmClear
+                  ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
+                  : "bg-surface-container border-outline-variant text-on-surface hover:bg-error-container hover:text-error hover:border-error"
+              }`}
+              title={confirmClear ? "Click again to confirm" : "Clear all logs"}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {confirmClear ? "Confirm?" : "Clear"}
+              </span>
+            </button>
+            <button
               onClick={() => logger.downloadLogs()}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-slate-50 hover:text-brand-600 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-sm font-medium text-on-surface hover:bg-surface-container-highest hover:text-primary transition-colors shadow-sm"
             >
               <Download className="w-4 h-4" />
-              Export JSON
+              <span className="hidden sm:inline">Export JSON</span>
             </button>
             <button
               onClick={onClose}
@@ -95,15 +141,15 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
         </div>
 
         {/* Filters */}
-        <div className="px-6 py-3 border-b border-border bg-slate-50/50 flex gap-2 overflow-x-auto">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-border bg-surface-container-high/50 flex gap-2 overflow-x-auto">
           {["ALL", "ERROR", "WARN", "INFO", "DEBUG"].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
                 filter === f
-                  ? "bg-slate-800 text-white shadow-md"
-                  : "bg-white border border-border text-text-secondary hover:bg-slate-100"
+                  ? "bg-primary text-on-primary shadow-md"
+                  : "bg-surface-container border border-outline-variant text-on-surface-variant hover:bg-surface-container-highest"
               }`}
             >
               {f}
@@ -112,7 +158,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
         </div>
 
         {/* Log List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 font-mono text-xs">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-surface-container-low font-mono text-xs">
           {filteredLogs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-text-tertiary opacity-50">
               <Terminal className="w-12 h-12 mb-4" />
@@ -136,7 +182,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
                 <div className="flex-1 break-all">
                   <span className="font-medium mr-2">{log.message}</span>
                   {log.data && (
-                    <details className="mt-2 text-[11px] bg-white/50 p-2 rounded cursor-pointer border border-black/5">
+                    <details className="mt-2 text-[11px] bg-surface/50 p-2 rounded cursor-pointer border border-outline-variant/20">
                       <summary className="font-bold opacity-70 hover:opacity-100 select-none">
                         View Data Payload
                       </summary>

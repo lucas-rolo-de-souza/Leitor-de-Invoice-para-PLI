@@ -16,6 +16,11 @@ export const isFieldInvalid = (value: any): boolean => {
 
 /**
  * Validates Brazilian NCM (Nomenclature Comum do Mercosul).
+ *
+ * Rules:
+ * 1. **Format**: Must be 8 digits.
+ * 2. **Bypass**: "9999.99.99" is explicitly allowed (Generic NCM).
+ * 3. **Database**: Checks existence against the official NCM table (via `ncmService`).
  */
 export const isValidNCM = (ncm: string | null): boolean => {
   const result = validateNCM(ncm);
@@ -49,12 +54,25 @@ export const isValidReference = (
   );
 };
 
-export interface ValidationError {
+export type ValidationError = {
   field: string;
   message: string;
   code: string;
-}
+};
 
+/**
+ * Core Validation Logic (Art. 557)
+ *
+ * Scans the entire InvoiceData structure and returns a list of errors.
+ *
+ * Checks:
+ * 1. **Header**: Dates, numbers, required entities.
+ * 2. **Logic**: Net Weight <= Gross Weight, Date Range (Due >= Issue).
+ * 3. **Reference Checks**: Validates Country Codes, Incoterms, and Currencies against `validationConstants`.
+ * 4. **Items**: Iterates every line item checking for required PLI fields (NCM, Manufacturer, Weights).
+ *
+ * @returns Array of `ValidationError` objects used to render alerts in the UI.
+ */
 export const generateValidationErrors = (
   data: InvoiceData,
   lists: {

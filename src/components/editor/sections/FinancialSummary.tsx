@@ -16,7 +16,7 @@ export const FinancialSummary: React.FC<SectionProps> = ({
 }) => {
   return (
     <div className="w-full">
-      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+      <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-6">
         Valores Totais
       </h4>
 
@@ -43,12 +43,12 @@ export const FinancialSummary: React.FC<SectionProps> = ({
         />
       </div>
 
-      <div className="bg-slate-50/50 rounded-lg p-4 space-y-3 border border-slate-100">
+      <div className="bg-surface-container rounded-m3-md p-4 space-y-3 border border-outline-variant/30">
         <div className="flex justify-between items-center text-xs">
-          <label className="text-slate-500 font-bold">
+          <label className="text-on-surface-variant font-bold">
             Subtotal (Calculado)
           </label>
-          <div className="w-28">
+          <div className="w-32">
             <ValidatedInput
               minimal
               type="number"
@@ -59,14 +59,14 @@ export const FinancialSummary: React.FC<SectionProps> = ({
               isReadOnly={true} // Visual style
               readOnly={true} // Functional attribute
               placeholder="0.00"
-              className="text-right bg-slate-50 text-slate-600 font-medium cursor-default"
+              className="text-right bg-surface-container-high text-on-surface font-medium cursor-default border-transparent"
             />
           </div>
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-slate-500">Frete (+)</label>
-          <div className="w-28">
+          <label className="text-on-surface-variant">Frete (+)</label>
+          <div className="w-32">
             <ValidatedInput
               minimal
               type="number"
@@ -75,14 +75,14 @@ export const FinancialSummary: React.FC<SectionProps> = ({
               onChange={(e) => handleChange("freight", e.target.value)}
               isReadOnly={isReadOnly}
               placeholder="0.00"
-              className="text-right bg-white"
+              className="text-right bg-surface border-outline-variant focus:border-primary text-on-surface"
             />
           </div>
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-slate-500">Seguro (+)</label>
-          <div className="w-28">
+          <label className="text-on-surface-variant">Seguro (+)</label>
+          <div className="w-32">
             <ValidatedInput
               minimal
               type="number"
@@ -91,14 +91,14 @@ export const FinancialSummary: React.FC<SectionProps> = ({
               onChange={(e) => handleChange("insurance", e.target.value)}
               isReadOnly={isReadOnly}
               placeholder="0.00"
-              className="text-right bg-white"
+              className="text-right bg-surface border-outline-variant focus:border-primary text-on-surface"
             />
           </div>
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-slate-500">Outros (+)</label>
-          <div className="w-28">
+          <label className="text-on-surface-variant">Outros (+)</label>
+          <div className="w-32">
             <ValidatedInput
               minimal
               type="number"
@@ -107,16 +107,16 @@ export const FinancialSummary: React.FC<SectionProps> = ({
               onChange={(e) => handleChange("otherCharges", e.target.value)}
               isReadOnly={isReadOnly}
               placeholder="0.00"
-              className="text-right bg-white"
+              className="text-right bg-surface border-outline-variant focus:border-primary text-on-surface"
             />
           </div>
         </div>
 
-        <div className="border-t border-slate-200 my-2 pt-3 flex justify-between items-center">
-          <label className="text-sm font-bold text-slate-800">
+        <div className="border-t border-outline-variant/30 my-2 pt-3 flex justify-between items-center">
+          <label className="text-sm font-bold text-on-surface">
             Total Geral
           </label>
-          <div className="w-32">
+          <div className="w-36">
             <ValidatedInput
               type="number"
               step="any"
@@ -125,7 +125,7 @@ export const FinancialSummary: React.FC<SectionProps> = ({
               error={errors.grandTotal}
               isReadOnly={isReadOnly}
               placeholder="0.00"
-              className="text-right font-mono font-bold text-lg text-brand-700 bg-transparent border-none focus:ring-0 px-0 h-auto"
+              className="text-right font-mono font-bold text-lg text-primary bg-transparent border-none focus:ring-0 px-0 h-auto"
             />
           </div>
         </div>

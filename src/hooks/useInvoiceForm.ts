@@ -9,6 +9,23 @@ import { InvoiceData, LineItem } from "../types";
  * Now acts as a pure logic controller that takes current data and triggers
  * atomic updates via onDataChange.
  */
+/**
+ * Hook: useInvoiceForm
+ *
+ * Manages the core business logic for the invoice editor in a "Stateless / Controlled" manner.
+ *
+ * Responsibilities:
+ * 1. **Data Integrity**: Ensures numeric fields are valid and totals are calculated atomically.
+ * 2. **Auto-Calculations**: detailed logic for:
+ *    - `calculateGlobalTotals`: Subtotal, Net Weight, Grand Total.
+ *    - `calculateDueDate`: Parses Payment Term (e.g., "Net 30") to prompt a date.
+ *    - `handleLineItemChange`: Cross-calculates Unit Price vs Total, and Unit Weight vs Total Weight.
+ * 3. **CRUD Operations**: Add, Duplicate, Remove line items.
+ *
+ * @param formData - The current state of the invoice data (lifted state).
+ * @param onDataChange - Callback to update parent state.
+ * @param isReadOnly - If true, blocks all edit operations.
+ */
 export const useInvoiceForm = (
   formData: InvoiceData,
   onDataChange: (data: InvoiceData) => void,

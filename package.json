@@ -1,7 +1,7 @@
 {
   "name": "leitor-faturas-ai",
   "displayName": "Leitor de Faturas AI",
-  "version": "1.05.00.14",
+  "version": "1.05.00.39",
   "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
   "keywords": [
     "invoice",
@@ -32,8 +32,9 @@
     "url": "https://github.com/your-username/leitor-faturas-ai.git"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "node scripts/update-version.js && vite",
+    "build": "node scripts/update-version.js && tsc && vite build",
+    "update-version": "node scripts/update-version.js",
     "type-check": "tsc --noEmit",
     "preview": "vite preview"
   },
@@ -45,6 +46,7 @@
     "nvm": "^0.0.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.0",
+    "react-dropzone": "^14.3.8",
     "type-check": "^0.4.0",
     "xlsx": "^0.18.5",
     "zod": "^4.2.1"

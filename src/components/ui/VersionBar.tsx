@@ -1,40 +1,61 @@
+import React from "react";
+import { PenTool, Sparkles } from "lucide-react";
+import { useTranslation } from "../../hooks/useTranslation";
 
-import React from 'react';
-import { PenTool, Sparkles } from 'lucide-react';
-
-interface VersionBarProps {
+type VersionBarProps = {
   showOriginal: boolean;
   onToggle: (showOriginal: boolean) => void;
-}
+};
 
-export const VersionBar: React.FC<VersionBarProps> = ({ showOriginal, onToggle }) => {
+/**
+ * VersionBar Component
+ *
+ * A segmented control toggle that switches the application view between:
+ * 1. **Editor**: The current, editable working draft of the invoice.
+ * 2. **Original AI**: A read-only view of the raw data as initially extracted by the AI.
+ *
+ * used to allow users to verify AI accuracy against their edits without losing work.
+ */
+export const VersionBar: React.FC<VersionBarProps> = ({
+  showOriginal,
+  onToggle,
+}) => {
+  const t = useTranslation();
+
   return (
-    <div className="bg-slate-100 p-1 rounded-lg flex items-center shadow-inner">
+    <div className="bg-surface-container-high p-1 rounded-full flex items-center relative border border-outline-variant/30 shadow-inner">
+      {/* Sliding Background Indicator (Simulated with absolute positioning or just conditional classes for simplicity first) */}
+      {/* For a true sliding effect without extra libs, we can simply switch styles. The user requested "modern and seamless". 
+          Let's stick to a clean conditional class approach for reliability. */}
+
       <button
         onClick={() => onToggle(false)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all
-          ${!showOriginal 
-            ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/5' 
-            : 'text-slate-500 hover:text-slate-700'
+          relative z-10 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all duration-300
+          ${
+            !showOriginal
+              ? "bg-primary-container text-on-primary-container shadow-sm"
+              : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50"
           }
         `}
       >
-        <PenTool className="w-3 h-3" />
-        Editor
+        <PenTool className="w-3.5 h-3.5" />
+        <span>{t.app.versionBar.editor}</span>
       </button>
+
       <button
         onClick={() => onToggle(true)}
         className={`
-          flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all
-          ${showOriginal 
-            ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5' 
-            : 'text-slate-500 hover:text-slate-700'
+          relative z-10 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all duration-300
+          ${
+            showOriginal
+              ? "bg-secondary-container text-on-secondary-container shadow-sm"
+              : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50"
           }
         `}
       >
-        <Sparkles className="w-3 h-3" />
-        Original AI
+        <Sparkles className="w-3.5 h-3.5" />
+        <span>{t.app.versionBar.original}</span>
       </button>
     </div>
   );

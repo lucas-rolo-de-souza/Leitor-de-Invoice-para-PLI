@@ -1,22 +1,26 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
+import { useTranslation } from "../hooks/useTranslation";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const t = useTranslation();
 
   return (
     <button
       onClick={toggleTheme}
       className={`
-        p-2 rounded-lg transition-all duration-300
+        p-2.5 rounded-pill transition-all duration-300 border
         ${
           theme === "dark"
-            ? "bg-slate-800 text-yellow-400 hover:bg-slate-700 hover:shadow-glow-yellow"
-            : "bg-slate-100 text-slate-500 hover:text-orange-500 hover:bg-orange-50"
+            ? "bg-surface-highlight border-border text-yellow-400 hover:text-yellow-300 hover:bg-surface hover:shadow-glow-yellow"
+            : "bg-surface border-border text-text-tertiary hover:text-primary hover:bg-surface-container hover:border-primary/30"
         }
       `}
       title={
-        theme === "dark" ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"
+        theme === "dark"
+          ? t.app.actions.toggleTheme.light
+          : t.app.actions.toggleTheme.dark
       }
     >
       {theme === "dark" ? (

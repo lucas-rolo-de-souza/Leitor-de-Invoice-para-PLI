@@ -1,34 +1,38 @@
-// Version: 1.05.00.17
+// Version: 1.05.00.18
 import { logger } from "./loggerService";
 
 /**
- * NCM Service
- * Responsável por buscar, processar e validar dados da Tabela NCM oficial do Siscomex.
+ * NCM Service (Singleton)
  *
- * Estratégia de Cache Atualizada (v1.05):
- * - Utiliza a Cache API (window.caches) para armazenar o dataset processado como um arquivo JSON virtual.
- * - Isso evita o bloqueio da thread principal (comum no LocalStorage) e contorna limites de cota de 5MB.
- * - Metadados de expiração permanecem no LocalStorage para acesso rápido.
+ * Manages the "Nomenclatura Comum do Mercosul" database.
+ *
+ * Architecture:
+ * 1. **Cache-First**: Uses the browser's `Cache API` to store a virtual `ncm-db.json` file.
+ *    This allows storing ~10MB+ of data without blocking the main thread (unlike LocalStorage).
+ * 2. **Penalty Box**: If the external API returns 429 (Rate Limit) or 503, the service
+ *    enters a "Penalty Mode", blocking outbound calls for 1 hour to prevent IP bans.
+ * 3. **Mirrors**: Fallback strategy: API (Primary) -> Proxy -> GitHub Mirror (Secondary).
  */
 
-export interface NcmRecord {
+export type NcmRecord = {
   code: string;
   description: string;
-}
+};
 
-export interface NcmHierarchyItem {
+export type NcmHierarchyItem = {
   code: string;
   description: string;
   level: string;
-}
+};
 
 // Configuração do Cache Virtual
 const CACHE_NAME = "siscomex-ncm-cache-v1";
 const VIRTUAL_FILE_URL = "https://internal/ncm-db.json"; // URL virtual interna para indexar o arquivo no Cache Storage
 const LAST_UPDATE_KEY = "SISCOMEX_NCM_DATE";
+const PENALTY_BOX_KEY = "SISCOMEX_PENALTY_UNTIL"; // Key para armazenar timestamp de fim da penalidade
 
 const PRIMARY_URL =
-  "https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json?perfil=PUBLICO";
+  "https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json";
 const SECONDARY_URL =
   "https://raw.githubusercontent.com/leogregianin/siscomex-ncm/cacd1cda19acf22e34a82e30c9b31cc508ee73e9/ncm.json";
 
@@ -212,6 +216,32 @@ class NcmService {
 
   // --- Internals ---
 
+  private isPenaltyActive(): boolean {
+    const penaltyStr = localStorage.getItem(PENALTY_BOX_KEY);
+    if (!penaltyStr) return false;
+
+    const penaltyUntil = parseInt(penaltyStr, 10);
+    if (Date.now() < penaltyUntil) {
+      const remainingMinutes = Math.ceil((penaltyUntil - Date.now()) / 60000);
+      logger.warn(
+        `[NCM Service] PENALTY BOX ATIVADO. Acesso à API Oficial bloqueado por ${remainingMinutes} min.`
+      );
+      return true;
+    }
+
+    // Penalidade expirou, limpa chave
+    localStorage.removeItem(PENALTY_BOX_KEY);
+    return false;
+  }
+
+  private activatePenalty(hours: number = 1) {
+    const penaltyUntil = Date.now() + hours * 60 * 60 * 1000;
+    localStorage.setItem(PENALTY_BOX_KEY, penaltyUntil.toString());
+    logger.error(
+      `[NCM Service] COTA EXCEDIDA ou ERRO DE API (429/PUCX-ER1001). Penalidade ativada por ${hours} hora(s).`
+    );
+  }
+
   /**
    * Lê o "arquivo virtual" JSON do Cache Storage.
    */
@@ -298,17 +328,45 @@ class NcmService {
         });
         clearTimeout(timeoutId);
 
+        // CHECK PARA PENALTY BOX
+        if (res.status === 429) {
+          this.activatePenalty(1);
+          throw new Error("Erro 429: Too Many Requests (Siscomex)");
+        }
+
         if (res.ok) return res;
+
+        // Check body error for PUCX-ER1001 if JSON
+        // Nota: as vezes o erro vem como JSON com status 400 ou 500
+        try {
+          const clone = res.clone();
+          const errBody = await clone.json();
+          if (errBody && errBody.code === "PUCX-ER1001") {
+            this.activatePenalty(1);
+            throw new Error("Erro PUCX-ER1001: Cota Excedida (Siscomex)");
+          }
+        } catch (ignore) {
+          // não era json ou não deu pra ler
+        }
 
         logger.warn(
           `[NCM Service] Tentativa ${
             i + 1
           }/${retries} falhou para ${url}. Status: ${res.status}`
         );
-        if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+
+        if (res.status >= 400 && res.status < 500) {
           throw new Error(`Erro Cliente (${res.status})`);
         }
       } catch (err: any) {
+        // Se foi ativado penalty, não adianta tentar de novo
+        if (
+          err.message &&
+          (err.message.includes("429") || err.message.includes("PUCX-ER1001"))
+        ) {
+          throw err;
+        }
+
         if (i === retries - 1) throw err;
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * Math.pow(2, i))
@@ -323,49 +381,99 @@ class NcmService {
       let data: any = null;
       let sourceUsed = "";
 
-      // 1. Tentativa Direta (Oficial)
-      try {
-        logger.info(`[NCM Service] Tentando download direto: ${PRIMARY_URL}`);
-        const res = await this.fetchWithRetry(PRIMARY_URL, 2, 10000);
-        data = await res.json();
-        sourceUsed = "Oficial (Direto)";
-      } catch (err) {
-        logger.warn(
-          "[NCM Service] Falha download direto (possível CORS). Tentando Proxy...",
-          err
+      // Validação rápida para garantir que baixamos algo útil
+      const isValidNcmData = (d: any) => {
+        if (!d) return false;
+        // Estrutura Oficial
+        if (
+          d.Nomenclaturas &&
+          Array.isArray(d.Nomenclaturas) &&
+          d.Nomenclaturas.length > 0
+        )
+          return true;
+        // Estrutura Legacy/Flat Array
+        if (Array.isArray(d) && d.length > 0) return true;
+        // Estrutura Recursiva (Legacy Mirror)
+        if (d.Nomenclatura) return true;
+
+        return false;
+      };
+
+      // 1. Verificação de Penalidade (Penalty Box)
+      // Se estiver penalizado, pula direto para o Mirror ou Cache
+      if (!this.isPenaltyActive()) {
+        // --- TENTATIVA 1: OFICIAL (DIRETO) ---
+        try {
+          logger.info(`[NCM Service] Tentando download direto: ${PRIMARY_URL}`);
+          const res = await this.fetchWithRetry(PRIMARY_URL, 2, 10000);
+          const temp = await res.json();
+          if (isValidNcmData(temp)) {
+            data = temp;
+            sourceUsed = "Oficial (Direto)";
+          } else {
+            throw new Error("JSON inválido (Direto).");
+          }
+        } catch (err: any) {
+          logger.warn(
+            "[NCM Service] Falha download direto. Tentando Proxy...",
+            err
+          );
+
+          // Se o erro foi Cota/429, o fetchWithRetry já ativou a flag e lançou erro.
+          // O isPenaltyActive() no próximo loop impediria... mas aqui estamos linear.
+          // Se erro for Cota, NÃO deve tentar proxy oficial, pois vai falhar tb e gastar cota do proxy se for transparente.
+          // Proxies como corsproxy apenas repassam.
+        }
+
+        // --- TENTATIVA 2: PROXY (Se não penalizado) ---
+        // Se acabou de ser penalizado (no catch acima), pula
+        if (!data && !this.isPenaltyActive()) {
+          const proxies = [
+            (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            (url: string) =>
+              `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+          ];
+
+          for (const proxyGen of proxies) {
+            if (data) break;
+            const proxyUrl = proxyGen(PRIMARY_URL);
+            try {
+              logger.info(`[NCM Service] Tentando via Proxy: ${proxyUrl}`);
+              const res = await this.fetchWithRetry(proxyUrl, 1, 15000);
+              const temp = await res.json();
+              if (isValidNcmData(temp)) {
+                data = temp;
+                sourceUsed = "Oficial (CORS Proxy)";
+              } else {
+                logger.warn(
+                  `[NCM Service] Proxy retornou dados inválidos: ${proxyUrl}`
+                );
+              }
+            } catch (err) {
+              logger.warn(`[NCM Service] Proxy falhou: ${proxyUrl}`, err);
+            }
+          }
+        }
+      } else {
+        logger.info(
+          "[NCM Service] Pulando API Oficial devido a Penalidade Ativa."
         );
       }
 
-      // 2. Tentativa via CORS Proxy (Oficial mas via Proxy)
-      // Tenta uma lista de proxies para contornar restrições
-      if (!data) {
-        const proxies = [
-          (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-          (url: string) =>
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        ];
-
-        for (const proxyGen of proxies) {
-          if (data) break;
-          const proxyUrl = proxyGen(PRIMARY_URL);
-          try {
-            logger.info(`[NCM Service] Tentando via Proxy: ${proxyUrl}`);
-            const res = await this.fetchWithRetry(proxyUrl, 1, 15000); // 1 retry per proxy to save time
-            data = await res.json();
-            sourceUsed = "Oficial (CORS Proxy)";
-          } catch (err) {
-            logger.warn(`[NCM Service] Proxy falhou: ${proxyUrl}`, err);
-          }
-        }
-      }
-
       // 3. Fallback para Mirror (GitHub) - Último recurso
+      // Usado se: (a) Oficial falhou, (b) Penalidade ativa
       if (!data) {
         try {
           logger.info(`[NCM Service] Tentando Mirror: ${SECONDARY_URL}`);
+          // Mirror do Leo Gregianin é seguro, estático, sem rate limit severo
           const res = await this.fetchWithRetry(SECONDARY_URL, 2, 10000);
-          data = await res.json();
-          sourceUsed = "GitHub Mirror";
+          const temp = await res.json();
+          if (isValidNcmData(temp)) {
+            data = temp;
+            sourceUsed = "GitHub Mirror";
+          } else {
+            throw new Error("Mirror retornou dados inválidos.");
+          }
         } catch (err) {
           logger.error("[NCM Service] Todas as tentativas falharam.", err);
           throw err;
@@ -393,9 +501,6 @@ class NcmService {
               // Remove pontos do código para normalizar (Ex: "0101.21.00" -> "01012100")
               const cleanCode = item.Codigo.replace(/\./g, "").trim();
 
-              // Armazenamos apenas NCMs completos (8 dígitos) para validação exata,
-              // ou parciais se necessário para hierarquia (mas focamos em validação)
-              // O código original guardava tudo. Vamos manter tudo para a hierarquia funcionar.
               if (cleanCode) {
                 newMap.set(cleanCode, item.Descricao.trim());
                 count++;
@@ -405,7 +510,6 @@ class NcmService {
         }
         // Parser legado/mirror (Se a estrutura for diferente ou recursiva)
         else {
-          // Fallback recursivo mantido para compatibilidade com mirrors antigos
           const traverse = (node: any) => {
             if (node.Codigo && typeof node.Codigo === "string") {
               const cleanCode = node.Codigo.replace(/\./g, "").trim();

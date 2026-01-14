@@ -4,38 +4,57 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      colors: {
-        // Semantic Tokens
-        page: "rgb(var(--page) / <alpha-value>)",
-        surface: {
-          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
-          highlight: "rgb(var(--surface-highlight) / <alpha-value>)",
-        },
-        text: {
-          primary: "rgb(var(--text-primary) / <alpha-value>)",
-          secondary: "rgb(var(--text-secondary) / <alpha-value>)",
-          tertiary: "rgb(var(--text-tertiary) / <alpha-value>)",
-        },
-        border: {
-          DEFAULT: "rgb(var(--border) / <alpha-value>)",
-        },
-        // Brand Legacy
-        brand: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
-        },
-      },
       fontFamily: {
-        sans: ["Inter", "Roboto", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
+        serif: ["Merriweather", "serif"],
       },
+      borderRadius: {
+        // M3 Shape System (1dp = 1px for semantic mapping)
+        "m3-xs": "4px", // Text fields, Menu items
+        "m3-sm": "8px", // Chips, Menus, Snackbars
+        "m3-md": "12px", // Cards, Small Dialogs
+        "m3-lg": "16px", // Navigation Drawers, Dialogs
+        "m3-xl": "28px", // Search bars, Bottom Sheets
+        "m3-full": "9999px", // Buttons, FABs, Badges
+      },
+      colors: {
+        // Material 3 Color Roles
+        "surface-dim": "var(--surface-dim)",
+        surface: "var(--surface)",
+        "surface-bright": "var(--surface-bright)",
+
+        "surface-container-lowest": "var(--surface-container-lowest)",
+        "surface-container-low": "var(--surface-container-low)",
+        "surface-container": "var(--surface-container)",
+        "surface-container-high": "var(--surface-container-high)",
+        "surface-container-highest": "var(--surface-container-highest)",
+
+        "on-surface": "var(--on-surface)",
+        "on-surface-variant": "var(--on-surface-variant)",
+
+        outline: "var(--outline)",
+        "outline-variant": "var(--outline-variant)",
+
+        primary: "var(--primary)",
+        "on-primary": "var(--on-primary)",
+        "primary-container": "var(--primary-container)",
+        "on-primary-container": "var(--on-primary-container)",
+
+        secondary: "var(--secondary)",
+        "on-secondary": "var(--on-secondary)",
+        "secondary-container": "var(--secondary-container)",
+        "on-secondary-container": "var(--on-secondary-container)",
+
+        error: "var(--error)",
+        "on-error": "var(--on-error)",
+        "error-container": "var(--error-container)",
+        "on-error-container": "var(--on-error-container)",
+
+        // Legacy/Compat (Map to new tokens or keep for specific use cases)
+        page: "var(--surface)", // Mapped to new surface
+        border: "var(--outline-variant)", // Mapped to outline variant
+      },
+
       animation: {
         "fade-in": "fadeIn 0.5s ease-out",
         "slide-up": "slideUp 0.5s ease-out",
