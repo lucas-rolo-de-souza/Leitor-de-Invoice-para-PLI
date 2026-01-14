@@ -461,11 +461,14 @@ function getMetadataPrompt(): string {
     - **Country of Acquisition**: The nation where the seller is legally established. Use ISO 3166-1 alpha-3 codes.
     - **Country of Provenance**: The nation from which the goods were physically dispatched. Use ISO 3166-1 alpha-3 codes.
   - **Logistics & Ports**:
-    - **Port of Loading**: The specific point where goods are loaded for export.
-    - **Port of Discharge**: The final destination point where goods are unloaded.
-    - **Transshipment**: Any intermediate locations or hubs where cargo is transferred.
-    - **Incoterm**: The 3-letter commercial term and its associated named place.
-    - **Weights/Volumes**: Total Net Weight, Total Gross Weight, and Total Package count.
+    - **Port of Loading**: The specific point where goods are loaded for export, can be an Airport or Port.
+    - **Port of Discharge**: The final destination point where goods are unloaded, can be an Airport or Port.
+    - **Transshipment**: Any intermediate locations or hubs where cargo is transferred, can be an Airport or Port.
+    - **Incoterm**: The 3-letter commercial term and its associated named place from the latest version of the Incoterm rules.
+    - **Weights**: Total Net Weight, Total Gross Weight.
+    - **Volumes**: Total Package count, can be nested and/or multiple.
+    - **Volume Type**: The type of volume measurement used (e.g., cubic meters, cubic feet, pallets, boxes, etc.).
+    - **Volume Dimensions**: The dimensions of the volume (e.g., length, width, height).
   - **Financials**: Currency (ISO code), Total Invoice Value, Payment Terms, and a breakdown of non-item costs (Freight, Insurance, Packing, and Miscellaneous Charges).
 
   EXCLUSION:
@@ -497,7 +500,7 @@ function getLineItemsPrompt(): string {
   
   [COLUMN ORDER - STRICTLY FOLLOW THIS INDEX]:
   0. **Description**: (String) Full description of goods.
-  1. **Buyer Part Number**: (String or null) The Importer/Buyer's Item Code or Main SKU.
+  1. **Buyer Part Number**: (String or null) The Importer/Buyer's Item Code, Main SKU, Product ID, Product Code, Product Reference, etc.
   2. **Quantity**: (Number) Pure number.
   3. **Unit**: (String) PCS, KG, SET, etc.
   4. **Unit Price**: (Number) 

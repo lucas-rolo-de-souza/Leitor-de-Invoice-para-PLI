@@ -22,6 +22,11 @@ export function ThemeToggle() {
           ? t.app.actions.toggleTheme.light
           : t.app.actions.toggleTheme.dark
       }
+      aria-label={
+        theme === "dark"
+          ? t.app.actions.toggleTheme.light
+          : t.app.actions.toggleTheme.dark
+      }
     >
       {theme === "dark" ? (
         <Moon className="w-5 h-5 fill-current" />

@@ -59,11 +59,19 @@ export const InvoiceSchema = z.object({
 
   // Logistics (Flat)
   mode: z.enum(["AIR", "SEA", "ROAD"]).nullable(),
-  portOfLoading: z.string().nullable(),
-  portOfDischarge: z.string().nullable(),
+  portOfLoading: z.string().nullable().describe("Port/Airport of loading"),
+  portOfDischarge: z.string().nullable().describe("Port/Airport of discharge"),
   vesselName: z.string().nullable(),
   mawb: z.string().nullable(),
   hawb: z.string().nullable(),
+  transshipment: z
+    .string()
+    .nullable()
+    .describe("Port/Airport of transshipment"),
+  volumeDimensions: z
+    .string()
+    .nullable()
+    .describe("Dimensions of volumes (LxWxH)"),
 
   totalGrossWeight: z.number().nullable(),
   totalNetWeight: z.number().nullable(),

@@ -26,17 +26,23 @@ const sanitizeFilename = (name: string): string => {
   return name.replace(/[\\/:*?"<>|]/g, "_");
 };
 
+import { convertWeight } from "../utils/converters";
+
 /**
  * Helper to display weight in both units (KG and LB)
  */
 const formatDualWeight = (value: number | string | null, unit: string) => {
   const val = Number(value || 0);
-  const isKg = unit === "KG";
+  const currentUnit = unit.toUpperCase();
+  const convertedVal = convertWeight(val, currentUnit);
 
-  const valKg = isKg ? val : val * 0.45359237;
-  const valLb = isKg ? val * 2.20462262 : val; // Fixed: If unit is LB, valLb equals val.
-
-  return `${valKg.toFixed(3)} KG  /  ${valLb.toFixed(3)} LB`;
+  if (currentUnit === "KG") {
+    // KG / LB
+    return `${val.toFixed(3)} KG  /  ${convertedVal.toFixed(3)} LB`;
+  } else {
+    // LB / KG
+    return `${convertedVal.toFixed(3)} KG  /  ${val.toFixed(3)} LB`;
+  }
 };
 
 /**
@@ -96,6 +102,10 @@ export const exportToExcel = (data: InvoiceData) => {
     ],
     ["Volumes", Number(data.totalVolumes || 0)],
     ["Tipo Volume", data.volumeType],
+    ["Dimensões", data.volumeDimensions],
+    ["Porto de Embarque", data.portOfLoading],
+    ["Porto de Descarga", data.portOfDischarge],
+    ["Transbordo", data.transshipment],
     ["Subtotal", localSubtotal], // Use local calculation
     ["Frete", Number(data.freight || 0)],
     ["Seguro", Number(data.insurance || 0)],

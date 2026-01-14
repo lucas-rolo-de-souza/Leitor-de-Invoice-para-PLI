@@ -7,6 +7,7 @@ import {
   COUNTRIES_LIST,
   VOLUME_TYPES_LIST,
 } from "../../../utils/validationConstants";
+import { convertWeight } from "../../../utils/converters";
 
 export const LogisticsSection: React.FC<SectionProps> = ({
   data,
@@ -23,63 +24,121 @@ export const LogisticsSection: React.FC<SectionProps> = ({
             Dados Logísticos
           </h4>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <div className="space-y-1">
               <label className="text-[10px] uppercase text-slate-400 font-bold ml-1">
                 Peso Líquido Total
               </label>
-              <div className="flex gap-2">
-                <ValidatedInput
-                  id="totalNetWeight"
-                  type="number"
-                  step="any"
-                  value={data.totalNetWeight || ""}
-                  onChange={(e) =>
-                    handleChange("totalNetWeight", e.target.value)
-                  }
-                  error={errors.totalNetWeight}
-                  isReadOnly={isReadOnly}
-                  placeholder="0.00"
-                />
-                <select
-                  disabled={isReadOnly}
-                  title="Unidade de Peso"
-                  aria-label="Unidade de Peso"
-                  value={data.weightUnit || "KG"}
-                  onChange={(e) => handleChange("weightUnit", e.target.value)}
-                  className={`w-20 px-2 rounded-m3-sm bg-surface-container-high border border-outline-variant/50 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 focus:bg-surface transition-all outline-none ${
-                    isReadOnly
-                      ? "cursor-default"
-                      : "cursor-pointer hover:bg-surface-container-highest hover:border-outline-variant"
-                  }`}
-                >
-                  <option value="KG">KG</option>
-                  <option value="LB">LB</option>
-                </select>
+              {/* Net Weight Card */}
+              <div className="bg-surface-container-high rounded-m3-md border border-outline-variant/50 overflow-hidden text-on-surface">
+                <div className="flex items-center px-1">
+                  <div className="flex-1">
+                    <ValidatedInput
+                      id="totalNetWeight"
+                      type="number"
+                      step="any"
+                      value={data.totalNetWeight || ""}
+                      onChange={(e) =>
+                        handleChange("totalNetWeight", e.target.value)
+                      }
+                      error={errors.totalNetWeight}
+                      isReadOnly={isReadOnly}
+                      placeholder="0.00"
+                      className="bg-transparent border-none focus:ring-0 px-3 py-2 text-lg font-bold text-on-surface placeholder:text-on-surface-variant/30"
+                    />
+                  </div>
+                  <div className="border-l border-outline-variant/50">
+                    <select
+                      disabled={isReadOnly}
+                      title="Unidade de Peso"
+                      aria-label="Unidade de Peso"
+                      value={data.weightUnit || "KG"}
+                      onChange={(e) =>
+                        handleChange("weightUnit", e.target.value)
+                      }
+                      className={`h-full px-3 py-2 bg-transparent text-sm font-bold text-on-surface-variant focus:bg-surface-container-highest transition-all outline-none cursor-pointer hover:text-primary ${
+                        isReadOnly ? "pointer-events-none" : ""
+                      }`}
+                    >
+                      <option value="KG">KG</option>
+                      <option value="LB">LB</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Converted Value Info Bar */}
+                <div className="bg-surface-container-highest/30 border-t border-outline-variant/50 px-3 py-1.5 flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">
+                    {(data.weightUnit || "KG") === "KG"
+                      ? "Em Libras"
+                      : "Em Quilos"}
+                  </span>
+                  <span className="text-xs font-mono font-medium text-on-surface-variant">
+                    {data.totalNetWeight
+                      ? convertWeight(
+                          data.totalNetWeight,
+                          data.weightUnit || "KG"
+                        ).toFixed(3)
+                      : "---"}
+                    <span className="ml-1 text-[10px] opacity-70">
+                      {(data.weightUnit || "KG") === "KG" ? "LB" : "KG"}
+                    </span>
+                  </span>
+                </div>
               </div>
             </div>
+
             <div className="space-y-1">
               <label className="text-[10px] uppercase text-slate-400 font-bold ml-1">
                 Peso Bruto Total
               </label>
-              <div className="flex gap-2">
-                <ValidatedInput
-                  id="totalGrossWeight"
-                  type="number"
-                  step="any"
-                  value={data.totalGrossWeight || ""}
-                  onChange={(e) =>
-                    handleChange("totalGrossWeight", e.target.value)
-                  }
-                  error={errors.totalGrossWeight}
-                  isReadOnly={isReadOnly}
-                  placeholder="0.00"
-                />
-                <div className="w-20 flex items-center justify-center bg-surface-container-high border border-outline-variant/50 rounded-m3-sm text-xs font-bold text-on-surface-variant select-none">
-                  {data.weightUnit || "KG"}
+              {/* Gross Weight Card */}
+              <div className="bg-surface-container-high rounded-m3-md border border-outline-variant/50 overflow-hidden text-on-surface">
+                <div className="flex items-center px-1">
+                  <div className="flex-1">
+                    <ValidatedInput
+                      id="totalGrossWeight"
+                      type="number"
+                      step="any"
+                      value={data.totalGrossWeight || ""}
+                      onChange={(e) =>
+                        handleChange("totalGrossWeight", e.target.value)
+                      }
+                      error={errors.totalGrossWeight}
+                      isReadOnly={isReadOnly}
+                      placeholder="0.00"
+                      className="bg-transparent border-none focus:ring-0 px-3 py-2 text-lg font-bold text-on-surface placeholder:text-on-surface-variant/30"
+                    />
+                  </div>
+                  <div className="border-l border-outline-variant/50">
+                    <div className="px-3 py-2 text-sm font-bold text-on-surface-variant select-none">
+                      {data.weightUnit || "KG"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Converted Value Info Bar */}
+                <div className="bg-surface-container-highest/30 border-t border-outline-variant/50 px-3 py-1.5 flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">
+                    {(data.weightUnit || "KG") === "KG"
+                      ? "Em Libras"
+                      : "Em Quilos"}
+                  </span>
+                  <span className="text-xs font-mono font-medium text-on-surface-variant">
+                    {data.totalGrossWeight
+                      ? convertWeight(
+                          data.totalGrossWeight,
+                          data.weightUnit || "KG"
+                        ).toFixed(3)
+                      : "---"}
+                    <span className="ml-1 text-[10px] opacity-70">
+                      {(data.weightUnit || "KG") === "KG" ? "LB" : "KG"}
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
+
             <div className="space-y-1">
               <Autocomplete
                 label="Tipo Volume"
@@ -90,6 +149,18 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 error={errors.volumeType}
                 isReadOnly={isReadOnly}
                 placeholder="Ex: Pallets"
+              />
+            </div>
+            <div className="space-y-1">
+              <ValidatedInput
+                label="Dimensões (LxWxH)"
+                id="volumeDimensions"
+                value={data.volumeDimensions || ""}
+                onChange={(e) =>
+                  handleChange("volumeDimensions", e.target.value)
+                }
+                isReadOnly={isReadOnly}
+                placeholder="ex: 120x80x150cm"
               />
             </div>
             <div className="space-y-1">
@@ -105,6 +176,68 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 placeholder="0"
               />
             </div>
+
+            <div className="col-span-2 mt-4 pt-4 border-t border-dashed border-outline-variant/30">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </div>
+                <h5 className="text-[11px] uppercase text-primary font-bold tracking-widest">
+                  Locais & Rota
+                </h5>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 pl-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <Autocomplete
+                    label="Porto de Embarque (Loading)"
+                    id="portOfLoading"
+                    options={[]} // Add relevant default ports if available
+                    value={data.portOfLoading || ""}
+                    onChange={(val) => handleChange("portOfLoading", val)}
+                    isReadOnly={isReadOnly}
+                    placeholder="Ex: Shanghai"
+                  />
+                  <Autocomplete
+                    label="Porto de Descarga (Discharge)"
+                    id="portOfDischarge"
+                    options={[]} // Add relevant default ports if available
+                    value={data.portOfDischarge || ""}
+                    onChange={(val) => handleChange("portOfDischarge", val)}
+                    isReadOnly={isReadOnly}
+                    placeholder="Ex: Santos"
+                  />
+                </div>
+                <Autocomplete
+                  label="Transbordo (Opcional)"
+                  id="transshipment"
+                  options={[
+                    { code: "Miami", name: "Miami" },
+                    { code: "Campinas", name: "Campinas (VCP)" },
+                    { code: "Guarulhos", name: "Guarulhos (GRU)" },
+                    { code: "Santos", name: "Santos (SSZ)" },
+                    { code: "New York", name: "New York (JFK/EWR)" },
+                  ]}
+                  value={data.transshipment || ""}
+                  onChange={(val) => handleChange("transshipment", val)}
+                  isReadOnly={isReadOnly}
+                  placeholder="Selecione o local de transbordo se houver"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -114,7 +247,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
             Termos de Comércio
           </h4>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <div className="col-span-2">
               <Autocomplete
                 label="Incoterm"

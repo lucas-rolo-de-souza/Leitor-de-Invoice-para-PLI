@@ -355,12 +355,16 @@ const App: React.FC = () => {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
             <div className="hidden md:flex items-center bg-surface-container-highest p-1.5 rounded-m3-full border border-outline-variant/30">
               <button
                 type="button"
                 onClick={handleExportPDF}
                 className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-error hover:shadow-sm transition-all"
                 title={t.app.actions.exportPDF}
+                aria-label={t.app.actions.exportPDF}
               >
                 <FileText className="w-4 h-4" />
               </button>
@@ -370,6 +374,7 @@ const App: React.FC = () => {
                 onClick={handleExportExcel}
                 className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-primary hover:shadow-sm transition-all"
                 title={t.app.actions.exportExcel}
+                aria-label={t.app.actions.exportExcel}
               >
                 <Download className="w-4 h-4" />
               </button>

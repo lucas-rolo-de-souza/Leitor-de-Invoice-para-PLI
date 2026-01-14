@@ -136,6 +136,10 @@ export type InvoiceData = {
   weightUnit: "KG" | "LB" | null;
   totalVolumes: number | string | null;
   volumeType: string | null;
+  volumeDimensions: string | null;
+  transshipment: string | null;
+  portOfLoading: string | null;
+  portOfDischarge: string | null;
 
   currency: string;
   subtotal: number | string | null;
@@ -173,6 +177,10 @@ export const initialInvoiceData: InvoiceData = {
   weightUnit: "KG",
   totalVolumes: "",
   volumeType: "",
+  volumeDimensions: "",
+  transshipment: "",
+  portOfLoading: "",
+  portOfDischarge: "",
 
   currency: "USD",
   subtotal: "",

@@ -22,6 +22,10 @@ export const mockInvoiceData: InvoiceData = {
   weightUnit: "KG",
   totalVolumes: 10,
   volumeType: "BOXES",
+  volumeDimensions: "50x50x50 cm",
+  transshipment: "Miami",
+  portOfLoading: "Shanghai",
+  portOfDischarge: "Santos",
 
   currency: "USD",
   subtotal: 33500.0,
