@@ -7,6 +7,8 @@ import {
   CURRENCIES_LIST,
   PAYMENT_TERMS_LIST,
 } from "../../../utils/validationConstants";
+import { SectionHeader } from "../../ui/SectionHeader";
+import { useTranslation } from "../../../hooks/useTranslation";
 
 export const FinancialSummary: React.FC<SectionProps> = ({
   data,
@@ -15,20 +17,18 @@ export const FinancialSummary: React.FC<SectionProps> = ({
   isReadOnly,
   calculatedTotals,
 }) => {
+  const t = useTranslation();
+
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 mb-6 border-b border-dashed border-outline-variant/30 pb-2">
-        <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
-          <Calculator className="w-3.5 h-3.5" />
-        </div>
-        <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-          Valores Totais
-        </h4>
-      </div>
+      <SectionHeader
+        title={t.editor.financials.title}
+        icon={<Calculator className="w-3.5 h-3.5" />}
+      />
 
       <div className="space-y-4 mb-6">
         <Autocomplete
-          label="Condição Pagamento *"
+          label={t.editor.financials.paymentTerms + " *"}
           id="paymentTerms"
           options={PAYMENT_TERMS_LIST}
           value={data.paymentTerms || ""}
@@ -38,7 +38,7 @@ export const FinancialSummary: React.FC<SectionProps> = ({
           placeholder="Net 30..."
         />
         <Autocomplete
-          label="Moeda *"
+          label={t.editor.financials.currency + " *"}
           id="currency"
           options={CURRENCIES_LIST}
           value={data.currency || ""}
@@ -52,7 +52,7 @@ export const FinancialSummary: React.FC<SectionProps> = ({
       <div className="bg-surface-container rounded-m3-md p-4 space-y-3 border border-outline-variant/30">
         <div className="flex justify-between items-center text-xs">
           <label className="text-on-surface-variant font-bold">
-            Subtotal (Calculado)
+            {t.editor.financials.subtotal}
           </label>
           <div className="w-32">
             <ValidatedInput
@@ -71,7 +71,9 @@ export const FinancialSummary: React.FC<SectionProps> = ({
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-on-surface-variant">Frete (+)</label>
+          <label className="text-on-surface-variant">
+            {t.editor.financials.freight}
+          </label>
           <div className="w-32">
             <ValidatedInput
               minimal
@@ -87,7 +89,9 @@ export const FinancialSummary: React.FC<SectionProps> = ({
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-on-surface-variant">Seguro (+)</label>
+          <label className="text-on-surface-variant">
+            {t.editor.financials.insurance}
+          </label>
           <div className="w-32">
             <ValidatedInput
               minimal
@@ -103,7 +107,9 @@ export const FinancialSummary: React.FC<SectionProps> = ({
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <label className="text-on-surface-variant">Outros (+)</label>
+          <label className="text-on-surface-variant">
+            {t.editor.financials.others}
+          </label>
           <div className="w-32">
             <ValidatedInput
               minimal
@@ -120,7 +126,7 @@ export const FinancialSummary: React.FC<SectionProps> = ({
 
         <div className="border-t border-outline-variant/30 my-2 pt-3 flex justify-between items-center">
           <label className="text-sm font-bold text-on-surface">
-            Total Geral
+            {t.editor.financials.grandTotal}
           </label>
           <div className="w-36">
             <ValidatedInput

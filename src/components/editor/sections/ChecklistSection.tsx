@@ -1,5 +1,6 @@
 import React from "react";
 import { ScrollText, Check, X, AlertTriangle, ArrowRight } from "lucide-react";
+import { useTranslation } from "../../../hooks/useTranslation";
 
 export type ChecklistItem = {
   id: string;
@@ -17,6 +18,8 @@ type ChecklistSectionProps = {
 export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
   checklist,
 }) => {
+  const t = useTranslation();
+
   const handleScrollToField = (id: string) => {
     // Map checklist IDs to DOM element IDs
     const fieldMap: Record<string, string> = {
@@ -72,10 +75,10 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
         </div>
         <div>
           <h3 className="text-sm font-bold text-on-surface uppercase tracking-wide">
-            Relatório de Conformidade
+            {t.editor.compliance.reportTitle}
           </h3>
           <p className="text-[10px] text-on-surface-variant font-medium">
-            Validação Art. 557 Regulamento Aduaneiro
+            {t.editor.compliance.subtitle}
           </p>
         </div>
       </div>
@@ -128,7 +131,7 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
                     onClick={() => handleScrollToField(item.id)}
                     className="self-start sm:self-center text-[10px] font-bold px-3 py-1.5 rounded-m3-full flex items-center gap-1.5 border transition-all bg-surface border-outline-variant text-primary hover:border-primary hover:bg-surface-container-highest hover:shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   >
-                    Corrigir <ArrowRight className="w-3 h-3" />
+                    {t.editor.compliance.fix} <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
               </div>
@@ -138,7 +141,7 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
                 <div className="mt-3 bg-surface-container border border-outline-variant/30 rounded-m3-sm p-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <span className="block text-[9px] uppercase font-bold text-on-surface-variant mb-1">
-                      Esperado
+                      {t.editor.compliance.expected}
                     </span>
                     <span className="text-xs text-on-surface font-medium">
                       {item.expected}
@@ -146,7 +149,7 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
                   </div>
                   <div>
                     <span className="block text-[9px] uppercase font-bold text-on-surface-variant mb-1">
-                      Status Atual
+                      {t.editor.compliance.currentStatus}
                     </span>
                     <span className="text-xs text-on-surface font-mono bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/30 inline-block">
                       {item.details}

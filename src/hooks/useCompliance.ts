@@ -1,4 +1,4 @@
-// Version: 1.05.00.39
+// Version: 1.05.00.40
 import { useMemo } from "react";
 import { InvoiceData } from "../types";
 import {
@@ -13,12 +13,15 @@ import {
   COUNTRIES_LIST,
 } from "../utils/validationConstants";
 import { ncmService } from "../services/ncmService";
+import { useTranslation } from "../hooks/useTranslation";
 
 /**
  * Hook to handle Customs Compliance (Art. 557) logic.
  * Generates field error map and a detailed conformity checklist.
  */
 export const useCompliance = (data: InvoiceData) => {
+  const t = useTranslation();
+
   // 1. Field Level Errors (for Input highlighting)
   const fieldErrors = useMemo(() => {
     const errs: Record<string, string | null> = {};
@@ -26,21 +29,29 @@ export const useCompliance = (data: InvoiceData) => {
     const check = (
       field: string,
       value: any,
-      msg: string = "Campo obrigatório."
+      msg: string = t.editor.items.validation.required
     ) => {
       if (isFieldInvalid(value)) errs[field] = msg;
     };
 
     // Identifiers
-    check("invoiceNumber", data.invoiceNumber, "Número da fatura ausente.");
-    check("packingListNumber", data.packingListNumber, "Número do PL ausente.");
-    check("date", data.date, "Data de emissão obrigatória.");
-    check("dueDate", data.dueDate, "Data de vencimento obrigatória.");
+    check(
+      "invoiceNumber",
+      data.invoiceNumber,
+      t.editor.compliance.validation.invoiceNumber
+    );
+    check(
+      "packingListNumber",
+      data.packingListNumber,
+      t.editor.compliance.validation.packingListNumber
+    );
+    check("date", data.date, t.editor.compliance.validation.date);
+    check("dueDate", data.dueDate, t.editor.compliance.validation.dueDate);
 
     // String based comparison for dates (YYYY-MM-DD) avoids Timezone/UTC instantiation issues
     if (data.date && data.dueDate && !errs.date && !errs.dueDate) {
       if (data.dueDate < data.date) {
-        errs.dueDate = "Vencimento anterior à emissão.";
+        errs.dueDate = t.editor.compliance.validation.dueDateBeforeIssue;
       }
     }
 
@@ -48,71 +59,80 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "exporterName",
       data.exporterName,
-      "Nome do exportador não identificado."
+      t.editor.compliance.validation.exporterName
     );
     check(
       "exporterAddress",
       data.exporterAddress,
-      "Endereço do exportador incompleto."
+      t.editor.compliance.validation.exporterAddress
     );
     check(
       "importerName",
       data.importerName,
-      "Nome do importador não identificado."
+      t.editor.compliance.validation.importerName
     );
     check(
       "importerAddress",
       data.importerAddress,
-      "Endereço do importador incompleto."
+      t.editor.compliance.validation.importerAddress
     );
 
     // Logistics
     check(
       "totalNetWeight",
       data.totalNetWeight,
-      "Peso líquido total deve ser > 0."
+      t.editor.compliance.validation.netWeight
     );
     check(
       "totalGrossWeight",
       data.totalGrossWeight,
-      "Peso bruto total deve ser > 0."
+      t.editor.compliance.validation.grossWeight
     );
 
     if (!errs.totalNetWeight && !errs.totalGrossWeight) {
       if ((data.totalNetWeight || 0) > (data.totalGrossWeight || 0)) {
-        errs.totalNetWeight = "Peso Líquido > Peso Bruto.";
-        errs.totalGrossWeight = "Peso Bruto < Peso Líquido.";
+        errs.totalNetWeight = t.editor.compliance.validation.weightMismatch;
+        errs.totalGrossWeight =
+          t.editor.compliance.validation.weightMismatchReverse;
       }
     }
 
     check(
       "totalVolumes",
       data.totalVolumes,
-      "Quantidade de volumes deve ser > 0."
+      t.editor.compliance.validation.volumes
     );
-    check("volumeType", data.volumeType, "Tipo de volume não informado.");
+    check(
+      "volumeType",
+      data.volumeType,
+      t.editor.compliance.validation.volumeType
+    );
 
     // Trade & Cross-Field Logic
-    check("incoterm", data.incoterm, "Incoterm obrigatório.");
+    check(
+      "incoterm",
+      data.incoterm,
+      t.editor.compliance.validation.incotermRequired
+    );
     if (data.incoterm) {
       if (!isValidReference(data.incoterm, INCOTERMS_LIST)) {
         if (isValidReference(data.incoterm, CURRENCIES_LIST)) {
-          errs.incoterm = "Parece ser uma Moeda, não Incoterm.";
+          errs.incoterm = t.editor.compliance.validation.incotermIsCurrency;
         } else {
-          errs.incoterm = "Incoterm inválido.";
+          errs.incoterm = t.editor.compliance.validation.incotermInvalid;
         }
       }
     }
 
     // Countries
     const checkCountry = (field: string, val: string | null) => {
-      check(field, val, "País obrigatório.");
+      check(field, val, t.editor.compliance.validation.countryRequired);
       if (val) {
         if (!isValidReference(val, COUNTRIES_LIST)) {
           if (isValidReference(val, CURRENCIES_LIST)) {
-            errs[field] = "Parece ser uma Moeda.";
+            errs[field] = t.editor.compliance.validation.countryIsCurrency;
           } else {
-            errs[field] = "Código/Nome inválido (Use ISO-3166).";
+            errs[field] = t.editor.compliance.validation.countryInvalid;
           }
         }
       }
@@ -125,30 +145,46 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "paymentTerms",
       data.paymentTerms,
-      "Condição de pagamento obrigatória."
+      t.editor.compliance.validation.paymentRequired
     );
     if (data.paymentTerms) {
       if (!isValidReference(data.paymentTerms, PAYMENT_TERMS_LIST)) {
-        errs.paymentTerms = "Condição não padronizada.";
+        errs.paymentTerms = t.editor.compliance.validation.paymentInvalid;
       }
     }
 
-    check("currency", data.currency, "Moeda obrigatória.");
+    check(
+      "currency",
+      data.currency,
+      t.editor.compliance.validation.currencyRequired
+    );
     if (data.currency) {
       if (!isValidReference(data.currency, CURRENCIES_LIST)) {
         if (isValidReference(data.currency, INCOTERMS_LIST)) {
-          errs.currency = "Parece ser um Incoterm.";
+          errs.currency = t.editor.compliance.validation.currencyIsIncoterm;
         } else {
-          errs.currency = "Código inválido (Use ISO-4217).";
+          errs.currency = t.editor.compliance.validation.currencyInvalid;
         }
       }
     }
 
-    check("subtotal", data.subtotal, "Subtotal inválido.");
-    check("grandTotal", data.grandTotal, "Total geral inválido.");
+    check(
+      "subtotal",
+      data.subtotal,
+      t.editor.compliance.validation.subtotalInvalid
+    );
+    check(
+      "grandTotal",
+      data.grandTotal,
+      t.editor.compliance.validation.grandTotalInvalid
+    );
 
     return errs;
-  }, [data]);
+  }, [
+    data,
+    t.editor.items.validation.required,
+    t.editor.compliance.validation,
+  ]);
 
   // 2. Item Level Swapped Field Detection
   const itemIssues = useMemo(() => {
@@ -160,20 +196,20 @@ export const useCompliance = (data: InvoiceData) => {
         const cleanPN = item.partNumber.replace(/\D/g, "");
         if (cleanPN.length === 8 && ncmService.getDescription(cleanPN)) {
           issues.push(
-            `Item ${idx + 1}: Part Number '${
-              item.partNumber
-            }' parece um NCM válido.`
+            `Item ${idx + 1}: Part Number '${item.partNumber}' ${
+              t.editor.compliance.validation.itemPartNumberPossibleNcm
+            }`
           );
         }
       }
       if (item.ncm && /[a-zA-Z]/.test(item.ncm)) {
         issues.push(
-          `Item ${idx + 1}: NCM contém letras, verifique se não houve troca.`
+          `Item ${idx + 1}: ${t.editor.compliance.validation.itemNcmHasLetters}`
         );
       }
     });
     return issues;
-  }, [data.lineItems]);
+  }, [data.lineItems, t.editor.compliance.validation]);
 
   // 3. High Level Checklist
   const checklist = useMemo(() => {
@@ -218,26 +254,26 @@ export const useCompliance = (data: InvoiceData) => {
         ? "ok"
         : "invalid";
     const descMsg = allItemsHaveDescription
-      ? "Itens descritos."
+      ? t.editor.compliance.checklist.goods.success
       : items.some((i) => (i.description?.length || 0) > 254)
-      ? "Descrição excede 254 caracteres."
-      : "Descrição ausente.";
+      ? t.editor.compliance.checklist.goods.errorLength
+      : t.editor.compliance.checklist.goods.missing;
 
     // NCM Check
     const validNcms = items.length > 0 && items.every((i) => isValidNCM(i.ncm));
     let ncmStatus = "ok";
-    let ncmMsg = "NCMs válidos.";
+    let ncmMsg = t.editor.compliance.checklist.ncm.success;
     if (items.length === 0) {
       ncmStatus = "missing";
-      ncmMsg = "Sem itens.";
+      ncmMsg = t.editor.compliance.checklist.ncm.missing;
     } else if (!validNcms) {
       ncmStatus = "invalid";
-      ncmMsg = "NCM inválido em alguns itens.";
+      ncmMsg = t.editor.compliance.checklist.ncm.invalid;
     }
 
     if (itemIssues.length > 0) {
       ncmStatus = "warning";
-      ncmMsg = "Possível inversão de campos detectada.";
+      ncmMsg = t.editor.compliance.checklist.ncm.warning;
     }
 
     // STRICT PLI Validation Check (Mirroring PLIValidator.ts)
@@ -264,19 +300,20 @@ export const useCompliance = (data: InvoiceData) => {
     });
 
     // --- Status Determination for PLI ---
-    // If ANY item fails strict PLI check, the whole "Technical Detail" section is invalid/warning.
-
     let pliStatus = "ok";
-    let pliMsg = "Detalhamento técnico completo.";
+    let pliMsg = t.editor.compliance.checklist.pli.success;
     let pliDetails = "OK";
 
     if (items.length === 0) {
       pliStatus = "missing";
-      pliMsg = "Sem itens para validar.";
+      pliMsg = t.editor.compliance.checklist.pli.missing;
       pliDetails = "-";
     } else if (itemsInvalidPli.length > 0) {
       pliStatus = "invalid";
-      pliMsg = `Erros em ${itemsInvalidPli.length} itens (Formato/Tam./Tipo).`;
+      pliMsg = `${t.editor.compliance.checklist.pli.error.replace(
+        "Erros em itens",
+        `Erros em ${itemsInvalidPli.length} itens`
+      )}`;
 
       // Hint for the first invalid item
       const i = itemsInvalidPli[0];
@@ -290,146 +327,155 @@ export const useCompliance = (data: InvoiceData) => {
       // limit hint length
       if (hint.length > 15) hint = hint.substring(0, 15);
 
-      pliDetails = `Verif. Item ${items.indexOf(i) + 1}: ${hint}...`;
+      pliDetails = `${t.editor.compliance.checklist.pli.hint} ${
+        items.indexOf(i) + 1
+      }: ${hint}...`;
     }
+
+    const missingName = t.app.status.docNoNumber || "Nome Ausente";
 
     return [
       createCheck(
         "exporter",
-        "I - Exportador",
+        t.editor.compliance.checklist.exporter.title,
         !fieldErrors.exporterName && !fieldErrors.exporterAddress,
         data.exporterName,
-        "Exportador identificado.",
-        "Dados do exportador incompletos.",
-        "Exportador não encontrado.",
-        "Nome completo e endereço.",
-        !data.exporterName ? "Nome Ausente" : "OK"
+        t.editor.compliance.checklist.exporter.success,
+        t.editor.compliance.checklist.exporter.error,
+        t.editor.compliance.checklist.exporter.missing,
+        t.editor.compliance.checklist.exporter.expected,
+        !data.exporterName ? missingName : "OK"
       ),
 
       createCheck(
         "importer",
-        "II - Importador",
+        t.editor.compliance.checklist.importer.title,
         !fieldErrors.importerName && !fieldErrors.importerAddress,
         data.importerName,
-        "Importador identificado.",
-        "Dados do importador incompletos.",
-        "Importador não encontrado.",
-        "Nome completo e endereço.",
-        !data.importerName ? "Nome Ausente" : "OK"
+        t.editor.compliance.checklist.importer.success,
+        t.editor.compliance.checklist.importer.error,
+        t.editor.compliance.checklist.importer.missing,
+        t.editor.compliance.checklist.importer.expected,
+        !data.importerName ? missingName : "OK"
       ),
 
       {
         id: "spec",
-        title: "III - Mercadorias",
+        title: t.editor.compliance.checklist.goods.title,
         status: descStatus,
         msg: descMsg,
-        expected: "Descrição completa (Max 254).",
+        expected: t.editor.compliance.checklist.goods.expected,
         details: `${items.length} itens.`,
       },
 
       {
         id: "ncm",
-        title: "IV - Classificação Fiscal",
+        title: t.editor.compliance.checklist.ncm.title,
         status: ncmStatus,
         msg: ncmMsg,
-        expected: "NCM 8 dígitos.",
-        details: itemIssues.length > 0 ? itemIssues[0] : "Obrigatório.",
+        expected: t.editor.compliance.checklist.ncm.expected,
+        details:
+          itemIssues.length > 0
+            ? itemIssues[0]
+            : t.editor.items.validation.required,
       },
 
       {
         id: "pli_details",
-        title: "IX - Detalhamento Técnico (PLI)",
+        title: t.editor.compliance.checklist.pli.title,
         status: pliStatus,
         msg: pliMsg,
-        expected: "Campos obrigatórios, numéricos e limites.",
+        expected: t.editor.compliance.checklist.pli.expected,
         details: pliDetails,
       },
 
       createCheck(
         "volumes",
-        "V - Volumes",
+        t.editor.compliance.checklist.volumes.title,
         !fieldErrors.totalVolumes && !fieldErrors.volumeType,
         data.totalVolumes,
-        "Volumes OK.",
-        "Erro nos volumes.",
-        "Volumes ausentes.",
-        "Qtd e Tipo.",
+        t.editor.compliance.checklist.volumes.success,
+        t.editor.compliance.checklist.volumes.error,
+        t.editor.compliance.checklist.volumes.missing,
+        t.editor.compliance.checklist.volumes.expected,
         `Qtd: ${data.totalVolumes || "-"}`
       ),
 
       createCheck(
         "gross_weight",
-        "VI - Peso Bruto",
+        t.editor.compliance.checklist.grossWeight.title,
         !fieldErrors.totalGrossWeight,
         data.totalGrossWeight,
-        "Peso Bruto OK.",
+        t.editor.compliance.checklist.grossWeight.success,
         fieldErrors.totalGrossWeight || "Erro.",
-        "Ausente.",
-        "PB > 0.",
+        t.editor.compliance.checklist.grossWeight.missing,
+        t.editor.compliance.checklist.grossWeight.expected,
         `PB: ${data.totalGrossWeight}`
       ),
 
       createCheck(
         "net_weight",
-        "VII - Peso Líquido",
+        t.editor.compliance.checklist.netWeight.title,
         !fieldErrors.totalNetWeight,
         data.totalNetWeight,
-        "Peso Líquido OK.",
+        t.editor.compliance.checklist.netWeight.success,
         fieldErrors.totalNetWeight || "Erro.",
-        "Ausente.",
-        "PL > 0.",
+        t.editor.compliance.checklist.netWeight.missing,
+        t.editor.compliance.checklist.netWeight.expected,
         `PL: ${data.totalNetWeight}`
       ),
 
       createCheck(
         "origin",
-        "VIII - País Origem",
+        t.editor.compliance.checklist.origin.title,
         !fieldErrors.countryOfOrigin,
         data.countryOfOrigin,
-        "Origem válida.",
-        fieldErrors.countryOfOrigin || "Inválido.",
-        "Ausente.",
-        "ISO 3166-3.",
+        t.editor.compliance.checklist.origin.success,
+        fieldErrors.countryOfOrigin ||
+          t.editor.compliance.checklist.origin.invalid,
+        t.editor.compliance.checklist.origin.missing,
+        t.editor.compliance.checklist.origin.expected,
         `${data.countryOfOrigin || "-"}`
       ),
 
       createCheck(
         "payment",
-        "XIII - Pagamento",
+        t.editor.compliance.checklist.payment.title,
         !fieldErrors.paymentTerms,
         data.paymentTerms,
-        "Condição definida.",
-        fieldErrors.paymentTerms || "Inválido.",
-        "Ausente.",
-        "Ex: Net 30, Antecipado.",
+        t.editor.compliance.checklist.payment.success,
+        fieldErrors.paymentTerms ||
+          t.editor.compliance.checklist.payment.invalid,
+        t.editor.compliance.checklist.payment.missing,
+        t.editor.compliance.checklist.payment.expected,
         `${data.paymentTerms || "-"}`
       ),
 
       createCheck(
         "currency",
-        "XIII - Moeda",
+        t.editor.compliance.checklist.currency.title,
         !fieldErrors.currency,
         data.currency,
-        "Moeda definida.",
-        fieldErrors.currency || "Inválido.",
-        "Ausente.",
-        "ISO 4217 (USD, EUR).",
+        t.editor.compliance.checklist.currency.success,
+        fieldErrors.currency || t.editor.compliance.checklist.currency.invalid,
+        t.editor.compliance.checklist.currency.missing,
+        t.editor.compliance.checklist.currency.expected,
         `${data.currency || "-"}`
       ),
 
       createCheck(
         "incoterm",
-        "XIV - Incoterm",
+        t.editor.compliance.checklist.incoterm.title,
         !fieldErrors.incoterm,
         data.incoterm,
-        "Incoterm válido.",
-        fieldErrors.incoterm || "Inválido.",
-        "Ausente.",
-        "Sigla válida.",
+        t.editor.compliance.checklist.incoterm.success,
+        fieldErrors.incoterm || t.editor.compliance.checklist.incoterm.invalid,
+        t.editor.compliance.checklist.incoterm.missing,
+        t.editor.compliance.checklist.incoterm.expected,
         `${data.incoterm || "-"}`
       ),
     ];
-  }, [data, fieldErrors, itemIssues]);
+  }, [data, fieldErrors, itemIssues, t]);
 
   const compliancePercentage = useMemo(() => {
     if (checklist.length === 0) return 0;
