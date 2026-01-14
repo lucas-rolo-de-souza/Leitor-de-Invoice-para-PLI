@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowRight, MapPin, Building2 } from "lucide-react";
 import { ValidatedInput, ValidatedTextArea } from "../../ui/FormElements";
 import { SectionProps } from "./types";
+import { useTranslation } from "../../../hooks/useTranslation";
 
 export const EntitiesSection: React.FC<SectionProps> = ({
   data,
@@ -9,6 +10,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
   errors,
   isReadOnly,
 }) => {
+  const t = useTranslation();
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 gap-12 relative">
       {/* Visual connector for desktop */}
@@ -23,7 +25,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
             <Building2 className="w-3.5 h-3.5" />
           </div>
           <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-            Exportador (Seller)
+            {t.editor.entities.exporterTitle}
           </h4>
         </div>
 
@@ -34,7 +36,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
             onChange={(e) => handleChange("exporterName", e.target.value)}
             error={errors.exporterName}
             isReadOnly={isReadOnly}
-            placeholder="Nome da Empresa Exportadora"
+            placeholder={t.editor.entities.exporterNamePlaceholder}
             className="font-bold"
           />
           <div className="relative">
@@ -44,7 +46,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
               onChange={(e) => handleChange("exporterAddress", e.target.value)}
               error={errors.exporterAddress}
               isReadOnly={isReadOnly}
-              placeholder="Endereço completo..."
+              placeholder={t.editor.entities.addressPlaceholder}
               className="pl-9 bg-slate-50/50"
             />
             <MapPin className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
@@ -59,7 +61,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
             <Building2 className="w-3.5 h-3.5" />
           </div>
           <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-            Importador (Buyer)
+            {t.editor.entities.importerTitle}
           </h4>
         </div>
 
@@ -70,7 +72,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
             onChange={(e) => handleChange("importerName", e.target.value)}
             error={errors.importerName}
             isReadOnly={isReadOnly}
-            placeholder="Nome da Empresa Importadora"
+            placeholder={t.editor.entities.importerNamePlaceholder}
             className="font-bold"
           />
           <div className="relative">
@@ -80,7 +82,7 @@ export const EntitiesSection: React.FC<SectionProps> = ({
               onChange={(e) => handleChange("importerAddress", e.target.value)}
               error={errors.importerAddress}
               isReadOnly={isReadOnly}
-              placeholder="Endereço completo..."
+              placeholder={t.editor.entities.addressPlaceholder}
               className="pl-9 bg-slate-50/50"
             />
             <MapPin className="w-4 h-4 text-slate-300 absolute left-3 top-3" />

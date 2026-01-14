@@ -9,6 +9,7 @@ import {
   VOLUME_TYPES_LIST,
 } from "../../../utils/validationConstants";
 import { convertWeight } from "../../../utils/converters";
+import { useTranslation } from "../../../hooks/useTranslation";
 
 export const LogisticsSection: React.FC<SectionProps> = ({
   data,
@@ -16,6 +17,8 @@ export const LogisticsSection: React.FC<SectionProps> = ({
   errors,
   isReadOnly,
 }) => {
+  const t = useTranslation();
+
   return (
     <section>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -26,14 +29,14 @@ export const LogisticsSection: React.FC<SectionProps> = ({
               <Truck className="w-3.5 h-3.5" />
             </div>
             <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-              Dados Logísticos
+              {t.editor.logistics.sectionTitle}
             </h4>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <div className="space-y-1">
               <label className="text-[10px] uppercase text-slate-400 font-bold ml-1">
-                Peso Líquido Total
+                {t.editor.logistics.netWeight}
               </label>
               {/* Net Weight Card */}
               <div className="bg-surface-container-high rounded-m3-md border border-outline-variant/50 overflow-hidden text-on-surface">
@@ -56,8 +59,8 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                   <div className="border-l border-outline-variant/50">
                     <select
                       disabled={isReadOnly}
-                      title="Unidade de Peso"
-                      aria-label="Unidade de Peso"
+                      title={t.editor.logistics.weightUnit}
+                      aria-label={t.editor.logistics.weightUnit}
                       value={data.weightUnit || "KG"}
                       onChange={(e) =>
                         handleChange("weightUnit", e.target.value)
@@ -76,8 +79,8 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 <div className="bg-surface-container-highest/30 border-t border-outline-variant/50 px-3 py-1.5 flex justify-between items-center">
                   <span className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">
                     {(data.weightUnit || "KG") === "KG"
-                      ? "Em Libras"
-                      : "Em Quilos"}
+                      ? t.editor.logistics.inPounds
+                      : t.editor.logistics.inKilos}
                   </span>
                   <span className="text-xs font-mono font-medium text-on-surface-variant">
                     {data.totalNetWeight
@@ -96,7 +99,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
 
             <div className="space-y-1">
               <label className="text-[10px] uppercase text-slate-400 font-bold ml-1">
-                Peso Bruto Total
+                {t.editor.logistics.grossWeight}
               </label>
               {/* Gross Weight Card */}
               <div className="bg-surface-container-high rounded-m3-md border border-outline-variant/50 overflow-hidden text-on-surface">
@@ -127,8 +130,8 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 <div className="bg-surface-container-highest/30 border-t border-outline-variant/50 px-3 py-1.5 flex justify-between items-center">
                   <span className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">
                     {(data.weightUnit || "KG") === "KG"
-                      ? "Em Libras"
-                      : "Em Quilos"}
+                      ? t.editor.logistics.inPounds
+                      : t.editor.logistics.inKilos}
                   </span>
                   <span className="text-xs font-mono font-medium text-on-surface-variant">
                     {data.totalGrossWeight
@@ -146,31 +149,31 @@ export const LogisticsSection: React.FC<SectionProps> = ({
             </div>
             <div className="space-y-1">
               <Autocomplete
-                label="Tipo Volume"
+                label={t.editor.logistics.volumeType}
                 id="volumeType"
                 options={VOLUME_TYPES_LIST}
                 value={data.volumeType || ""}
                 onChange={(val) => handleChange("volumeType", val)}
                 error={errors.volumeType}
                 isReadOnly={isReadOnly}
-                placeholder="Ex: Pallets"
+                placeholder={t.editor.logistics.volumeTypePlaceholder}
               />
             </div>
             <div className="space-y-1">
               <ValidatedInput
-                label="Dimensões (LxWxH)"
+                label={t.editor.logistics.dimensions}
                 id="volumeDimensions"
                 value={data.volumeDimensions || ""}
                 onChange={(e) =>
                   handleChange("volumeDimensions", e.target.value)
                 }
                 isReadOnly={isReadOnly}
-                placeholder="ex: 120x80x150cm"
+                placeholder={t.editor.logistics.dimensionsPlaceholder}
               />
             </div>
             <div className="space-y-1">
               <ValidatedInput
-                label="Qtd Volumes"
+                label={t.editor.logistics.totalVolumes}
                 id="totalVolumes"
                 type="number"
                 step="any"
@@ -201,14 +204,14 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                   </svg>
                 </div>
                 <h5 className="text-[11px] uppercase text-primary font-bold tracking-widest">
-                  Locais & Rota
+                  {t.editor.logistics.placesRoute}
                 </h5>
               </div>
 
               <div className="grid grid-cols-1 gap-3 pl-1">
                 <div className="grid grid-cols-2 gap-3">
                   <Autocomplete
-                    label="Porto de Embarque (Loading)"
+                    label={t.editor.logistics.loadingPort}
                     id="portOfLoading"
                     options={[]} // Add relevant default ports if available
                     value={data.portOfLoading || ""}
@@ -217,7 +220,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                     placeholder="Ex: Shanghai"
                   />
                   <Autocomplete
-                    label="Porto de Descarga (Discharge)"
+                    label={t.editor.logistics.dischargePort}
                     id="portOfDischarge"
                     options={[]} // Add relevant default ports if available
                     value={data.portOfDischarge || ""}
@@ -227,7 +230,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                   />
                 </div>
                 <Autocomplete
-                  label="Transbordo (Opcional)"
+                  label={t.editor.logistics.transshipment}
                   id="transshipment"
                   options={[
                     { code: "Miami", name: "Miami" },
@@ -239,7 +242,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                   value={data.transshipment || ""}
                   onChange={(val) => handleChange("transshipment", val)}
                   isReadOnly={isReadOnly}
-                  placeholder="Selecione o local de transbordo se houver"
+                  placeholder={t.editor.logistics.transshipmentPlaceholder}
                 />
               </div>
             </div>
@@ -253,57 +256,57 @@ export const LogisticsSection: React.FC<SectionProps> = ({
               <Globe className="w-3.5 h-3.5" />
             </div>
             <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-              Termos de Comércio
+              {t.editor.logistics.tradeTerms}
             </h4>
           </div>
 
           <div className="grid grid-cols-2 gap-x-6 gap-y-5">
             <div className="col-span-2">
               <Autocomplete
-                label="Incoterm"
+                label={t.editor.logistics.incoterm}
                 id="incoterm"
                 options={INCOTERMS_LIST}
                 value={data.incoterm || ""}
                 onChange={(val) => handleChange("incoterm", val)}
                 error={errors.incoterm}
                 isReadOnly={isReadOnly}
-                placeholder="Selecione (EXW, FOB...)"
+                placeholder={t.editor.logistics.incotermPlaceholder}
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
               <Autocomplete
-                label="País de Origem"
+                label={t.editor.logistics.origin}
                 id="countryOfOrigin"
                 options={COUNTRIES_LIST}
                 value={data.countryOfOrigin || ""}
                 onChange={(val) => handleChange("countryOfOrigin", val)}
                 error={errors.countryOfOrigin}
                 isReadOnly={isReadOnly}
-                placeholder="País de Fabricação"
+                placeholder={t.editor.logistics.originPlaceholder}
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
               <Autocomplete
-                label="País de Aquisição"
+                label={t.editor.logistics.acquisition}
                 id="countryOfAcquisition"
                 options={COUNTRIES_LIST}
                 value={data.countryOfAcquisition || ""}
                 onChange={(val) => handleChange("countryOfAcquisition", val)}
                 error={errors.countryOfAcquisition}
                 isReadOnly={isReadOnly}
-                placeholder="País do Vendedor"
+                placeholder={t.editor.logistics.acquisitionPlaceholder}
               />
             </div>
             <div className="col-span-2">
               <Autocomplete
-                label="País de Procedência"
+                label={t.editor.logistics.provenance}
                 id="countryOfProvenance"
                 options={COUNTRIES_LIST}
                 value={data.countryOfProvenance || ""}
                 onChange={(val) => handleChange("countryOfProvenance", val)}
                 error={errors.countryOfProvenance}
                 isReadOnly={isReadOnly}
-                placeholder="País de Embarque"
+                placeholder={t.editor.logistics.provenancePlaceholder}
               />
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Calendar, FileText } from "lucide-react";
 import { ValidatedInput } from "../../ui/FormElements";
 import { SectionProps } from "./types";
+import { useTranslation } from "../../../hooks/useTranslation";
 
 export const HeaderSection: React.FC<SectionProps> = ({
   data,
@@ -9,6 +10,7 @@ export const HeaderSection: React.FC<SectionProps> = ({
   errors,
   isReadOnly,
 }) => {
+  const t = useTranslation();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,13 +34,13 @@ export const HeaderSection: React.FC<SectionProps> = ({
           <FileText className="w-3.5 h-3.5" />
         </div>
         <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-          Identificação do Documento
+          {t.editor.header.sectionTitle}
         </h4>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
         <ValidatedInput
-          label="Fatura Comercial"
+          label={t.editor.header.invoiceNumber}
           id="invoiceNumber"
           value={data.invoiceNumber || ""}
           onChange={(e) => handleChange("invoiceNumber", e.target.value)}
@@ -48,7 +50,7 @@ export const HeaderSection: React.FC<SectionProps> = ({
           className="font-bold text-lg"
         />
         <ValidatedInput
-          label="Packing List"
+          label={t.editor.header.packingList}
           id="packingListNumber"
           value={data.packingListNumber || ""}
           onChange={(e) => handleChange("packingListNumber", e.target.value)}
@@ -59,7 +61,7 @@ export const HeaderSection: React.FC<SectionProps> = ({
 
         <div className="relative group">
           <ValidatedInput
-            label="Data Emissão"
+            label={t.editor.header.issueDate}
             id="date"
             ref={dateInputRef}
             type="date"
@@ -83,7 +85,7 @@ export const HeaderSection: React.FC<SectionProps> = ({
 
         <div className="relative group">
           <ValidatedInput
-            label="Data Vencimento"
+            label={t.editor.header.dueDate}
             id="dueDate"
             ref={dueDateInputRef}
             type="date"

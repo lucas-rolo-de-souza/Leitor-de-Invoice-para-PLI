@@ -97,22 +97,20 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 {t.editor.items.columns.partNumber} *
               </th>
               <th className="px-3 py-3 w-28">
-                {t.editor.fields.productCode || "Cód. Prod."} *
+                {t.editor.fields.productCode} *
               </th>
               <th className="px-3 py-3 min-w-[200px]">
                 {t.editor.items.columns.description} *
               </th>
-              <th className="px-3 py-3 w-32">
-                {t.editor.fields.ncm || "NCM"} *
-              </th>
+              <th className="px-3 py-3 w-32">{t.editor.fields.ncm} *</th>
               <th className="px-3 py-3 w-28">
-                {t.editor.fields.taxClassificationDetail || "Detalhe"} *
+                {t.editor.fields.taxClassificationDetail} *
               </th>
               <th className="px-3 py-3 w-28 text-right">
                 {t.editor.items.columns.qty} *
               </th>
               <th className="px-3 py-3 w-24 text-center">
-                {t.editor.fields.unitMeasure || "Und"} *
+                {t.editor.fields.unitMeasure} *
               </th>
               <th className="px-3 py-3 w-28 text-right">
                 {t.editor.items.columns.unitPrice} *
@@ -340,7 +338,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             ? "text-on-surface-variant/30 cursor-not-allowed"
                             : "text-on-surface-variant hover:text-primary hover:bg-primary/10"
                         }`}
-                        title="Duplicar Item"
+                        title={t.editor.items.actions.duplicate}
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
@@ -355,7 +353,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         title={
                           missingMandatory
                             ? "Existem campos obrigatórios ou erros de formato. Clique para editar."
-                            : "Editar Detalhes"
+                            : t.editor.items.actions.editDetails
                         }
                       >
                         {missingMandatory && !isReadOnly ? (
@@ -377,7 +375,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           ? "text-on-surface-variant/30 cursor-not-allowed"
                           : "text-on-surface-variant hover:text-error hover:bg-error/10"
                       }`}
-                      title="Remover Item"
+                      title={t.editor.items.actions.remove}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -391,9 +389,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   colSpan={12}
                   className="px-4 py-16 text-center text-slate-400"
                 >
-                  <p className="italic">
-                    {t.editor.items.empty || "Lista vazia"}
-                  </p>
+                  <p className="italic">{t.editor.items.empty}</p>
                 </td>
               </tr>
             )}
@@ -485,7 +481,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         ? "text-on-error-container bg-error-container"
                         : "text-primary bg-primary-container shadow-sm"
                     }`}
-                    title={t.editor.items.actions.addItem || "Editar"}
+                    title={t.editor.items.actions.edit}
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -506,8 +502,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 <div>
                   <h3 className="font-bold text-on-surface flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    {t.editor.items.actions.edit || "Editor de Item"} #
-                    {editingIndex + 1}
+                    {t.editor.items.actions.editDetails} #{editingIndex + 1}
                   </h3>
                   <p className="text-xs text-on-surface-variant font-mono mt-0.5">
                     {data.lineItems[editingIndex].partNumber}
@@ -528,8 +523,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   {/* 0. General Data (Added to ensure completeness in Modal View) */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
-                      <Package className="w-3.5 h-3.5" />{" "}
-                      {t.editor.sections.items || "Dados do Item"}
+                      <Package className="w-3.5 h-3.5" /> {t.editor.items.title}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <ValidatedInput
@@ -580,7 +574,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !isValidNCM(data.lineItems[editingIndex].ncm)
-                            ? t.editor.items.validation.ncm || "Inválido"
+                            ? t.editor.items.validation.ncm
                             : null
                         }
                         isReadOnly={isReadOnly}
@@ -602,7 +596,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             ) ||
                             (data.lineItems[editingIndex].description?.length ||
                               0) > 254
-                              ? "Max 254 chars"
+                              ? t.editor.items.validation.max254
                               : null
                           }
                           isReadOnly={isReadOnly}
@@ -629,7 +623,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             .taxClassificationDetail ||
                           data.lineItems[editingIndex].taxClassificationDetail!
                             .length > 4
-                            ? "Max 4 chars"
+                            ? t.editor.items.validation.max4
                             : null
                         }
                         isReadOnly={isReadOnly}
@@ -640,11 +634,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   {/* 0.1 Quantitatives */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                      <Scale className="w-3.5 h-3.5" /> Quantitativos e Valores
+                      <Scale className="w-3.5 h-3.5" />{" "}
+                      {t.editor.items.quantitives}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <ValidatedInput
-                        label="Quantidade *"
+                        label={t.editor.items.columns.qty + " *"}
                         type="number"
                         step="any"
                         value={data.lineItems[editingIndex].quantity || ""}
@@ -657,14 +652,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !isNumeric(data.lineItems[editingIndex].quantity)
-                            ? "Numérico"
+                            ? t.editor.items.validation.numeric
                             : null
                         }
                         isReadOnly={isReadOnly}
                         className="text-right"
                       />
                       <ValidatedInput
-                        label="Unidade *"
+                        label={t.editor.fields.unitMeasure + " *"}
                         value={data.lineItems[editingIndex].unitMeasure || ""}
                         onChange={(e) =>
                           onLineItemChange(
@@ -677,14 +672,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           isFieldInvalid(
                             data.lineItems[editingIndex].unitMeasure
                           )
-                            ? "Erro"
+                            ? t.editor.items.validation.required
                             : null
                         }
                         isReadOnly={isReadOnly}
                         className="text-center uppercase"
                       />
                       <ValidatedInput
-                        label="Valor Unit. *"
+                        label={t.editor.items.columns.unitPrice + " *"}
                         type="number"
                         step="any"
                         value={data.lineItems[editingIndex].unitPrice || ""}
@@ -697,14 +692,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !isNumeric(data.lineItems[editingIndex].unitPrice)
-                            ? "Numérico"
+                            ? t.editor.items.validation.numeric
                             : null
                         }
                         isReadOnly={isReadOnly}
                         className="text-right"
                       />
                       <ValidatedInput
-                        label="Peso Líq. Unit. *"
+                        label={t.editor.items.columns.unitNetWeight + " *"}
                         type="number"
                         step="any"
                         value={data.lineItems[editingIndex].unitNetWeight || ""}
@@ -717,14 +712,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !isNumeric(data.lineItems[editingIndex].unitNetWeight)
-                            ? "Numérico"
+                            ? t.editor.items.validation.numeric
                             : null
                         }
                         isReadOnly={isReadOnly}
                         className="text-right"
                       />
                       <ValidatedInput
-                        label="Item Total Net Weight"
+                        label={t.editor.items.columns.weight}
                         type="number"
                         step="any"
                         value={data.lineItems[editingIndex].netWeight || ""}
@@ -737,7 +732,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         }
                         error={
                           !isNumeric(data.lineItems[editingIndex].netWeight)
-                            ? "Numérico"
+                            ? t.editor.items.validation.numeric
                             : null
                         }
                         isReadOnly={isReadOnly}
@@ -749,12 +744,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   {/* 1. Manufacturer Section */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                      <Settings className="w-3.5 h-3.5" /> Dados do Fabricante
-                      (Mandatório)
+                      <Settings className="w-3.5 h-3.5" />{" "}
+                      {t.editor.items.manufacturerData}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <ValidatedInput
-                        label="Código Fabricante *"
+                        label={t.editor.items.fields.manufacturerCode + " *"}
                         value={
                           data.lineItems[editingIndex].manufacturerCode || ""
                         }
@@ -770,13 +765,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           !isNumeric(
                             data.lineItems[editingIndex].manufacturerCode
                           )
-                            ? "Numérico Obrigatório"
+                            ? t.editor.items.validation.numericRequired
                             : null
                         }
                         isReadOnly={isReadOnly}
                       />
                       <ValidatedInput
-                        label="Ref. Fabricante *"
+                        label={t.editor.items.fields.manufacturerRef + " *"}
                         value={
                           data.lineItems[editingIndex].manufacturerRef || ""
                         }
@@ -791,13 +786,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           isFieldInvalid(
                             data.lineItems[editingIndex].manufacturerRef
                           )
-                            ? "Obrigatório"
+                            ? t.editor.items.validation.required
                             : null
                         }
                         isReadOnly={isReadOnly}
                       />
                       <ValidatedInput
-                        label="Matéria Prima"
+                        label={t.editor.items.fields.rawMaterial}
                         value={data.lineItems[editingIndex].material || ""}
                         onChange={(e) =>
                           onLineItemChange(
