@@ -1,7 +1,7 @@
 {
   "name": "leitor-faturas-ai",
   "displayName": "Leitor de Faturas AI",
-  "version": "1.05.00.14",
+  "version": "1.05.00.41",
   "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
   "keywords": [
     "invoice",
@@ -32,8 +32,10 @@
     "url": "https://github.com/your-username/leitor-faturas-ai.git"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "node scripts/update-version.js && vite",
+    "build": "node scripts/update-version.js && tsc && vite build",
+    "update-version": "node scripts/update-version.js",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -41,21 +43,28 @@
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.555.0",
-    "react": "^19.2.0",
+    "nvm": "^0.0.4",
+    "react": "^19.2.3",
     "react-dom": "^19.2.0",
-    "xlsx": "^0.18.5"
+    "react-dropzone": "^14.3.8",
+    "type-check": "^0.4.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@types/node": "^25.0.3",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.7.0",
-    "autoprefixer": "^10.0.0",
-    "postcss": "^8.0.0",
-    "tailwindcss": "^3.0.0",
-    "typescript": "^5.0.0",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
     "vite": "^7.3.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.12.0"
   }
 }
