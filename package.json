@@ -1,7 +1,7 @@
 {
   "name": "leitor-faturas-ai",
   "displayName": "Leitor de Faturas AI",
-  "version": "1.05.00.39",
+  "version": "1.05.00.40",
   "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
   "keywords": [
     "invoice",

@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.05.00.40] - 2026-01-14
+
+### Added
+
+- **Design Doc**: Created dedicated `DESIGN_SYSTEM.md` to document the "Flux" design philosophy and Material Design 3 specifications.
+- **Documentation**: Updated `ARCHITECTURE.md` to reflect recent codebase refactoring (Types vs Interfaces), inclusion of `LogViewer`, and new documentation structure.
+
+### Changed
+
+- **Version Bump**: Incrementing version to reflect documentation consolidation.
+
 ## [1.05.00.39] - 2026-01-13
 
 ### Changed
