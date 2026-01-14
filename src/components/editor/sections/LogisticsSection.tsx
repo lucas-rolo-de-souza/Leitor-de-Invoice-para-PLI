@@ -1,4 +1,5 @@
 import React from "react";
+import { Truck, Globe } from "lucide-react";
 import { ValidatedInput } from "../../ui/FormElements";
 import { Autocomplete } from "../../ui/Autocomplete";
 import { SectionProps } from "./types";
@@ -20,9 +21,14 @@ export const LogisticsSection: React.FC<SectionProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Left Column: Logistics */}
         <div>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
-            Dados Logísticos
-          </h4>
+          <div className="flex items-center gap-2 mb-6 border-b border-dashed border-outline-variant/30 pb-2">
+            <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
+              <Truck className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
+              Dados Logísticos
+            </h4>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             <div className="space-y-1">
@@ -138,7 +144,6 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 </div>
               </div>
             </div>
-
             <div className="space-y-1">
               <Autocomplete
                 label="Tipo Volume"
@@ -243,11 +248,16 @@ export const LogisticsSection: React.FC<SectionProps> = ({
 
         {/* Right Column: Trade Terms */}
         <div>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
-            Termos de Comércio
-          </h4>
+          <div className="flex items-center gap-2 mb-6 border-b border-dashed border-outline-variant/30 pb-2">
+            <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
+              <Globe className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
+              Termos de Comércio
+            </h4>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
             <div className="col-span-2">
               <Autocomplete
                 label="Incoterm"

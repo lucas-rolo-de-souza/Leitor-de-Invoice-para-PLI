@@ -2,6 +2,7 @@ import React from "react";
 import { ValidatedInput } from "../../ui/FormElements";
 import { Autocomplete } from "../../ui/Autocomplete";
 import { SectionProps } from "./types";
+import { Calculator } from "lucide-react";
 import {
   CURRENCIES_LIST,
   PAYMENT_TERMS_LIST,
@@ -16,9 +17,14 @@ export const FinancialSummary: React.FC<SectionProps> = ({
 }) => {
   return (
     <div className="w-full">
-      <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-6">
-        Valores Totais
-      </h4>
+      <div className="flex items-center gap-2 mb-6 border-b border-dashed border-outline-variant/30 pb-2">
+        <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
+          <Calculator className="w-3.5 h-3.5" />
+        </div>
+        <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
+          Valores Totais
+        </h4>
+      </div>
 
       <div className="space-y-4 mb-6">
         <Autocomplete

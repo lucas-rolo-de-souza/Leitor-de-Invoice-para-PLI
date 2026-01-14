@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.05.00.41] - 2026-01-14
+
+### Fixed
+
+- **Mobile Responsiveness**: Fixed critical layout breakage in the Logistics Section, ensuring proper grids on small screens.
+- **Accessibility**: Added `aria-label` to all icon-only buttons (Export PDF/Excel, Theme Toggle).
+
+### Added
+
+- **Editor Theme Toggle**: Added theme switch control to the Editor header for better context consistency.
+
 ## [1.05.00.40] - 2026-01-14
 
 ### Added

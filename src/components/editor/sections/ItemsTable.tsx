@@ -65,9 +65,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   return (
     <section className="flex flex-col relative" id="items-section">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-          {t.editor.items.title}
-        </h4>
+        <div className="flex items-center gap-2 border-b border-dashed border-outline-variant/30 pb-2">
+          <div className="p-1.5 rounded-full bg-primary-container/30 text-primary">
+            <Package className="w-3.5 h-3.5" />
+          </div>
+          <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
+            {t.editor.items.title}
+          </h4>
+        </div>
         <button
           type="button"
           onClick={onAdd}

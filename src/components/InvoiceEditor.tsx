@@ -118,7 +118,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Compliance Status Bar (Floating & Glass) */}
-      <div className="bg-surface-container-high/90 backdrop-blur-md rounded-m3-lg shadow-elevation-2 border border-outline-variant/50 p-2 pl-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-[80px] z-30 transition-all mx-2 sm:mx-0">
+      <div className="bg-surface-container-high/90 backdrop-blur-md rounded-m3-lg shadow-elevation-2 border border-outline-variant/50 p-2 pl-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all mx-2 sm:mx-0">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full border shadow-sm transition-all duration-300 ${
