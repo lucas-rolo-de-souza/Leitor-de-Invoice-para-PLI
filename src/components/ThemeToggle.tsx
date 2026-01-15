@@ -9,14 +9,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className={`
-        p-2.5 rounded-pill transition-all duration-300 border
-        ${
-          theme === "dark"
-            ? "bg-surface-highlight border-border text-yellow-400 hover:text-yellow-300 hover:bg-surface hover:shadow-glow-yellow"
-            : "bg-surface border-border text-text-tertiary hover:text-primary hover:bg-surface-container hover:border-primary/30"
-        }
-      `}
+      className="p-2 rounded-m3-full text-on-surface hover:bg-on-surface/10 transition-colors duration-200 group"
       title={
         theme === "dark"
           ? t.app.actions.toggleTheme.light
@@ -29,9 +22,9 @@ export function ThemeToggle() {
       }
     >
       {theme === "dark" ? (
-        <Moon className="w-5 h-5 fill-current" />
+        <Moon className="w-5 h-5 text-primary group-hover:rotate-12 transition-transform duration-300" />
       ) : (
-        <Sun className="w-5 h-5 fill-current" />
+        <Sun className="w-5 h-5 text-amber-500 group-hover:rotate-90 transition-transform duration-500" />
       )}
     </button>
   );

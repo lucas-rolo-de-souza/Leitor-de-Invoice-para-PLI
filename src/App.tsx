@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FileUpload } from "./components/FileUpload";
+import { LoginScreen } from "./components/auth/LoginScreen";
+import { useAuth } from "./contexts/AuthContext";
 import { InvoiceEditor } from "./components/InvoiceEditor";
 import { VersionBar } from "./components/ui/VersionBar";
 import { extractInvoiceData } from "./services/geminiService";
@@ -34,6 +36,7 @@ import {
   FileJson,
   X,
   History,
+  LogOut,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
@@ -155,7 +158,23 @@ const App: React.FC = () => {
       }),
     [activeData]
   );
+
   const isValid = validationErrors.length === 0;
+
+  // --- Auth Protection ---
+  const { user, signOut, isLoading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   // --- Landing Screen (Premium Enterprise Design) ---
   if (!hasProcessed) {
@@ -212,6 +231,13 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <ThemeToggle />
+                <button
+                  onClick={signOut}
+                  className="text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors"
+                  title={t.app.actions.signOut || "Sair"}
+                >
+                  {t.app.actions.signOut || "Sair"}
+                </button>
               </div>
             </div>
           </div>
@@ -355,8 +381,14 @@ const App: React.FC = () => {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <ThemeToggle />
+            <div className="hidden md:block flex items-center gap-2">
+              <button
+                onClick={signOut}
+                className="ml-2 p-2 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-error transition-colors"
+                title={t.app.actions.signOut || "Sair"}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
             <div className="hidden md:flex items-center bg-surface-container-highest p-1.5 rounded-m3-full border border-outline-variant/30">
               <button
@@ -408,23 +440,15 @@ const App: React.FC = () => {
       {/* Functional Footer - Floating Pill */}
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[50]">
         <div className="flex items-center gap-1 bg-surface-container-highest/90 backdrop-blur-md border border-outline-variant shadow-md px-5 py-2.5 rounded-m3-full text-xs font-medium text-on-surface hover:scale-105 transition-transform duration-300 cursor-default">
-          <button
-            onClick={() => setShowChangelog(true)}
-            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
-          >
-            <GitCommit className="w-3.5 h-3.5 text-primary" />
-            <span>v{APP_VERSION}</span>
-          </button>
+          <ThemeToggle />
 
           <div className="w-px h-4 bg-on-surface/20"></div>
 
-          <button
-            onClick={() => setShowLogs(true)}
-            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
-          >
-            <FileJson className="w-3.5 h-3.5 text-outline" />
-            <span>{t.app.footer.logs}</span>
-          </button>
+          <LanguageSelector
+            currentLang={language}
+            onLanguageChange={setLanguage}
+            placement="top"
+          />
 
           <div className="w-px h-4 bg-on-surface/20"></div>
 
@@ -438,15 +462,17 @@ const App: React.FC = () => {
 
           <div className="w-px h-4 bg-on-surface/20"></div>
 
-          <LanguageSelector
-            currentLang={language}
-            onLanguageChange={setLanguage}
-            placement="top"
-          />
+          <UsageWidget refreshTrigger={refreshUsage} fullSize={true} />
 
           <div className="w-px h-4 bg-on-surface/20"></div>
 
-          <UsageWidget refreshTrigger={refreshUsage} fullSize={true} />
+          <button
+            onClick={() => setShowLogs(true)}
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
+          >
+            <FileJson className="w-3.5 h-3.5 text-outline" />
+            <span>{t.app.footer.logs}</span>
+          </button>
 
           <div className="w-px h-4 bg-on-surface/20"></div>
 
@@ -460,6 +486,16 @@ const App: React.FC = () => {
               {t.app.status.dbReady}
             </span>
           </div>
+
+          <div className="w-px h-4 bg-on-surface/20"></div>
+
+          <button
+            onClick={() => setShowChangelog(true)}
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
+          >
+            <GitCommit className="w-3.5 h-3.5 text-primary" />
+            <span>v{APP_VERSION}</span>
+          </button>
         </div>
       </footer>
 

@@ -40,7 +40,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
-    "jspdf": "^3.0.4",
+    "@supabase/supabase-js": "^2.90.1",
+    "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.555.0",
     "nvm": "^0.0.4",

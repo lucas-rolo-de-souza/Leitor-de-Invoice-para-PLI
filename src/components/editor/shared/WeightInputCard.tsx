@@ -1,5 +1,5 @@
 import React from "react";
-import { ValidatedInput } from "../../ui/FormElements";
+import { ErrorTooltip } from "../../ui/FormElements";
 import { convertWeight } from "../../../utils/converters";
 import { useTranslation } from "../../../hooks/useTranslation";
 
@@ -27,23 +27,33 @@ export const WeightInputCard: React.FC<WeightInputCardProps> = ({
 
   return (
     <div className="space-y-1">
-      <label className="text-[10px] uppercase text-slate-400 font-bold ml-1">
+      <label className="text-[10px] uppercase text-on-surface-variant font-bold ml-1">
         {label}
       </label>
       {/* Weight Card */}
-      <div className="bg-surface-container-high rounded-m3-md border border-outline-variant/50 overflow-hidden text-on-surface">
+      <div
+        className={`rounded-m3-md border overflow-hidden text-on-surface transition-all duration-200 ${
+          isReadOnly
+            ? "bg-surface-container-highest/30 border-transparent cursor-default"
+            : `bg-surface-container-high ${
+                error
+                  ? "border-error focus-within:ring-1 focus-within:ring-error"
+                  : "border-outline-variant/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
+              }`
+        }`}
+      >
         <div className="flex items-center px-1">
-          <div className="flex-1">
-            <ValidatedInput
+          <div className="flex-1 relative">
+            <input
               type="number"
               step="any"
               value={value || ""}
               onChange={(e) => onChangeValue(e.target.value)}
-              error={error}
-              isReadOnly={isReadOnly}
+              disabled={isReadOnly}
               placeholder="0.00"
-              className="bg-transparent border-none focus:ring-0 px-3 py-2 text-lg font-bold text-on-surface placeholder:text-on-surface-variant/30"
+              className="w-full bg-transparent border-none outline-none focus:ring-0 px-3 py-3 text-lg font-bold text-on-surface placeholder:text-on-surface-variant/30"
             />
+            {error && !isReadOnly && <ErrorTooltip message={error} />}
           </div>
           <div className="border-l border-outline-variant/50">
             <select

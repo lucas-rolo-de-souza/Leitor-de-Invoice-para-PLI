@@ -22,6 +22,7 @@ export const translations = {
           light: "Mudar para Modo Claro",
           dark: "Mudar para Modo Escuro",
         },
+        signOut: "Sair",
       },
       status: {
         docNoNumber: "Documento Sem Número",
@@ -389,6 +390,7 @@ export const translations = {
           light: "Switch to Light Mode",
           dark: "Switch to Dark Mode",
         },
+        signOut: "Sign Out",
       },
       status: {
         docNoNumber: "Document without Number",

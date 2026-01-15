@@ -632,7 +632,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                   {/* 0.1 Quantitatives */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
                       <Scale className="w-3.5 h-3.5" />{" "}
                       {t.editor.items.quantitives}
                     </div>
@@ -742,7 +742,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                   {/* 1. Manufacturer Section */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
                       <Settings className="w-3.5 h-3.5" />{" "}
                       {t.editor.items.manufacturerData}
                     </div>
@@ -821,7 +821,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                   {/* 2. Regulatory Acts */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
                       <ShieldCheck className="w-3.5 h-3.5" /> Atos Legais
                       (Regulatório)
                     </div>
@@ -1033,14 +1033,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                   {/* 3. Attributes Section */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
                       <Database className="w-3.5 h-3.5" /> Atributos e
                       Especificações
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">
                           Atributo 1
                         </span>
                         <ValidatedInput
@@ -1087,7 +1087,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                       </div>
                       <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">
                           Atributo 2
                         </span>
                         <ValidatedInput
@@ -1134,7 +1134,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                       </div>
                       <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant/30 space-y-2">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">
                           Atributo 3
                         </span>
                         <ValidatedInput
@@ -1205,7 +1205,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
               <div className="p-4 border-t border-outline-variant/30 bg-surface-container flex justify-end">
                 <button
                   onClick={handleCloseModal}
-                  className="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors"
+                  className="bg-primary text-on-primary px-6 py-2 rounded-m3-full text-sm font-bold hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
                 >
                   Concluir Edição
                 </button>
