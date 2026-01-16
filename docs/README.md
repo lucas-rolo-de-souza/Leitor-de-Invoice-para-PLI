@@ -1,6 +1,6 @@
 # Invoice Reader AI (Leitor de Faturas) v1.05
 
-**Version:** 1.05.00.37
+**Version:** 1.05.00.42
 **Status:** Production Ready
 
 An intelligent, regulatory-compliant web application designed to automate the extraction, validation, and processing of **Commercial Invoices** and **Packing Lists** for international trade (specifically optimized for Brazilian Customs/Receita Federal).

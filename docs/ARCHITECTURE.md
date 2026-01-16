@@ -52,6 +52,7 @@ The project follows a feature-based and layered structure:
   - `geminiService.ts`: AI interaction with **Robust JSON Repair**.
   - `ncmService.ts`: Handling of large NCM datasets via Cache API.
 - **`utils/`**: Pure helper functions and constants.
+  - `converters.ts`: **New** engine for unit normalization (KG, LB, G, OZ) and currency handling.
 - **`types.ts`**: The single source of truth for the Data Model (`InvoiceData`).
 
 ## 🔄 Data Flow

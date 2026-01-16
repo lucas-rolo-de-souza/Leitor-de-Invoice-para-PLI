@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.05.00.42] - 2026-01-16
+
+### Fixed
+
+- **Weight Calculation**: Implemented `normalizeToKg` strategy to correctly sum weights of different units (KG, G, LB, OZ).
+- **Unit Updates**: Changing the weight unit now triggers an immediate recalculation of global totals.
+- **Error Visibility**: Resolved an issue where validation error messages were clipped or invisible in `WeightInputCard`. They now appear as a floating banner.
+
+### Added
+
+- **Localization**: Complete translation support for "Manufacturer Data" and "Legal Acts" sections in the Item Editor modal.
+
 ## [1.05.00.41] - 2026-01-14
 
 ### Fixed

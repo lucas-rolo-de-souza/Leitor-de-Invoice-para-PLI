@@ -389,7 +389,7 @@ export async function extractInvoiceData(
             typeof row[6] === "number" ? row[6] : parseFloat(row[6]) || 0,
           // Default fields
           productCode: null,
-          ncm: null,
+          ncm: row[8]?.toString() || null, // Capture NCM from column 8
           taxClassificationDetail: null,
           unitNetWeight: 0, // Calculated later
           manufacturerRef: row[7] || null,
@@ -507,12 +507,18 @@ function getLineItemsPrompt(): string {
   4. **Unit Price**: (Number) 
   5. **Total Value**: (Number)
   6. **Net Weight**: (Number) Total Net Weight for the line (Check Packing List if needed).
-  7. **Manufacturer Part Number**: (String or null) The Manufacturer/Seller's Part Number (Referência).
+  7. **Manufacturer Part Number**: (String or null) The Manufacturer/Seller's Part Number (Referência do Fabricante).
+  8. **NCM**: (String or null) The NCM (Nomenclatura Comum do Mercosul) or, if no NCM is found, the HS Code.
+
+  [ANTI-HALLUCINATION RULE FOR NCM]:
+  - ONLY extract the NCM/HS Code if it is EXPLICITLY written in the document for that specific line item.
+  - DO NOT attempt to classify, guess, or search for the NCM based on the description.
+  - If not explicitly found in the text, return \`null\`.
   
   [EXAMPLE OUTPUT]:
   [
-    ["iPhone 15 Pro Max 256GB", "BUYER-SKU-001", 50, "PCS", 1199.00, 59950.00, 12.5, "A2894"],
-    ["Samsung Galaxy S24 Ultra", "BUYER-SKU-002", 30, "PCS", 1299.00, 38970.00, 8.2, "SM-S928"]
+    ["iPhone 15 Pro Max 256GB", "BUYER-SKU-001", 50, "PCS", 1199.00, 59950.00, 12.5, "A2894", "8517.13.00"],
+    ["Samsung Galaxy S24 Ultra", "BUYER-SKU-002", 30, "PCS", 1299.00, 38970.00, 8.2, "SM-S928", null]
   ]
   
   RULES:
@@ -561,7 +567,7 @@ function postProcessInvoiceData(data: any): InvoiceData {
         weightUnit: "KG",
         // Enforce nulls just in case
         productCode: null,
-        ncm: null,
+        // NCM is now authorized to be populated from extraction
         taxClassificationDetail: null,
       };
     });

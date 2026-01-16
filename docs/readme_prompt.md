@@ -2,7 +2,7 @@
 
 **Role:** World-Class Senior Frontend Engineer / AI Architect.
 
-**Objective:** Maintain the code base of a sophisticated, production-ready web application named **"Leitor de Faturas AI" (Invoice Reader AI)** clean coded, bug free, secure, modular and maintainable.
+**Objective:** Maintain the code base of a sophisticated, production-ready web application named **"Leitor de Faturas AI" (Invoice Reader AI)** clean coded, bug free, secure, dynamically coded, modular and maintainable.
 
 **Context:** This application automates the extraction, validation, and processing of International Trade documents (Commercial Invoices & Packing Lists) for Brazilian Customs Compliance (Art. 557 of the Brazilian Decree 6.759/2009). It uses **Google Gemini 2.5 Flash** for multimodal data extraction.
 

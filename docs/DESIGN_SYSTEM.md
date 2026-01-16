@@ -65,6 +65,13 @@ A wrapper around standard inputs that handles:
 - Error checking (red border + helper text).
 - Success states.
 
+### `WeightInputCard` with Floating Error Banner
+
+A specialized input component for mass/weight that handles:
+
+- **Unit Selector**: Embedded dropdown (KG, LB, G, OZ).
+- **Absolute Error Positioning**: To prevent layout clipping in tight tables, validation errors appear as a **Floating Banner** (z-index 50) directly below the card, overlaying adjacent content if necessary. This ensures visibility without breaking the refined grid layout.
+
 ### `ThemeToggle`
 
 A specialized button that switches between `light` and `dark` classes on the `<html>` element. Persists preference to `localStorage`.

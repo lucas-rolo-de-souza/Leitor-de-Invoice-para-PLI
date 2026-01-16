@@ -69,3 +69,22 @@ The "SCUD" industry model requires over 30 specific data points per line item (e
   2.  **Detail Modal**: A focused overlay allowing editing of the "Extended" fields (Atos Legais, Attributes, Manufacturer Info).
 - **Validation**: The `validators.ts` logic was updated to enforce these extended fields as mandatory, even if they are hidden behind the modal (the table row highlights red if missing).
 - **Calculation**: Subtotals are now calculated locally to ensure that if a user edits Quantity or Price in the table, the financial summary updates immediately, guaranteeing mathematical consistency.
+
+## 8. Weight Calculation & Unit Normalization
+
+Dealing with international invoices involves mixed units (KG, LB, OZ, Grams).
+
+- **Problem**: A naive sum of `10 (KG)` + `1000 (G)` results in `1010`, which is physically incorrect.
+- **Strategy**:
+  - **Normalization**: All line item weights are converted to **Kilograms** (KG) before summation.
+    - `10 KG` -> `10.0`
+    - `1000 G` -> `1.0`
+  - **Summation**: The normalized values are added: `10.0 + 1.0 = 11.0 KG`.
+  - **Display**: The final total is converted to the user's preferred **Global Unit** (e.g., if user selected "LB", the internal 11.0 KG is displayed as ~24.25 LB).
+- **Helpers**: The `converters.ts` utility module was expanded with `normalizeToKg(val, unit)` and `convertFromKg(val, unit)` to centralize this logic.
+- **Trigger**: The `useInvoiceForm` hook monitors `weightUnit` changes to trigger immediate re-calculation.
+
+## 9. Error Display Strategy
+
+- **Constraint**: The `ItemsTable` cells often clip lengthy validation messages due to `overflow: hidden` or tight spacing.
+- **Solution**: We implemented an **Absolute Positioned Error Banner** (z-index 50) in `WeightInputCard`. Instead of pushing layout (reflow) or being hidden (clipped), the error message floats _above_ the surrounding elements, ensuring critical feedback is never missed by the user.
