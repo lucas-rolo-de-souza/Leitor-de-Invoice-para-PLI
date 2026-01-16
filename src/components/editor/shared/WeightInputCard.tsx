@@ -25,14 +25,20 @@ export const WeightInputCard: React.FC<WeightInputCardProps> = ({
   const t = useTranslation();
   const currentUnit = unit || "KG";
 
+  const preventNegativeInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "-" || e.key === "Minus") {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 relative group">
       <label className="text-[10px] uppercase text-on-surface-variant font-bold ml-1">
         {label}
       </label>
       {/* Weight Card */}
       <div
-        className={`rounded-m3-md border overflow-hidden text-on-surface transition-all duration-200 ${
+        className={`rounded-m3-md border overflow-visible text-on-surface transition-all duration-200 ${
           isReadOnly
             ? "bg-surface-container-highest/30 border-transparent cursor-default"
             : `bg-surface-container-high ${
@@ -47,6 +53,8 @@ export const WeightInputCard: React.FC<WeightInputCardProps> = ({
             <input
               type="number"
               step="any"
+              min={0}
+              onKeyDown={preventNegativeInput}
               value={value || ""}
               onChange={(e) => onChangeValue(e.target.value)}
               disabled={isReadOnly}
@@ -66,8 +74,18 @@ export const WeightInputCard: React.FC<WeightInputCardProps> = ({
                 isReadOnly ? "pointer-events-none" : ""
               }`}
             >
-              <option value="KG">KG</option>
-              <option value="LB">LB</option>
+              <option value="KG" className="bg-surface text-on-surface">
+                KG
+              </option>
+              <option value="LB" className="bg-surface text-on-surface">
+                LB
+              </option>
+              <option value="G" className="bg-surface text-on-surface">
+                G
+              </option>
+              <option value="OZ" className="bg-surface text-on-surface">
+                OZ
+              </option>
             </select>
           </div>
         </div>
@@ -75,18 +93,36 @@ export const WeightInputCard: React.FC<WeightInputCardProps> = ({
         {/* Converted Value Info Bar */}
         <div className="bg-surface-container-highest/30 border-t border-outline-variant/50 px-3 py-1.5 flex justify-between items-center">
           <span className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">
-            {currentUnit === "KG"
-              ? t.editor.logistics.inPounds
-              : t.editor.logistics.inKilos}
+            {["KG", "LB"].includes(currentUnit)
+              ? currentUnit === "KG"
+                ? t.editor.logistics.inPounds
+                : t.editor.logistics.inKilos
+              : currentUnit === "G"
+              ? "EM ONÇAS (OZ)"
+              : "EM GRAMAS (G)"}
           </span>
           <span className="text-xs font-mono font-medium text-on-surface-variant">
             {value ? convertWeight(value, currentUnit).toFixed(3) : "---"}
             <span className="ml-1 text-[10px] opacity-70">
-              {currentUnit === "KG" ? "LB" : "KG"}
+              {currentUnit === "KG"
+                ? "LB"
+                : currentUnit === "LB"
+                ? "KG"
+                : currentUnit === "G"
+                ? "OZ"
+                : "G"}
             </span>
           </span>
         </div>
       </div>
+      {error && !isReadOnly && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 animate-fadeIn">
+          <div className="bg-error text-on-error text-xs font-medium px-2 py-1.5 rounded-md shadow-lg flex items-center gap-1.5 border border-error-container">
+            <span className="bg-on-error/20 p-0.5 rounded-full">!</span>
+            {error}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

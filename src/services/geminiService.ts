@@ -558,6 +558,7 @@ function postProcessInvoiceData(data: any): InvoiceData {
         total: parseFloat(item.total) || 0,
         netWeight,
         unitNetWeight,
+        weightUnit: "KG",
         // Enforce nulls just in case
         productCode: null,
         ncm: null,

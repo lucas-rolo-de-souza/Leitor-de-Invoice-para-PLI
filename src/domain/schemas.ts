@@ -32,6 +32,7 @@ export const LineItemSchema = z.object({
 
   unitNetWeight: z.number().nullable().describe("Unit Net Weight"),
   netWeight: z.number().nullable().describe("Total Net Weight"),
+  weightUnit: z.string().nullable().describe("Weight Unit (KG, LB)"),
 
   manufacturer: z.string().nullable().describe("Manufacturer Name"),
 });

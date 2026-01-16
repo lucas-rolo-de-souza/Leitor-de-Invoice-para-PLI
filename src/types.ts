@@ -51,7 +51,18 @@ export type LineItem = {
    * Represents the Total Net Weight of the line item.
    * If extracted, this value takes precedence over unitNetWeight.
    */
+  /**
+   * PRIMARY WEIGHT FIELD FOR PLI.
+   * Represents the Total Net Weight of the line item.
+   * If extracted, this value takes precedence over unitNetWeight.
+   */
   netWeight: number | string | null;
+
+  /**
+   * Unit of Measure for the weight (KG, LB, etc).
+   * Defaults to 'KG' if not specified.
+   */
+  weightUnit: string | null;
 
   /**
    * NCM Code (Nomenclatura Comum do Mercosul).

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { InvoiceData, LineItem } from "../types";
+import { normalizeToKg, convertFromKg } from "../utils/converters";
 
 /**
  * Hook to manage Invoice Data Logic (Stateless / Controlled).
@@ -43,13 +44,15 @@ export const useInvoiceForm = (
       return sum + (isNaN(Number(val)) ? 0 : Number(val));
     }, 0);
 
-    const totalNetWeight = items.reduce((sum, item) => {
-      const val =
-        typeof item.netWeight === "string"
-          ? parseFloat(item.netWeight)
-          : item.netWeight;
-      return sum + (isNaN(Number(val)) ? 0 : Number(val));
+    const totalNetWeightInKiilos = items.reduce((sum, item) => {
+      const val = item.netWeight;
+      const unit = item.weightUnit || "KG";
+      const valInKg = normalizeToKg(val, unit);
+      return sum + valInKg;
     }, 0);
+
+    const targetUnit = data.weightUnit || "KG";
+    const totalNetWeight = convertFromKg(totalNetWeightInKiilos, targetUnit);
 
     // Calculate Grand Total
     const freight = Number(data.freight) || 0;
@@ -103,7 +106,26 @@ export const useInvoiceForm = (
     (field: keyof InvoiceData, value: string | number | null) => {
       if (isReadOnly) return;
 
-      let newData = { ...formData, [field]: value };
+      let safeValue = value;
+      // Enforce non-negative for top-level numeric fields
+      if (
+        [
+          "totalVolumes",
+          "totalGrossWeight",
+          "totalNetWeight",
+          "freight",
+          "insurance",
+          "otherCharges",
+          "tax",
+        ].includes(field as string) &&
+        typeof value === "string"
+      ) {
+        if (value.startsWith("-")) {
+          safeValue = value.replace(/-/g, "");
+        }
+      }
+
+      let newData = { ...formData, [field]: safeValue };
 
       // If changing financial fields, recalculate Grand Total immediately
       if (["freight", "insurance", "tax", "otherCharges"].includes(field)) {
@@ -132,8 +154,28 @@ export const useInvoiceForm = (
       if (isReadOnly) return;
 
       const newItems = [...(formData.lineItems || [])];
+
+      // Enforce non-negative values for specific numeric fields
+      let safeValue = value;
+      if (
+        [
+          "quantity",
+          "unitPrice",
+          "netWeight",
+          "unitNetWeight",
+          "manufacturerCode", // Usually numeric and positive
+        ].includes(field as string) &&
+        typeof value === "string"
+      ) {
+        // Allow empty string to pass through (controlled input)
+        // Check if it's a negative number string
+        if (value.startsWith("-")) {
+          safeValue = value.replace(/-/g, "");
+        }
+      }
+
       // @ts-ignore
-      newItems[index] = { ...newItems[index], [field]: value };
+      newItems[index] = { ...newItems[index], [field]: safeValue };
 
       // --- Atomic Item Calculations ---
       const item = newItems[index];
@@ -197,7 +239,8 @@ export const useInvoiceForm = (
         field === "unitPrice" ||
         field === "total" ||
         field === "netWeight" ||
-        field === "unitNetWeight"
+        field === "unitNetWeight" ||
+        field === "weightUnit"
       ) {
         newData = calculateGlobalTotals(newData);
       }
@@ -220,6 +263,7 @@ export const useInvoiceForm = (
       total: "",
       unitNetWeight: "",
       netWeight: "",
+      weightUnit: "KG",
       ncm: "",
       manufacturerCode: "",
       material: "",
@@ -327,9 +371,13 @@ export const useInvoiceForm = (
       (sum, i) => sum + (Number(i.quantity) || 0),
       0
     ),
-    totalNetWeight: (formData.lineItems || []).reduce(
-      (sum, i) => sum + (Number(i.netWeight) || 0),
-      0
+    totalNetWeight: convertFromKg(
+      (formData.lineItems || []).reduce((sum, item) => {
+        const val = item.netWeight;
+        const unit = item.weightUnit || "KG";
+        return sum + normalizeToKg(val, unit);
+      }, 0),
+      formData.weightUnit || "KG"
     ),
   };
 

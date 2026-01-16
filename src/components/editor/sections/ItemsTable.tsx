@@ -36,6 +36,7 @@ type ItemsTableProps = {
 };
 
 import { SectionHeader } from "../../ui/SectionHeader";
+import { WeightInputCard } from "../shared/WeightInputCard";
 
 export const ItemsTable: React.FC<ItemsTableProps> = ({
   data,
@@ -62,6 +63,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
     if (v === null || v === undefined || v === "") return false;
     const n = Number(v.toString().replace(",", "."));
     return !isNaN(n);
+  };
+
+  const preventNegativeInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "-" || e.key === "Minus") {
+      e.preventDefault();
+    }
   };
 
   return (
@@ -117,7 +124,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
               <th className="px-3 py-3 w-28 text-right">
                 {t.editor.items.columns.totalPrice}
               </th>
-              <th className="px-3 py-3 w-24 text-right">
+              <th className="px-3 py-3 w-32 text-right">
                 {t.editor.items.columns.weight}
               </th>
               <th className="px-3 py-3 w-24 text-center">
@@ -146,6 +153,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 // Removed Manufacturer Country Check as it's now cleared
 
                 !isNumeric(item.netWeight) ||
+                isFieldInvalid(item.weightUnit) ||
                 !isNumeric(item.quantity) ||
                 !isNumeric(item.unitPrice) ||
                 isFieldInvalid(item.unitMeasure);
@@ -253,6 +261,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       minimal
                       type="number"
                       step="any"
+                      min={0}
+                      onKeyDown={preventNegativeInput}
                       value={item.quantity || ""}
                       onChange={(e) =>
                         onLineItemChange(index, "quantity", e.target.value)
@@ -281,6 +291,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       minimal
                       type="number"
                       step="any"
+                      min={0}
+                      onKeyDown={preventNegativeInput}
                       value={item.unitPrice || ""}
                       onChange={(e) =>
                         onLineItemChange(index, "unitPrice", e.target.value)
@@ -310,19 +322,59 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   </td>
 
                   <td className="px-2 py-2">
-                    <ValidatedInput
-                      minimal
-                      type="number"
-                      step="any"
-                      value={item.netWeight || ""}
-                      onChange={(e) =>
-                        onLineItemChange(index, "netWeight", e.target.value)
-                      }
-                      error={!isNumeric(item.netWeight) ? "!" : null}
-                      isReadOnly={isReadOnly}
-                      placeholder="0.00"
-                      className="text-right"
-                    />
+                    <div className="flex items-center border rounded-m3-md bg-surface-container-high overflow-hidden border-outline-variant/30 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all h-9">
+                      <input
+                        type="number"
+                        step="any"
+                        min={0}
+                        onKeyDown={preventNegativeInput}
+                        value={item.netWeight || ""}
+                        onChange={(e) =>
+                          onLineItemChange(index, "netWeight", e.target.value)
+                        }
+                        placeholder="0.00"
+                        className="w-full min-w-[60px] bg-transparent border-none outline-none px-2 text-right font-mono text-sm text-on-surface"
+                      />
+                      <div className="border-l border-outline-variant/30 h-full flex items-center bg-surface-container-highest/30">
+                        <select
+                          value={item.weightUnit || "KG"}
+                          onChange={(e) =>
+                            onLineItemChange(
+                              index,
+                              "weightUnit",
+                              e.target.value
+                            )
+                          }
+                          className="h-full bg-transparent pl-1 pr-0.5 text-[11px] font-bold text-on-surface-variant cursor-pointer outline-none hover:text-primary appearance-none text-center min-w-[32px]"
+                          title={t.editor.logistics.weightUnit}
+                        >
+                          <option
+                            value="KG"
+                            className="bg-surface text-on-surface"
+                          >
+                            KG
+                          </option>
+                          <option
+                            value="LB"
+                            className="bg-surface text-on-surface"
+                          >
+                            LB
+                          </option>
+                          <option
+                            value="G"
+                            className="bg-surface text-on-surface"
+                          >
+                            G
+                          </option>
+                          <option
+                            value="OZ"
+                            className="bg-surface text-on-surface"
+                          >
+                            OZ
+                          </option>
+                        </select>
+                      </div>
+                    </div>
                   </td>
 
                   {/* Actions */}
@@ -385,7 +437,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             {(!data.lineItems || data.lineItems.length === 0) && (
               <tr>
                 <td
-                  colSpan={12}
+                  colSpan={13}
                   className="px-4 py-16 text-center text-slate-400"
                 >
                   <p className="italic">{t.editor.items.empty}</p>
@@ -410,7 +462,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             !item.manufacturerCode ||
             !isNumeric(item.manufacturerCode) ||
             !item.manufacturerRef ||
-            !isNumeric(item.netWeight);
+            !isNumeric(item.netWeight) ||
+            isFieldInvalid(item.weightUnit);
 
           return (
             <div
@@ -636,107 +689,118 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       <Scale className="w-3.5 h-3.5" />{" "}
                       {t.editor.items.quantitives}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <ValidatedInput
-                        label={t.editor.items.columns.qty + " *"}
-                        type="number"
-                        step="any"
-                        value={data.lineItems[editingIndex].quantity || ""}
-                        onChange={(e) =>
-                          onLineItemChange(
-                            editingIndex,
-                            "quantity",
-                            e.target.value
-                          )
-                        }
-                        error={
-                          !isNumeric(data.lineItems[editingIndex].quantity)
-                            ? t.editor.items.validation.numeric
-                            : null
-                        }
-                        isReadOnly={isReadOnly}
-                        className="text-right"
-                      />
-                      <ValidatedInput
-                        label={t.editor.fields.unitMeasure + " *"}
-                        value={data.lineItems[editingIndex].unitMeasure || ""}
-                        onChange={(e) =>
-                          onLineItemChange(
-                            editingIndex,
-                            "unitMeasure",
-                            e.target.value
-                          )
-                        }
-                        error={
-                          isFieldInvalid(
-                            data.lineItems[editingIndex].unitMeasure
-                          )
-                            ? t.editor.items.validation.required
-                            : null
-                        }
-                        isReadOnly={isReadOnly}
-                        className="text-center uppercase"
-                      />
-                      <ValidatedInput
-                        label={t.editor.items.columns.unitPrice + " *"}
-                        type="number"
-                        step="any"
-                        value={data.lineItems[editingIndex].unitPrice || ""}
-                        onChange={(e) =>
-                          onLineItemChange(
-                            editingIndex,
-                            "unitPrice",
-                            e.target.value
-                          )
-                        }
-                        error={
-                          !isNumeric(data.lineItems[editingIndex].unitPrice)
-                            ? t.editor.items.validation.numeric
-                            : null
-                        }
-                        isReadOnly={isReadOnly}
-                        className="text-right"
-                      />
-                      <ValidatedInput
-                        label={t.editor.items.columns.unitNetWeight + " *"}
-                        type="number"
-                        step="any"
-                        value={data.lineItems[editingIndex].unitNetWeight || ""}
-                        onChange={(e) =>
-                          onLineItemChange(
-                            editingIndex,
-                            "unitNetWeight",
-                            e.target.value
-                          )
-                        }
-                        error={
-                          !isNumeric(data.lineItems[editingIndex].unitNetWeight)
-                            ? t.editor.items.validation.numeric
-                            : null
-                        }
-                        isReadOnly={isReadOnly}
-                        className="text-right"
-                      />
-                      <ValidatedInput
-                        label={t.editor.items.columns.weight}
-                        type="number"
-                        step="any"
-                        value={data.lineItems[editingIndex].netWeight || ""}
-                        onChange={(e) =>
-                          onLineItemChange(
-                            editingIndex,
-                            "netWeight",
-                            e.target.value
-                          )
-                        }
-                        error={
-                          !isNumeric(data.lineItems[editingIndex].netWeight)
-                            ? t.editor.items.validation.numeric
-                            : null
-                        }
-                        isReadOnly={isReadOnly}
-                        className="text-right"
-                      />
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                      <div className="col-span-1 md:col-span-2">
+                        <ValidatedInput
+                          label={t.editor.items.columns.qty + " *"}
+                          type="number"
+                          step="any"
+                          min={0}
+                          onKeyDown={preventNegativeInput}
+                          value={data.lineItems[editingIndex].quantity || ""}
+                          onChange={(e) =>
+                            onLineItemChange(
+                              editingIndex,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                          error={
+                            !isNumeric(data.lineItems[editingIndex].quantity)
+                              ? t.editor.items.validation.numeric
+                              : null
+                          }
+                          isReadOnly={isReadOnly}
+                          className="text-right"
+                        />
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <ValidatedInput
+                          label={t.editor.fields.unitMeasure + " *"}
+                          value={data.lineItems[editingIndex].unitMeasure || ""}
+                          onChange={(e) =>
+                            onLineItemChange(
+                              editingIndex,
+                              "unitMeasure",
+                              e.target.value
+                            )
+                          }
+                          error={
+                            isFieldInvalid(
+                              data.lineItems[editingIndex].unitMeasure
+                            )
+                              ? t.editor.items.validation.required
+                              : null
+                          }
+                          isReadOnly={isReadOnly}
+                          className="text-center uppercase"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-2">
+                        <ValidatedInput
+                          label={t.editor.items.columns.unitPrice + " *"}
+                          type="number"
+                          step="any"
+                          min={0}
+                          onKeyDown={preventNegativeInput}
+                          value={data.lineItems[editingIndex].unitPrice || ""}
+                          onChange={(e) =>
+                            onLineItemChange(
+                              editingIndex,
+                              "unitPrice",
+                              e.target.value
+                            )
+                          }
+                          error={
+                            !isNumeric(data.lineItems[editingIndex].unitPrice)
+                              ? t.editor.items.validation.numeric
+                              : null
+                          }
+                          isReadOnly={isReadOnly}
+                          className="text-right"
+                        />
+                      </div>
+
+                      <div className="col-span-2 md:col-span-3">
+                        <WeightInputCard
+                          label={t.editor.items.columns.unitNetWeight + " *"}
+                          value={data.lineItems[editingIndex].unitNetWeight}
+                          unit={data.lineItems[editingIndex].weightUnit || "KG"}
+                          onChangeValue={(val) =>
+                            onLineItemChange(editingIndex, "unitNetWeight", val)
+                          }
+                          onChangeUnit={(val) =>
+                            onLineItemChange(editingIndex, "weightUnit", val)
+                          }
+                          error={
+                            !isNumeric(
+                              data.lineItems[editingIndex].unitNetWeight
+                            )
+                              ? t.editor.items.validation.numeric
+                              : null
+                          }
+                          isReadOnly={isReadOnly}
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-3">
+                        <WeightInputCard
+                          label={t.editor.items.columns.weight}
+                          value={data.lineItems[editingIndex].netWeight}
+                          unit={data.lineItems[editingIndex].weightUnit || "KG"}
+                          onChangeValue={(val) =>
+                            onLineItemChange(editingIndex, "netWeight", val)
+                          }
+                          onChangeUnit={(val) =>
+                            onLineItemChange(editingIndex, "weightUnit", val)
+                          }
+                          error={
+                            !isNumeric(data.lineItems[editingIndex].netWeight)
+                              ? t.editor.items.validation.numeric
+                              : null
+                          }
+                          isReadOnly={isReadOnly}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -803,7 +867,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         isReadOnly={isReadOnly}
                       />
                       <ValidatedInput
-                        label="País Fabricante"
+                        label={t.editor.items.fields.manufacturerCountry}
                         value={
                           data.lineItems[editingIndex].manufacturerCountry || ""
                         }
@@ -822,18 +886,18 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   {/* 2. Regulatory Acts */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/30 pb-2">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Atos Legais
-                      (Regulatório)
+                      <ShieldCheck className="w-3.5 h-3.5" />{" "}
+                      {t.editor.items.legalActs.title}
                     </div>
 
                     <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/30 space-y-3">
-                      <span className="text-xs font-bold text-brand-600">
-                        Ato Legal 1
+                      <span className="text-xs font-bold text-primary">
+                        {t.editor.items.legalActs.act1}
                       </span>
                       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                         <ValidatedInput
                           minimal
-                          label="Tipo"
+                          label={t.editor.items.legalActs.type}
                           value={
                             data.lineItems[editingIndex].legalAct1Type || ""
                           }
@@ -849,7 +913,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Emissor"
+                          label={t.editor.items.legalActs.issuer}
                           value={
                             data.lineItems[editingIndex].legalAct1Issuer || ""
                           }
@@ -865,7 +929,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Número"
+                          label={t.editor.items.legalActs.number}
                           value={
                             data.lineItems[editingIndex].legalAct1Number || ""
                           }
@@ -881,7 +945,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Ano"
+                          label={t.editor.items.legalActs.year}
                           value={
                             data.lineItems[editingIndex].legalAct1Year || ""
                           }
@@ -897,7 +961,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Ex"
+                          label={t.editor.items.legalActs.ex}
                           value={data.lineItems[editingIndex].legalAct1Ex || ""}
                           onChange={(e) =>
                             onLineItemChange(
@@ -911,7 +975,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Alíquota (%)"
+                          label={t.editor.items.legalActs.rate}
                           value={
                             data.lineItems[editingIndex].legalAct1Rate || ""
                           }
@@ -929,13 +993,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                     </div>
 
                     <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/30 space-y-3">
-                      <span className="text-xs font-bold text-slate-600">
-                        Ato Legal 2
+                      <span className="text-xs font-bold text-primary">
+                        {t.editor.items.legalActs.act2}
                       </span>
                       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                         <ValidatedInput
                           minimal
-                          label="Tipo"
+                          label={t.editor.items.legalActs.type}
                           value={
                             data.lineItems[editingIndex].legalAct2Type || ""
                           }
@@ -951,7 +1015,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Emissor"
+                          label={t.editor.items.legalActs.issuer}
                           value={
                             data.lineItems[editingIndex].legalAct2Issuer || ""
                           }
@@ -967,7 +1031,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Número"
+                          label={t.editor.items.legalActs.number}
                           value={
                             data.lineItems[editingIndex].legalAct2Number || ""
                           }
@@ -983,7 +1047,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Ano"
+                          label={t.editor.items.legalActs.year}
                           value={
                             data.lineItems[editingIndex].legalAct2Year || ""
                           }
@@ -999,7 +1063,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Ex"
+                          label={t.editor.items.legalActs.ex}
                           value={data.lineItems[editingIndex].legalAct2Ex || ""}
                           onChange={(e) =>
                             onLineItemChange(
@@ -1013,7 +1077,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         />
                         <ValidatedInput
                           minimal
-                          label="Alíquota (%)"
+                          label={t.editor.items.legalActs.rate}
                           value={
                             data.lineItems[editingIndex].legalAct2Rate || ""
                           }

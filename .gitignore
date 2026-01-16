@@ -26,3 +26,4 @@ apikey.json
 
 .agent/workflows/ai-extraction-standard.md
 logfiles/
+.test.credentials.md
