@@ -5,6 +5,7 @@ import App from "./App";
 import "./index.css";
 import { TranslationProvider } from "./contexts/TranslationContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SettingsProvider } from "./contexts/SettingsContext";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -16,7 +17,9 @@ root.render(
   <React.StrictMode>
     <TranslationProvider>
       <AuthProvider>
-        <App />
+        <SettingsProvider>
+          <App />
+        </SettingsProvider>
       </AuthProvider>
     </TranslationProvider>
   </React.StrictMode>

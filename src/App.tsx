@@ -40,7 +40,9 @@ import {
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
-import { Code2 } from "lucide-react";
+import { Code2, Settings } from "lucide-react";
+import { useSettings } from "./contexts/SettingsContext";
+import { SettingsModal } from "./components/ui/SettingsModal";
 
 const App: React.FC = () => {
   // --- File & Processing State ---
@@ -65,6 +67,8 @@ const App: React.FC = () => {
   const [showLogs, setShowLogs] = useState(false);
   const { language, setLanguage } = useLanguage();
   const t = useTranslation();
+  const { apiKey, isConfigured } = useSettings();
+  const [showSettings, setShowSettings] = useState(false);
 
   // --- Initialization ---
   useEffect(() => {
@@ -80,6 +84,10 @@ const App: React.FC = () => {
   }, []);
 
   const handleFilesSelect = async (selectedFiles: File[]) => {
+    if (!isConfigured) {
+      setShowSettings(true);
+      return;
+    }
     setFiles(selectedFiles);
     setIsLoading(true);
     setError(null);
@@ -90,10 +98,14 @@ const App: React.FC = () => {
         setProgressMessage(msg)
       );
 
+      // Use the selected model from state, default to 2.5 flash if undefined
+      const modelToUse = selectedModel || "gemini-2.5-flash";
+
       const extractedData = await extractInvoiceData(
         fileParts,
+        apiKey,
         (msg) => setProgressMessage(msg),
-        selectedModel
+        modelToUse
       );
 
       setOriginalData(extractedData);
@@ -204,13 +216,11 @@ const App: React.FC = () => {
                     aria-label={t.app.actions.selectModel}
                     className="appearance-none bg-surface-container-low border border-outline-variant/30 text-xs font-medium text-on-surface rounded-lg cursor-pointer hover:border-primary/30 transition-all py-2 pl-3 pr-8 focus:ring-2 focus:ring-primary/10 outline-none shadow-sm"
                   >
-                    <option value="gemini-2.5-flash-lite">
-                      Flash Lite 2.5
-                    </option>
                     <option value="gemini-2.5-flash">
-                      Flash 2.5 (Enterprise)
+                      Gemini 2.5 Flash (Recommended)
                     </option>
-                    <option value="gemini-2.0-flash">Flash 2.0</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                   </select>
                   <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
                     <svg
@@ -230,6 +240,13 @@ const App: React.FC = () => {
                     </svg>
                   </div>
                 </div>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container"
+                  title="Settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
                 <ThemeToggle />
                 <button
                   onClick={signOut}
@@ -326,6 +343,69 @@ const App: React.FC = () => {
             </div>
           </div>
         </footer>
+
+        {/* Modals for Landing Screen */}
+        {(!isConfigured || showSettings) && (
+          <SettingsModal
+            onClose={() => setShowSettings(false)}
+            canClose={isConfigured}
+          />
+        )}
+        {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
+        {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
+        {showChangelog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-slide-up border border-outline-variant">
+              <div className="px-8 py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container">
+                <h3 className="font-serif font-bold text-xl text-on-surface flex items-center gap-3">
+                  <History className="w-6 h-6 text-primary" />{" "}
+                  {t.app.history.title}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowChangelog(false)}
+                  className="p-2 rounded-m3-full hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors"
+                  title={t.app.history.close}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-8 overflow-y-auto custom-scrollbar space-y-10 bg-surface">
+                {CHANGE_LOG.map((log, i) => (
+                  <div
+                    key={i}
+                    className="relative pl-8 border-l-2 border-outline-variant"
+                  >
+                    <div
+                      className={`absolute -left-[9px] top-1.5 w-4 h-4 rounded-full ring-4 ring-surface ${
+                        i === 0 ? "bg-primary" : "bg-outline"
+                      }`}
+                    ></div>
+                    <div className="mb-3">
+                      <span className="text-lg font-serif font-bold text-on-surface block">
+                        v{log.version}
+                      </span>
+                      <span className="inline-block mt-1 text-xs font-bold text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-m3-full uppercase tracking-wide">
+                        {log.date}
+                      </span>
+                    </div>
+                    <ul className="space-y-3">
+                      {log.changes.map((c, idx) => (
+                        <li
+                          key={idx}
+                          className="text-sm text-on-surface-variant leading-relaxed flex items-start gap-3"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-2 shrink-0"></span>
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -500,6 +580,12 @@ const App: React.FC = () => {
       </footer>
 
       {/* Modals */}
+      {(!isConfigured || showSettings) && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          canClose={isConfigured}
+        />
+      )}
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
       {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
       {showChangelog && (

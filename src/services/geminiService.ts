@@ -264,15 +264,16 @@ async function withRetry<T>(
  */
 export async function extractInvoiceData(
   fileParts: FilePart[],
+  apiKey: string,
   onProgress?: (msg: string) => void,
-  modelId: string = "gemini-2.5-flash-lite"
+  modelId: string = "gemini-2.5-flash"
 ): Promise<InvoiceData> {
   // 1. Prepare Prompts
   const metadataPrompt = getMetadataPrompt();
   const lineItemsPrompt = getLineItemsPrompt();
 
   // Initialize AI Client
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Helper for generation with Retry Logic
   const generate = async (prompt: string, schema?: any) => {

@@ -136,21 +136,86 @@ class LoggerService {
   /**
    * Helper to safely sanitize data for storage (handles circular refs & Errors).
    */
+  /**
+   * Helper to safe-sanitize data for storage (handles circular refs & PII redaction).
+   */
   private sanitize(data: any): any {
     try {
       if (data instanceof Error) {
         return {
           name: data.name,
-          message: data.message,
+          message: this.redactPII(data.message), // Redact error messages too
           stack: data.stack,
           // @ts-ignore
           cause: data.cause,
         };
       }
-      return JSON.parse(JSON.stringify(data, this.getCircularReplacer()));
+      // Deep clone and redact
+      const json = JSON.stringify(data, this.getCircularReplacer());
+      return this.redactLogObject(JSON.parse(json));
     } catch (e) {
       return "[Unable to serialize data]";
     }
+  }
+
+  private redactLogObject(obj: any): any {
+    if (!obj) return obj;
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.redactLogObject(item));
+    }
+
+    if (typeof obj === "object") {
+      const clean: any = {};
+      for (const key in obj) {
+        const lowerKey = key.toLowerCase();
+        // Redact Sensitive Keys
+        if (
+          lowerKey.includes("password") ||
+          lowerKey.includes("token") ||
+          lowerKey.includes("key") ||
+          lowerKey.includes("secret") ||
+          lowerKey.includes("auth") ||
+          lowerKey.includes("cookie") ||
+          lowerKey.includes("cpf") ||
+          lowerKey.includes("cnpj")
+        ) {
+          clean[key] = "[REDACTED]";
+        } else {
+          clean[key] = this.redactLogObject(obj[key]);
+        }
+      }
+      return clean;
+    }
+
+    if (typeof obj === "string") {
+      return this.redactPII(obj);
+    }
+
+    return obj;
+  }
+
+  private redactPII(text: string): string {
+    if (!text) return text;
+    // Basic PII Redaction Regex
+    // CPF (11 digits, loose match)
+    let clean = text.replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "[CPF]");
+    // CNPJ (14 digits, loose match)
+    clean = clean.replace(
+      /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g,
+      "[CNPJ]"
+    );
+    // Email
+    clean = clean.replace(
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      "[EMAIL]"
+    );
+
+    // Truncate huge strings
+    if (clean.length > 500) {
+      return clean.substring(0, 500) + "...[TRUNCATED]";
+    }
+    return clean;
   }
 
   private getCircularReplacer() {
