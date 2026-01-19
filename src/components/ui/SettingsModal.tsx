@@ -74,7 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </p>
               <p>
                 <strong>Pricing:</strong> We recommend using{" "}
-                <span className="font-bold text-primary">Gemini 1.5 Flash</span>
+                <span className="font-bold text-primary">Gemini 2.5 Flash</span>
                 . It is currently free of charge (Free Tier) within reasonable
                 specific limits (up to ~15 RPM).
               </p>

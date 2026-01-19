@@ -6,41 +6,6 @@ import { logger } from "./loggerService";
 import { usageService } from "./usageService";
 
 /**
- * Helper to recursively clean data.
- */
-const cleanData = (obj: any): any => {
-  if (obj === null || obj === undefined) return null;
-
-  if (Array.isArray(obj)) {
-    return obj.map((item) => cleanData(item));
-  }
-
-  if (typeof obj === "object") {
-    const cleaned: any = {};
-    for (const key in obj) {
-      cleaned[key] = cleanData(obj[key]);
-    }
-    return cleaned;
-  }
-
-  if (typeof obj === "string") {
-    const lower = obj.trim().toLowerCase();
-    if (
-      lower === "null" ||
-      lower === "n/a" ||
-      lower === "undefined" ||
-      lower === "none" ||
-      lower === "não consta"
-    ) {
-      return null;
-    }
-    return obj;
-  }
-
-  return obj;
-};
-
-/**
  * Robust JSON parser designed to handle LLM output "hallucinations" and formatting errors.
  *
  * Strategy:
@@ -83,7 +48,7 @@ const safeJsonParse = (text: string): any => {
 
   // 3. State-Machine Token Balancer
   // This reconstructs the JSON by tracking open brackets and strings
-  let stack: string[] = [];
+  const stack: string[] = [];
   let inString = false;
   let escaped = false;
 
@@ -172,10 +137,12 @@ const safeJsonParse = (text: string): any => {
         const attempt = candidate + closer;
         const res = JSON.parse(attempt);
         logger.info(
-          `JSON repaired via Truncation at index ${candidate.length} with closer '${closer}'.`
+          `JSON repaired via Truncation at index ${candidate.length} with closer '${closer}'.`,
         );
         return res;
-      } catch (ignore) {}
+      } catch {
+        // Ignore parse errors, try next closer
+      }
     }
   }
 
@@ -195,7 +162,7 @@ async function withRetry<T>(
   operation: () => Promise<T>,
   onProgress?: (msg: string) => void,
   attempt = 1,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<T> {
   try {
     return await operation();
@@ -231,7 +198,7 @@ async function withRetry<T>(
         : "Limite de cota (429)";
 
       onProgress?.(
-        `⚠️ ${reason}. Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`
+        `⚠️ ${reason}. Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`,
       );
 
       logger.warn(`${reason}. Retrying in ${delay}ms`, {
@@ -266,7 +233,7 @@ export async function extractInvoiceData(
   fileParts: FilePart[],
   apiKey: string,
   onProgress?: (msg: string) => void,
-  modelId: string = "gemini-2.5-flash"
+  modelId: string = "gemini-2.5-flash",
 ): Promise<InvoiceData> {
   // 1. Prepare Prompts
   const metadataPrompt = getMetadataPrompt();
@@ -317,7 +284,7 @@ export async function extractInvoiceData(
 
   // Task A: Metadata
   onProgress?.(
-    `🚀 Solicitando extração de Cabeçalho e Metadados (${modelId})...`
+    `🚀 Solicitando extração de Cabeçalho e Metadados (${modelId})...`,
   );
   let metadataResult;
   try {
@@ -356,7 +323,7 @@ export async function extractInvoiceData(
     modelId,
     totalInputTokens,
     totalOutputTokens,
-    duration
+    duration,
   );
 
   // 4. Parse & Merge
@@ -396,14 +363,18 @@ export async function extractInvoiceData(
         };
       });
       logger.info(
-        `Parsed ${lineItemsObj.length} items from Minified Array format.`
+        `Parsed ${lineItemsObj.length} items from Minified Array format.`,
       );
     } else {
       // Fallback: It might be the old object format (if model ignored instructions, rare but possible)
       // OR it handles the wrapper object case { "lineItems": [...] }
+      // OR it handles the wrapper object case { "lineItems": [...] }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!Array.isArray(rawItemsData) && (rawItemsData as any).lineItems) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         lineItemsObj = (rawItemsData as any).lineItems;
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         lineItemsObj = rawItemsData as any[]; // Assume it's array of objects
       }
     }
@@ -443,8 +414,8 @@ function getMetadataPrompt(): string {
   // In a stricter implementation, we would define a specific MetadataSchema.
 
   // Use Zod 4 native JSON Schema generation
-  // @ts-ignore - Assuming z.toJSONSchema is available in v4 but might miss types in some envs
-  const jsonSchema = z.toJSONSchema(InvoiceSchema);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const jsonSchema = (z as any).toJSONSchema(InvoiceSchema);
 
   // We manually override the description for lineItems in the prompt text or rely on the schema
   // But strictly speaking, the prompt text instructions take precedence for "what" to extract.
@@ -545,6 +516,7 @@ function postProcessInvoiceData(data: any): InvoiceData {
 
   // 2. Line Items Normalization
   if (result.lineItems && Array.isArray(result.lineItems)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result.lineItems = result.lineItems.map((item: any) => {
       const qty = parseFloat(item.quantity) || 0;
       let netWeight = parseFloat(item.netWeight) || 0;

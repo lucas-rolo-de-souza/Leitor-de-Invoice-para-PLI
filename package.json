@@ -1,7 +1,7 @@
 {
   "name": "leitor-faturas-ai",
   "displayName": "Leitor de Faturas AI",
-  "version": "1.05.00.42",
+  "version": "1.05.00.44",
   "description": "Extrator inteligente de faturas e packing lists usando Gemini 2.5 Flash. Faça upload de documentos (PDF ou Imagem), valide os dados extraídos e exporte para Excel ou PDF.",
   "keywords": [
     "invoice",
@@ -32,38 +32,48 @@
     "url": "https://github.com/your-username/leitor-faturas-ai.git"
   },
   "scripts": {
-    "dev": "node scripts/update-version.js && vite",
-    "build": "node scripts/update-version.js && tsc && vite build",
-    "update-version": "node scripts/update-version.js",
-    "type-check": "tsc --noEmit",
-    "preview": "vite preview"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
+    "@google/genai": "^1.37.0",
     "@supabase/supabase-js": "^2.90.1",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.2",
-    "lucide-react": "^0.555.0",
-    "nvm": "^0.0.4",
+    "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.0",
     "react-dropzone": "^14.3.8",
     "type-check": "^0.4.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.2.1"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.5",
+    "@babel/core": "^7.28.6",
     "@babel/preset-typescript": "^7.28.5",
-    "@types/node": "^25.0.3",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@eslint/css": "^0.14.1",
+    "@eslint/js": "^9.39.2",
+    "@eslint/json": "^0.14.0",
+    "@eslint/markdown": "^7.5.1",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.0.0",
+    "jiti": "^2.6.1",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "vite": "^7.3.0"
+    "typescript-eslint": "^8.53.0",
+    "vite": "^7.3.1"
   },
   "engines": {
     "node": ">=24.12.0"

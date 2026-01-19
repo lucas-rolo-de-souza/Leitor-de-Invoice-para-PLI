@@ -203,3 +203,9 @@ export const initialInvoiceData: InvoiceData = {
 
   lineItems: [],
 };
+
+export interface SavedInvoice {
+  id: string;
+  data: InvoiceData;
+  created_at: string;
+}

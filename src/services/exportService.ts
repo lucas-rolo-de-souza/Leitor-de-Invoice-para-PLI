@@ -15,7 +15,7 @@ import {
 const calculateSubtotal = (items: any[] | undefined): number => {
   return (items || []).reduce(
     (sum, item) => sum + (Number(item.total) || 0),
-    0
+    0,
   );
 };
 
@@ -268,10 +268,9 @@ export const exportToPDF = (data: InvoiceData) => {
   });
 
   // Footer / Totals
-  // @ts-ignore
-  const finalY = (doc as any).lastAutoTable
-    ? (doc as any).lastAutoTable.finalY + 10
-    : 90;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lastTable = (doc as any).lastAutoTable;
+  const finalY = lastTable ? lastTable.finalY + 10 : 90;
 
   // Helper to display weight in both units (KG and LB)
 
@@ -281,22 +280,22 @@ export const exportToPDF = (data: InvoiceData) => {
   doc.text(
     `Volumes: ${Number(data.totalVolumes || 0)} (${data.volumeType || "-"})`,
     14,
-    finalY
+    finalY,
   );
   doc.text(
     `Peso Líquido Total: ${formatDualWeight(data.totalNetWeight, currentUnit)}`,
     14,
-    finalY + 5
+    finalY + 5,
   );
   doc.text(
     `Peso Bruto Total: ${formatDualWeight(data.totalGrossWeight, currentUnit)}`,
     14,
-    finalY + 10
+    finalY + 10,
   );
   doc.text(
     `Total Geral: ${data.currency} ${Number(data.grandTotal || 0).toFixed(2)}`,
     14,
-    finalY + 15
+    finalY + 15,
   );
 
   const safeInvoiceNumber = sanitizeFilename(data.invoiceNumber || "Draft");

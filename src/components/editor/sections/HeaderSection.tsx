@@ -15,11 +15,12 @@ export const HeaderSection: React.FC<SectionProps> = ({
   const dueDateInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to programmatically open date picker on icon click
-  const openDatePicker = (ref: React.RefObject<HTMLInputElement>) => {
+  const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (!isReadOnly && ref.current && "showPicker" in ref.current) {
       try {
-        // @ts-ignore - showPicker is standard in modern browsers but TS might flag it
-        ref.current.showPicker();
+        (
+          ref.current as HTMLInputElement & { showPicker: () => void }
+        ).showPicker();
       } catch (e) {
         // Fallback: Focus triggers picker on mobile, but not always on desktop
         ref.current.focus();

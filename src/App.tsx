@@ -9,7 +9,7 @@ import { processFilesToBase64 } from "./services/fileService";
 import { exportToExcel, exportToPDF } from "./services/exportService";
 import { handlePLIExport } from "./services/PLIService";
 import { generateValidationErrors } from "./utils/validators";
-import { InvoiceData, initialInvoiceData } from "./types";
+import { InvoiceData, initialInvoiceData, SavedInvoice } from "./types";
 import {
   INCOTERMS_LIST,
   CURRENCIES_LIST,
@@ -18,6 +18,7 @@ import {
 import { ncmService } from "./services/ncmService";
 import { suggestionService } from "./services/suggestionService";
 import { logger } from "./services/loggerService";
+import { invoiceService } from "./services/invoiceService";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UsageWidget } from "./components/ui/UsageWidget";
 import { LegalModal } from "./components/ui/LegalModal";
@@ -25,6 +26,7 @@ import { LogViewer } from "./components/ui/LogViewer";
 import { LanguageSelector } from "./components/ui/LanguageSelector";
 import { useLanguage } from "./contexts/TranslationContext";
 import { useTranslation } from "./hooks/useTranslation";
+import { ImportInvoiceModal } from "./components/ui/ImportInvoiceModal";
 import {
   FileText,
   Download,
@@ -37,6 +39,8 @@ import {
   X,
   History,
   LogOut,
+  Cloud,
+  CloudDownload,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
@@ -54,6 +58,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [refreshUsage, setRefreshUsage] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // --- Data State (Simplified) ---
   const [data, setData] = useState<InvoiceData>(initialInvoiceData); // Current Editing State
@@ -69,6 +74,10 @@ const App: React.FC = () => {
   const t = useTranslation();
   const { apiKey, isConfigured } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importModalMode, setImportModalMode] = useState<
+    "import" | "overwrite"
+  >("import");
 
   // --- Initialization ---
   useEffect(() => {
@@ -95,7 +104,7 @@ const App: React.FC = () => {
 
     try {
       const fileParts = await processFilesToBase64(selectedFiles, (msg) =>
-        setProgressMessage(msg)
+        setProgressMessage(msg),
       );
 
       // Use the selected model from state, default to 2.5 flash if undefined
@@ -105,7 +114,7 @@ const App: React.FC = () => {
         fileParts,
         apiKey,
         (msg) => setProgressMessage(msg),
-        modelToUse
+        modelToUse,
       );
 
       setOriginalData(extractedData);
@@ -140,6 +149,51 @@ const App: React.FC = () => {
     exportToPDF(data);
   };
 
+  const handleImportInvoice = (importedData: InvoiceData) => {
+    // Ensure we have valid data structure before setting state
+    const validData = { ...initialInvoiceData, ...importedData };
+    setOriginalData(validData);
+    setData(validData);
+    setHasProcessed(true);
+    setRefreshUsage((prev) => prev + 1);
+    setShowImportModal(false);
+  };
+
+  const handleSaveToCloud = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await invoiceService.saveInvoice(data);
+      alert(t.app.actions?.saveSuccess || "Invoice saved to cloud!");
+    } catch (err: any) {
+      if (err.code === "LIMIT_REACHED") {
+        setImportModalMode("overwrite");
+        // Use timeout to ensure state update propagates before showing modal
+        setTimeout(() => setShowImportModal(true), 0);
+      } else {
+        logger.error("Save failed", err);
+        alert(t.app.actions?.saveError || "Failed to save invoice.");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOverwriteInvoice = async (invoice: SavedInvoice) => {
+    setIsSaving(true);
+    try {
+      await invoiceService.updateInvoice(invoice.id, data);
+      alert(t.app.actions?.saveSuccess || "Invoice updated successfully!");
+      setShowImportModal(false);
+      setImportModalMode("import");
+    } catch (err) {
+      logger.error("Overwrite failed", err);
+      alert(t.app.actions?.saveError || "Failed to update invoice.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleReset = () => {
     if (window.confirm(t.app.actions.reset)) {
       const cleanData = JSON.parse(JSON.stringify(initialInvoiceData));
@@ -168,7 +222,7 @@ const App: React.FC = () => {
         currencies: CURRENCIES_LIST,
         countries: COUNTRIES_LIST,
       }),
-    [activeData]
+    [activeData],
   );
 
   const isValid = validationErrors.length === 0;
@@ -240,6 +294,18 @@ const App: React.FC = () => {
                     </svg>
                   </div>
                 </div>
+                {user && (
+                  <button
+                    onClick={() => {
+                      setImportModalMode("import");
+                      setShowImportModal(true);
+                    }}
+                    className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container"
+                    title={t.modals?.import?.title || "Import from Cloud"}
+                  >
+                    <CloudDownload className="w-5 h-5" />
+                  </button>
+                )}
                 <button
                   onClick={() => setShowSettings(true)}
                   className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container"
@@ -349,6 +415,17 @@ const App: React.FC = () => {
           <SettingsModal
             onClose={() => setShowSettings(false)}
             canClose={isConfigured}
+          />
+        )}
+        {showImportModal && (
+          <ImportInvoiceModal
+            onClose={() => {
+              setShowImportModal(false);
+              setImportModalMode("import");
+            }}
+            onSelect={handleImportInvoice}
+            onOverwrite={handleOverwriteInvoice}
+            mode={importModalMode}
           />
         )}
         {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
@@ -473,6 +550,18 @@ const App: React.FC = () => {
             <div className="hidden md:flex items-center bg-surface-container-highest p-1.5 rounded-m3-full border border-outline-variant/30">
               <button
                 type="button"
+                onClick={handleSaveToCloud}
+                disabled={isSaving || !hasProcessed}
+                className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-primary hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Save to Cloud"
+              >
+                <Cloud
+                  className={`w-4 h-4 ${isSaving ? "animate-pulse" : ""}`}
+                />
+              </button>
+              <div className="w-px h-4 bg-outline-variant mx-1"></div>
+              <button
+                type="button"
                 onClick={handleExportPDF}
                 className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-error hover:shadow-sm transition-all"
                 title={t.app.actions.exportPDF}
@@ -584,6 +673,17 @@ const App: React.FC = () => {
         <SettingsModal
           onClose={() => setShowSettings(false)}
           canClose={isConfigured}
+        />
+      )}
+      {showImportModal && (
+        <ImportInvoiceModal
+          onClose={() => {
+            setShowImportModal(false);
+            setImportModalMode("import");
+          }}
+          onSelect={handleImportInvoice}
+          onOverwrite={handleOverwriteInvoice}
+          mode={importModalMode}
         />
       )}
       {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
