@@ -7,6 +7,8 @@ import { TranslationProvider } from "./contexts/TranslationContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
@@ -18,7 +20,9 @@ root.render(
     <TranslationProvider>
       <AuthProvider>
         <SettingsProvider>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </SettingsProvider>
       </AuthProvider>
     </TranslationProvider>
