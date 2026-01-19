@@ -18,6 +18,7 @@ import {
 import { ncmService } from "./services/ncmService";
 import { suggestionService } from "./services/suggestionService";
 import { logger } from "./services/loggerService";
+import { invoiceService } from "./services/invoiceService";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UsageWidget } from "./components/ui/UsageWidget";
 import { LegalModal } from "./components/ui/LegalModal";
@@ -37,6 +38,7 @@ import {
   X,
   History,
   LogOut,
+  Cloud,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
@@ -54,6 +56,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [refreshUsage, setRefreshUsage] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // --- Data State (Simplified) ---
   const [data, setData] = useState<InvoiceData>(initialInvoiceData); // Current Editing State
@@ -95,7 +98,7 @@ const App: React.FC = () => {
 
     try {
       const fileParts = await processFilesToBase64(selectedFiles, (msg) =>
-        setProgressMessage(msg)
+        setProgressMessage(msg),
       );
 
       // Use the selected model from state, default to 2.5 flash if undefined
@@ -105,7 +108,7 @@ const App: React.FC = () => {
         fileParts,
         apiKey,
         (msg) => setProgressMessage(msg),
-        modelToUse
+        modelToUse,
       );
 
       setOriginalData(extractedData);
@@ -140,6 +143,20 @@ const App: React.FC = () => {
     exportToPDF(data);
   };
 
+  const handleSaveToCloud = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await invoiceService.saveInvoice(data);
+      alert(t.app.actions?.saveSuccess || "Invoice saved to cloud!");
+    } catch (err) {
+      logger.error("Save failed", err);
+      alert(t.app.actions?.saveError || "Failed to save invoice.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleReset = () => {
     if (window.confirm(t.app.actions.reset)) {
       const cleanData = JSON.parse(JSON.stringify(initialInvoiceData));
@@ -168,7 +185,7 @@ const App: React.FC = () => {
         currencies: CURRENCIES_LIST,
         countries: COUNTRIES_LIST,
       }),
-    [activeData]
+    [activeData],
   );
 
   const isValid = validationErrors.length === 0;
@@ -471,6 +488,18 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="hidden md:flex items-center bg-surface-container-highest p-1.5 rounded-m3-full border border-outline-variant/30">
+              <button
+                type="button"
+                onClick={handleSaveToCloud}
+                disabled={isSaving || !hasProcessed}
+                className="p-2.5 hover:bg-surface-bright rounded-m3-full text-on-surface-variant hover:text-primary hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Save to Cloud"
+              >
+                <Cloud
+                  className={`w-4 h-4 ${isSaving ? "animate-pulse" : ""}`}
+                />
+              </button>
+              <div className="w-px h-4 bg-outline-variant mx-1"></div>
               <button
                 type="button"
                 onClick={handleExportPDF}

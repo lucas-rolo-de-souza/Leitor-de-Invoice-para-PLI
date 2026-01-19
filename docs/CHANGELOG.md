@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.05.00.43] - 2026-01-19
+
+### Changed
+
+- **Maintenance**: Updated core dependencies (@google/genai, lucide-react, zod) to latest versions for security and performance.
+- **Linting**: Migrated to ESLint 9 Flat Config (eslint.config.mts) and added dedicated linting scripts.
+- **Build System**: Simplified `dev` and `build` scripts, removing deprecated `update-version.js` dependency in favor of direct TypeScript execution with `jiti`.
+
+### Added
+
+- **Persistent Invoice History**: Added "Save to Cloud" button in the header bar.
+- **Supabase Integration**: Implemented secure storage with a 3-invoice limit per user (FIFO) using Row Level Security (RLS).
+- **Security Audit**: Validated application security and confirmed no distinct secret exposures.
+
 ## [1.05.00.42] - 2026-01-16
 
 ### Fixed

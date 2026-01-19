@@ -23,6 +23,8 @@ export const translations = {
           dark: "Mudar para Modo Escuro",
         },
         signOut: "Sair",
+        saveSuccess: "Fatura salva com sucesso!",
+        saveError: "Erro ao salvar fatura.",
       },
       status: {
         docNoNumber: "Documento Sem Número",
@@ -404,6 +406,8 @@ export const translations = {
           dark: "Switch to Dark Mode",
         },
         signOut: "Sign Out",
+        saveSuccess: "Invoice saved successfully!",
+        saveError: "Error saving invoice.",
       },
       status: {
         docNoNumber: "Document without Number",

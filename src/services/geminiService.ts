@@ -83,7 +83,7 @@ const safeJsonParse = (text: string): any => {
 
   // 3. State-Machine Token Balancer
   // This reconstructs the JSON by tracking open brackets and strings
-  let stack: string[] = [];
+  const stack: string[] = [];
   let inString = false;
   let escaped = false;
 

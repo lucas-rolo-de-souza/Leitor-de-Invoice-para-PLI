@@ -56,7 +56,7 @@ class CurrencyService {
     const maxAttempts = 5;
 
     // Clone date to avoid mutating the original passed reference if we loop back
-    let searchDate = new Date(date);
+    const searchDate = new Date(date);
 
     while (!rate && attempts < maxAttempts) {
       try {
