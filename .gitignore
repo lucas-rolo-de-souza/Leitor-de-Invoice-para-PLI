@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 apikey.json
+.env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +31,4 @@ apikey.json
 
 .agent/workflows/ai-extraction-standard.md
 logfiles/
+.test.credentials.md

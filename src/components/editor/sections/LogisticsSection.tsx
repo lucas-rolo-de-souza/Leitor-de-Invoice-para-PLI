@@ -20,6 +20,12 @@ export const LogisticsSection: React.FC<SectionProps> = ({
 }) => {
   const t = useTranslation();
 
+  const preventNegativeInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "-" || e.key === "Minus") {
+      e.preventDefault();
+    }
+  };
+
   return (
     <section>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -92,6 +98,8 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 id="totalVolumes"
                 type="number"
                 step="any"
+                min={0}
+                onKeyDown={preventNegativeInput}
                 value={data.totalVolumes || ""}
                 onChange={(e) => handleChange("totalVolumes", e.target.value)}
                 error={errors.totalVolumes}

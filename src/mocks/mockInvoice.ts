@@ -48,6 +48,7 @@ export const mockInvoiceData: InvoiceData = {
       total: 25000.0,
       unitNetWeight: 0.1,
       netWeight: 10.0,
+      weightUnit: "KG",
 
       manufacturerCode: null, // Manual Input
       material: null, // Manual Input
@@ -91,6 +92,7 @@ export const mockInvoiceData: InvoiceData = {
       total: 8500.0,
       unitNetWeight: 0.05,
       netWeight: 5.0,
+      weightUnit: "KG",
 
       manufacturerCode: "", // Manual Input (Empty String test)
       material: null,
