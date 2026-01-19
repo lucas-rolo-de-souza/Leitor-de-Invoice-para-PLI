@@ -32,3 +32,5 @@ apikey.json
 .agent/workflows/ai-extraction-standard.md
 logfiles/
 .test.credentials.md
+lint-report.json
+lint_output.txt
