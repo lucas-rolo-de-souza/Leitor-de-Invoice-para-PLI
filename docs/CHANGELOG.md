@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.05.00.44] - 2026-01-19
+
+### Fixed
+
+- **Type Safety**: Resolved critical `no-explicit-any` lint errors across core services (`geminiService`, `exportService`, `loggerService`) and utilities (`validators.ts`), improving codebase stability.
+- **Code Quality**: Removed unused code (`cleanData` in `geminiService`) and enforced strict type definitions in UI components (`HeaderSection`).
+- **Linting**: Achieved a clean state for `npm run type-check` and significantly reduced ESLint warnings.
+
 ## [1.05.00.43] - 2026-01-19
 
 ### Changed

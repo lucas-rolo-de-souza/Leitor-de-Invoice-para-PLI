@@ -25,6 +25,11 @@ export const translations = {
         signOut: "Sair",
         saveSuccess: "Fatura salva com sucesso!",
         saveError: "Erro ao salvar fatura.",
+        importCloud: "Importar da Nuvem",
+        loadSuccess: "Fatura carregada com sucesso!",
+        loadError: "Erro ao carregar fatura.",
+        confirmOverwrite:
+          "Tem certeza que deseja sobrescrever esta fatura? Esta ação não pode ser desfeita.",
       },
       status: {
         docNoNumber: "Documento Sem Número",
@@ -382,6 +387,28 @@ export const translations = {
         clear: "Limpar Logs",
         confirmClear: "Confirmar Limpeza",
       },
+      import: {
+        title: "Importar Fatura da Nuvem",
+        empty: "Nenhuma fatura salva encontrada.",
+        loading: "Carregando faturas...",
+        load: "Carregar",
+        delete: "Excluir",
+        cancel: "Cancelar",
+        loadError: "Erro ao carregar faturas.",
+        overwriteTitle: "Armazenamento Cheio",
+        overwriteMessage:
+          "Limite de 3 faturas atingido. Selecione uma para substituir:",
+        confirmOverwrite: "Substituir",
+        actions: {
+          deleteSelected: "Excluir Selecionados",
+          clearAll: "Limpar Tudo",
+          overwrite: "Substituir",
+          import: "Importar",
+          confirmDelete: "Tem certeza que deseja excluir esta fatura?",
+          confirmClearAll:
+            "Tem certeza que deseja excluir TODAS as faturas? Esta ação não pode ser desfeita.",
+        },
+      },
     },
   },
   "en-GB": {
@@ -408,7 +435,13 @@ export const translations = {
         signOut: "Sign Out",
         saveSuccess: "Invoice saved successfully!",
         saveError: "Error saving invoice.",
+        importCloud: "Import from Cloud",
+        loadSuccess: "Invoice loaded successfully!",
+        loadError: "Error loading invoice.",
+        confirmOverwrite:
+          "Are you sure you want to overwrite this invoice? This action cannot be undone.",
       },
+
       status: {
         docNoNumber: "Document without Number",
         attention: "Attention",
@@ -762,6 +795,28 @@ export const translations = {
         export: "Export JSON",
         clear: "Clear Logs",
         confirmClear: "Confirm Clear",
+      },
+      import: {
+        title: "Import Invoice from Cloud",
+        empty: "No saved invoices found.",
+        loading: "Loading invoices...",
+        load: "Load",
+        delete: "Delete",
+        cancel: "Cancel",
+        loadError: "Error loading invoices.",
+        overwriteTitle: "Storage Full",
+        overwriteMessage:
+          "Limit of 3 invoices reached. Select one to overwrite:",
+        confirmOverwrite: "Overwrite",
+        actions: {
+          deleteSelected: "Delete Selected",
+          clearAll: "Clear All",
+          overwrite: "Overwrite",
+          import: "Import",
+          confirmDelete: "Are you sure you want to delete this invoice?",
+          confirmClearAll:
+            "Are you sure you want to delete ALL invoices? This cannot be undone.",
+        },
       },
     },
   },

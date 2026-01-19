@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient";
-import { InvoiceData } from "../types";
+import { InvoiceData, SavedInvoice } from "../types";
 import { logger } from "./loggerService";
 
 const TABLE_NAME = "invoices";
@@ -11,7 +11,7 @@ const MAX_INVOICES = 3;
 export const invoiceService = {
   /**
    * Saves an invoice to the cloud.
-   * Enforces a limit of MAX_INVOICES (3) per user using FIFO strategy.
+   * Checks for MAX_INVOICES limit. If reached, throws error with code 'LIMIT_REACHED'.
    */
   saveInvoice: async (data: InvoiceData): Promise<void> => {
     try {
@@ -29,35 +29,11 @@ export const invoiceService = {
 
       if (countError) throw countError;
 
-      // 2. Enforce Limit (Delete Oldest if needed)
-      // Note: We check if count is >= MAX_INVOICES.
-      // If exactly 3, we delete 1 to make room for the new one (maintaining 3).
-      // If > 3 (shouldn't happen but good to handle), we might need to delete more,
-      // but for now deleting the single oldest matches the requirements.
+      // 2. Enforce Limit
       if (count !== null && count >= MAX_INVOICES) {
-        // Fetch the oldest ID
-        const { data: oldest, error: fetchOldestError } = await supabase
-          .from(TABLE_NAME)
-          .select("id")
-          .order("created_at", { ascending: true }) // Oldest first
-          .limit(count - MAX_INVOICES + 1); // Delete excess + 1 for the new one?
-        // Actually if we have 3, we delete 1 -> 2 lefot. Insert 1 -> 3 total.
-        // So we need to delete (count - MAX_INVOICES + 1) items.
-
-        if (fetchOldestError) throw fetchOldestError;
-
-        if (oldest && oldest.length > 0) {
-          const idsToDelete = oldest.map((r) => r.id);
-          const { error: deleteError } = await supabase
-            .from(TABLE_NAME)
-            .delete()
-            .in("id", idsToDelete);
-
-          if (deleteError) throw deleteError;
-          logger.info(
-            `Limit reached. Deleted ${idsToDelete.length} old invoice(s).`,
-          );
-        }
+        const error = new Error("Storage limit reached");
+        (error as any).code = "LIMIT_REACHED";
+        throw error;
       }
 
       // 3. Insert New Invoice
@@ -77,11 +53,77 @@ export const invoiceService = {
   },
 
   /**
+   * Deletes an invoice by ID.
+   */
+  deleteInvoice: async (id: string): Promise<void> => {
+    try {
+      const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+      if (error) throw error;
+      logger.info("Invoice deleted successfully", { id });
+    } catch (error) {
+      logger.error("Failed to delete invoice", { error });
+      throw error;
+    }
+  },
+
+  /**
+   * Updates an existing invoice.
+   * Updates data and timestamp (effectively bumping it to top).
+   * Bypasses limit check since it modifies existing record.
+   */
+  updateInvoice: async (id: string, data: InvoiceData): Promise<void> => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User must be logged in to update invoices.");
+      }
+
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({
+          data: data,
+          created_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      logger.info("Invoice updated successfully", { id });
+    } catch (error) {
+      logger.error("Failed to update invoice", { error });
+      throw error;
+    }
+  },
+
+  /**
+   * Deletes all invoices for the current user.
+   */
+  deleteAllInvoices: async (): Promise<void> => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .delete()
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      logger.info("All invoices deleted successfully");
+    } catch (error) {
+      logger.error("Failed to delete all invoices", { error });
+      throw error;
+    }
+  },
+
+  /**
    * Retrieves the most recent invoices for the current user.
    */
-  getRecentInvoices: async (): Promise<
-    { id: string; data: InvoiceData; created_at: string }[]
-  > => {
+  getRecentInvoices: async (): Promise<SavedInvoice[]> => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -90,15 +132,13 @@ export const invoiceService = {
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .select("id, data, created_at")
-      .order("created_at", { ascending: false })
-      .limit(MAX_INVOICES);
+      .order("created_at", { ascending: false });
 
     if (error) {
       logger.error("Failed to fetch recent invoices", { error });
       throw error;
     }
 
-    // Type casting relying on our knowledge that 'data' column is InvoiceData
     return (data || []).map((row) => ({
       id: row.id,
       data: row.data as InvoiceData,

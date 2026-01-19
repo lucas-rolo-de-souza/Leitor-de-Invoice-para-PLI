@@ -7,7 +7,7 @@ import { ncmService } from "../services/ncmService";
 /**
  * Pure function to check if a generic value is considered 'invalid' (empty/null/NaN).
  */
-export const isFieldInvalid = (value: any): boolean => {
+export const isFieldInvalid = (value: unknown): boolean => {
   if (value === null || value === undefined) return true;
   if (typeof value === "string" && value.trim() === "") return true;
   if (typeof value === "number" && isNaN(value)) return true;
@@ -43,14 +43,14 @@ export const isValidNCM = (ncm: string | null): boolean => {
 
 export const isValidReference = (
   value: string | null,
-  list: ReferenceItem[]
+  list: ReferenceItem[],
 ): boolean => {
   if (!value) return false;
   const normalized = value.trim().toUpperCase();
   return list.some(
     (item) =>
       item.code.toUpperCase() === normalized ||
-      item.name.toUpperCase() === normalized
+      item.name.toUpperCase() === normalized,
   );
 };
 
@@ -79,16 +79,15 @@ export const generateValidationErrors = (
     incoterms: ReferenceItem[];
     currencies: ReferenceItem[];
     countries: ReferenceItem[];
-  }
+  },
 ): ValidationError[] => {
   const errors: ValidationError[] = [];
 
   const check = (
     field: keyof InvoiceData,
     msg: string,
-    code: string = "MISSING_FIELD"
+    code: string = "MISSING_FIELD",
   ) => {
-    // @ts-ignore
     if (isFieldInvalid(data[field])) {
       errors.push({ field: String(field), message: msg, code });
     }
@@ -138,14 +137,13 @@ export const generateValidationErrors = (
   }
 
   // Countries
-  const countryFields = [
+  const countryFields: (keyof InvoiceData)[] = [
     "countryOfOrigin",
     "countryOfAcquisition",
     "countryOfProvenance",
   ];
   countryFields.forEach((field) => {
-    // @ts-ignore
-    const val = data[field];
+    const val = data[field] as string | null;
     if (isFieldInvalid(val)) {
       errors.push({ field, message: "País ausente", code: "MISSING_FIELD" });
     } else if (!isValidReference(val, lists.countries)) {

@@ -12,6 +12,7 @@ export type LogEntry = {
   formattedTimestamp: string; // Local String (Human readable: DD/MM/YYYY HH:MM:SS)
   level: LogLevel;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any;
 };
 
@@ -59,7 +60,7 @@ class LoggerService {
   private cleanupOldLogs() {
     const now = new Date();
     const cutoff = new Date(
-      now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000
+      now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
     );
 
     const originalCount = this.logs.length;
@@ -71,7 +72,7 @@ class LoggerService {
         `System`,
         `Logs cleaned up. Removed ${
           originalCount - this.logs.length
-        } expired entries.`
+        } expired entries.`,
       );
     }
   }
@@ -80,6 +81,7 @@ class LoggerService {
    * Adds a new log entry.
    * Also outputs to the browser console for immediate dev feedback.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private add(level: LogLevel, message: string, data?: any) {
     const now = new Date();
 
@@ -139,6 +141,7 @@ class LoggerService {
   /**
    * Helper to safe-sanitize data for storage (handles circular refs & PII redaction).
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitize(data: any): any {
     try {
       if (data instanceof Error) {
@@ -146,8 +149,7 @@ class LoggerService {
           name: data.name,
           message: this.redactPII(data.message), // Redact error messages too
           stack: data.stack,
-          // @ts-ignore
-          cause: data.cause,
+          cause: (data as Error & { cause?: unknown }).cause,
         };
       }
       // Deep clone and redact
@@ -158,6 +160,7 @@ class LoggerService {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private redactLogObject(obj: any): any {
     if (!obj) return obj;
 
@@ -166,6 +169,7 @@ class LoggerService {
     }
 
     if (typeof obj === "object") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clean: any = {};
       for (const key in obj) {
         const lowerKey = key.toLowerCase();
@@ -203,12 +207,12 @@ class LoggerService {
     // CNPJ (14 digits, loose match)
     clean = clean.replace(
       /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g,
-      "[CNPJ]"
+      "[CNPJ]",
     );
     // Email
     clean = clean.replace(
       /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-      "[EMAIL]"
+      "[EMAIL]",
     );
 
     // Truncate huge strings
@@ -233,15 +237,19 @@ class LoggerService {
 
   // --- Public API ---
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public info(message: string, data?: any) {
     this.add("INFO", message, data);
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public warn(message: string, data?: any) {
     this.add("WARN", message, data);
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public error(message: string, data?: any) {
     this.add("ERROR", message, data);
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public debug(message: string, data?: any) {
     this.add("DEBUG", message, data);
   }
@@ -268,7 +276,7 @@ class LoggerService {
           logs: this.logs,
         },
         null,
-        2
+        2,
       );
 
       const blob = new Blob([logContent], { type: "application/json" });

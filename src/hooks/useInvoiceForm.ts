@@ -30,7 +30,7 @@ import { normalizeToKg, convertFromKg } from "../utils/converters";
 export const useInvoiceForm = (
   formData: InvoiceData,
   onDataChange: (data: InvoiceData) => void,
-  isReadOnly: boolean = false
+  isReadOnly: boolean = false,
 ) => {
   // --- Helper: Centralized Total Calculation ---
   // Calculates global totals (Subtotal, Net Weight, Grand Total) based on current Line Items
@@ -146,7 +146,7 @@ export const useInvoiceForm = (
 
       onDataChange(newData);
     },
-    [formData, isReadOnly, onDataChange]
+    [formData, isReadOnly, onDataChange],
   );
 
   const handleLineItemChange = useCallback(
@@ -174,8 +174,8 @@ export const useInvoiceForm = (
         }
       }
 
-      // @ts-ignore
-      newItems[index] = { ...newItems[index], [field]: safeValue };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (newItems[index] as any)[field] = safeValue;
 
       // --- Atomic Item Calculations ---
       const item = newItems[index];
@@ -247,7 +247,7 @@ export const useInvoiceForm = (
 
       onDataChange(newData);
     },
-    [formData, isReadOnly, onDataChange]
+    [formData, isReadOnly, onDataChange],
   );
 
   const addLineItem = useCallback(() => {
@@ -324,7 +324,7 @@ export const useInvoiceForm = (
       });
       onDataChange(newData);
     },
-    [formData, isReadOnly, onDataChange]
+    [formData, isReadOnly, onDataChange],
   );
 
   const removeLineItem = useCallback(
@@ -337,7 +337,7 @@ export const useInvoiceForm = (
       });
       onDataChange(newData);
     },
-    [formData, isReadOnly, onDataChange]
+    [formData, isReadOnly, onDataChange],
   );
 
   const handleNCMChange = useCallback(
@@ -350,12 +350,12 @@ export const useInvoiceForm = (
         masked = `${limited.slice(0, 4)}.${limited.slice(4)}`;
       if (limited.length > 6)
         masked = `${limited.slice(0, 4)}.${limited.slice(4, 6)}.${limited.slice(
-          6
+          6,
         )}`;
 
       handleLineItemChange(index, "ncm", masked);
     },
-    [isReadOnly, handleLineItemChange]
+    [isReadOnly, handleLineItemChange],
   );
 
   // Derived totals for UI consistency check (Virtual Fields)
@@ -369,7 +369,7 @@ export const useInvoiceForm = (
     grandTotal: Number(formData.grandTotal) || 0,
     totalQuantity: (formData.lineItems || []).reduce(
       (sum, i) => sum + (Number(i.quantity) || 0),
-      0
+      0,
     ),
     totalNetWeight: convertFromKg(
       (formData.lineItems || []).reduce((sum, item) => {
@@ -377,7 +377,7 @@ export const useInvoiceForm = (
         const unit = item.weightUnit || "KG";
         return sum + normalizeToKg(val, unit);
       }, 0),
-      formData.weightUnit || "KG"
+      formData.weightUnit || "KG",
     ),
   };
 
