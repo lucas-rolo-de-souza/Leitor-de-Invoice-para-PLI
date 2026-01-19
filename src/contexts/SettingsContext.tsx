@@ -7,7 +7,7 @@ interface SettingsContextType {
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -16,7 +16,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [apiKey, setApiKeyState] = useState<string>("");
 
   useEffect(() => {
-    // Load from localStorage on mount
+    // Priority: Local Storage Only (Strict BYOK)
     const stored = localStorage.getItem("gemini_api_key");
     if (stored) {
       setApiKeyState(stored);

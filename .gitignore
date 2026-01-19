@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 apikey.json
+.env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # Editor directories and files
 .vscode/*
