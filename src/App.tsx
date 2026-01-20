@@ -27,6 +27,7 @@ import { LanguageSelector } from "./components/ui/LanguageSelector";
 import { useLanguage } from "./contexts/TranslationContext";
 import { useTranslation } from "./hooks/useTranslation";
 import { ImportInvoiceModal } from "./components/ui/ImportInvoiceModal";
+import { ExtractionDebugger } from "./components/debug/ExtractionDebugger";
 import {
   FileText,
   Download,
@@ -41,6 +42,7 @@ import {
   LogOut,
   Cloud,
   CloudDownload,
+  Activity,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
@@ -59,6 +61,7 @@ const App: React.FC = () => {
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [refreshUsage, setRefreshUsage] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDebugger, setShowDebugger] = useState(false);
 
   // --- Data State (Simplified) ---
   const [data, setData] = useState<InvoiceData>(initialInvoiceData); // Current Editing State
@@ -165,8 +168,8 @@ const App: React.FC = () => {
     try {
       await invoiceService.saveInvoice(data);
       alert(t.app.actions?.saveSuccess || "Invoice saved to cloud!");
-    } catch (err: any) {
-      if (err.code === "LIMIT_REACHED") {
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "LIMIT_REACHED") {
         setImportModalMode("overwrite");
         // Use timeout to ensure state update propagates before showing modal
         setTimeout(() => setShowImportModal(true), 0);
@@ -395,6 +398,12 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-6">
               <button
+                onClick={() => setShowDebugger(true)}
+                className="hover:text-primary transition-colors flex items-center gap-1.5"
+              >
+                <Activity className="w-3.5 h-3.5" /> Debug
+              </button>
+              <button
                 onClick={handleDevBypass}
                 className="hover:text-primary transition-colors flex items-center gap-1.5"
               >
@@ -411,6 +420,9 @@ const App: React.FC = () => {
         </footer>
 
         {/* Modals for Landing Screen */}
+        {showDebugger && (
+          <ExtractionDebugger onClose={() => setShowDebugger(false)} />
+        )}
         {(!isConfigured || showSettings) && (
           <SettingsModal
             onClose={() => setShowSettings(false)}
@@ -610,17 +622,13 @@ const App: React.FC = () => {
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[50]">
         <div className="flex items-center gap-1 bg-surface-container-highest/90 backdrop-blur-md border border-outline-variant shadow-md px-5 py-2.5 rounded-m3-full text-xs font-medium text-on-surface hover:scale-105 transition-transform duration-300 cursor-default">
           <ThemeToggle />
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
           <LanguageSelector
             currentLang={language}
             onLanguageChange={setLanguage}
             placement="top"
           />
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
           <button
             onClick={() => setShowLegal(true)}
             className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
@@ -628,13 +636,9 @@ const App: React.FC = () => {
             <Scale className="w-3.5 h-3.5 text-outline" />
             <span>{t.app.footer.legal}</span>
           </button>
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
           <UsageWidget refreshTrigger={refreshUsage} fullSize={true} />
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
           <button
             onClick={() => setShowLogs(true)}
             className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
@@ -642,9 +646,15 @@ const App: React.FC = () => {
             <FileJson className="w-3.5 h-3.5 text-outline" />
             <span>{t.app.footer.logs}</span>
           </button>
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
+          <button
+            onClick={() => setShowDebugger(true)}
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
+          >
+            <Activity className="w-3.5 h-3.5 text-blue-500" />
+            <span>Debug</span>
+          </button>
+          <div className="w-px h-4 bg-on-surface/20"></div>
           <div className="flex items-center gap-2 px-4">
             <div
               className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.4)] ${
@@ -655,9 +665,7 @@ const App: React.FC = () => {
               {t.app.status.dbReady}
             </span>
           </div>
-
           <div className="w-px h-4 bg-on-surface/20"></div>
-
           <button
             onClick={() => setShowChangelog(true)}
             className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
@@ -669,6 +677,9 @@ const App: React.FC = () => {
       </footer>
 
       {/* Modals */}
+      {showDebugger && (
+        <ExtractionDebugger onClose={() => setShowDebugger(false)} />
+      )}
       {(!isConfigured || showSettings) && (
         <SettingsModal
           onClose={() => setShowSettings(false)}

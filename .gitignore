@@ -34,3 +34,5 @@ logfiles/
 .test.credentials.md
 lint-report.json
 lint_output.txt
+
+docs/PENDING_COMMIT.md

@@ -68,7 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  Google's Privacy Policy
+                  Google&apos;s Privacy Policy
                 </a>{" "}
                 for more details.
               </p>

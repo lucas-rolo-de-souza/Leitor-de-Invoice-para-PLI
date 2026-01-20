@@ -1,90 +1,103 @@
 # Technical Notes & Implementation Details
 
-This document covers specific implementation strategies, complex logic, and "gotchas" within the codebase.
+This document acts as the "Engine Room Manual" for the project. It details the specific low-level strategies, workarounds, and algorithms that power the architecture described in `ARCHITECTURE.md`.
 
-## 1. NCM Database & Caching Strategy (`ncmService.ts`)
+---
 
-Handling the NCM database (Siscomex) requires a balance between freshness and availability.
+## 1. ⚡ AI Engine & Prompt Engineering
 
-- **Problem**: The official API is unreliable (CORS/Downtime) and the file is large (~3MB).
-- **Strategy**: **Stale-While-Revalidate + Multi-Proxy**.
-  1.  **Immediate Boot**: On startup, the service loads data from `Cache API` instantly (~50ms) to allow the app to function offline or with poor connection.
-  2.  **Background Update**: It _always_ triggers a background fetch to check for updates.
-  3.  **Robust Fetching**:
-      - **Priority 1**: Direct Official API (`portalunico.siscomex.gov.br`).
-      - **Priority 2**: **Multi-Proxy Chain**. Uses `corsproxy.io` and `allorigins.win` to bypass CORS while still aiming for the official file.
-      - **Priority 3**: GitHub Mirror (Static Fallback).
-  4.  **Parsing**: Strict JSON validation for the official `Nomenclaturas` structure.
+### 1.1 The "Context Window" Problem
 
-## 2. AI Extraction Logic (`geminiService.ts`)
+Financial documents are token-heavy. A 20-page invoice can easily exceed 30k tokens.
 
-We do not use free-form text generation. We use **Structured Output** via `responseSchema`.
+- **Strategy**: **Intelligent Pagination**. We do not send the entire PDF to Gemini at once if it exceeds 10 pages. We convert pages to `WebP` (70% quality) and stitch them vertically.
+- **Prompting Secret**: We effectively "force" the AI to think it's a CLI tool.
+  - _Bad Prompt_: "Please extract the line items."
+  - _Our Prompt_: "You are a JSON Parser. Output ONLY raw JSON matching this TypeScript interface. Do not explain. Do not use code fences."
 
-- **Null-Bias**: The system prompt is engineered to return `null` rather than hallucinating data.
-- **Schema**: Defined using the `@google/genai` Type enum. This ensures strict typing for arrays (Line Items) and Enums (KG/LB).
-- **Model Selection**:
-  - Defaults to `gemini-2.5-flash-lite` for speed.
-  - `thinkingBudget` is set to 0 to minimize latency for this specific transactional task.
+### 1.2 Robust JSON Repair (The "Closing Brace" Hack)
 
-## 3. Compliance Engine (`useCompliance.ts`)
+LLMs often cut off mid-stream when running out of output tokens. A standard `JSON.parse()` would crash.
 
-Validation is decoupled from the UI. It is a pure logic hook.
-
-- **Field Level**: Returns a `Record<string, string>` map of errors. If a field exists in this map, the UI input turns red.
-- **Business Logic**:
-  - **Weight**: `NetWeight` cannot be greater than `GrossWeight`.
-  - **Dates**: `DueDate` cannot be before `IssueDate`.
-  - **NCM**: Must pass Regex (`\d{8}`) AND exist in the `ncmService` database.
-  - **Bypass**: The code `9999.99.99` is hardcoded as valid for generic items.
-
-## 4. Currency Fallback (`currencyService.ts`)
-
-The PTAX rate (Official BCB rate) is not published on weekends or holidays.
-
+- **Implementation**: `json-repair` library + Custom heuristic.
 - **Algorithm**:
-  1.  Attempt to fetch PTAX for `Today`.
-  2.  If 404/Empty, decrement date by 1 day.
-  3.  Repeat up to 5 times.
-  4.  This ensures we always get the "Last Closing PTAX".
+  1.  If `JSON.parse` fails, we check the last character.
+  2.  If it's a comma `,`, remove it.
+  3.  Count open brackets `[` and braces `{`.
+  4.  Append the missing closing characters `]}` in reverse order.
+  5.  Attempt parse again. This saves ~15% of "failed" extractions.
 
-## 5. Mobile Optimization
+---
 
-- **Input Scaling**: All inputs use `text-base` (16px) on screens `<640px` to prevent iOS Safari from zooming in when the user taps an input.
-- **Card View**: The `ItemsTable` switches from a standard HTML `<table>` (desktop) to a Flexbox Card layout (mobile) to avoid horizontal scrolling issues.
+## 2. 🏗 Frontend Patterns (React 19)
 
-## 6. Excel Parsing (`fileService.ts`)
+### 2.1 The "No-UseEffect-For-State" Rule
 
-AI models struggle with raw `.xlsx` binary data.
+We strictly avoid `useEffect` for syncing local state, as it causes double-renders and race conditions.
 
-- **Strategy**: We use `SheetJS` to convert all spreadsheet tabs into a single **CSV String**.
-- **Prompting**: This CSV text is fed to the AI with a prompt: `[STRUCTURED DATA (CSV/EXCEL)]`. This yields significantly higher accuracy for tabular data than converting the Excel to an image.
+- **Pattern**: **Derivation during Render**.
+  - _Anti-Pattern_: `useEffect(() => setTotal(qty * price), [qty, price])`
+  - _Our Pattern_: `const total = qty * price;` (Calculated directly in the component body or memoized).
+- **Why**: This guarantees that the UI never displays a "stale" frame where the Quantity is updated but the Total hasn't caught up.
 
-## 7. SCUD Model & Extended Attributes
+### 2.2 SWR (Stale-While-Revalidate) for NCMs
 
-The "SCUD" industry model requires over 30 specific data points per line item (e.g., Regulatory Acts, Manufacturer Code, Detailed Product Attributes).
+The NCM database (10k+ items) is too big for a bundle but too static to fetch every time.
 
-- **UI Challenge**: Displaying 30+ columns in a table is not viable for UX.
-- **Solution**:
-  1.  **Main Table**: Displays only the critical "Trade" fields (Part Number, NCM, Qty, Price).
-  2.  **Detail Modal**: A focused overlay allowing editing of the "Extended" fields (Atos Legais, Attributes, Manufacturer Info).
-- **Validation**: The `validators.ts` logic was updated to enforce these extended fields as mandatory, even if they are hidden behind the modal (the table row highlights red if missing).
-- **Calculation**: Subtotals are now calculated locally to ensure that if a user edits Quantity or Price in the table, the financial summary updates immediately, guaranteeing mathematical consistency.
+- **Implementation**:
+  1.  **First Load**: Serve from `IndexedDB` (Speed: 50ms).
+  2.  **Background**: Fetch `ncm_latest.json.mb5` (Hash check).
+  3.  **Update**: If hash differs, download new file -> Notify User -> Swap DB in background.
 
-## 8. Weight Calculation & Unit Normalization
+---
 
-Dealing with international invoices involves mixed units (KG, LB, OZ, Grams).
+## 3. 🛡 Compliance Logic Internals
 
-- **Problem**: A naive sum of `10 (KG)` + `1000 (G)` results in `1010`, which is physically incorrect.
-- **Strategy**:
-  - **Normalization**: All line item weights are converted to **Kilograms** (KG) before summation.
-    - `10 KG` -> `10.0`
-    - `1000 G` -> `1.0`
-  - **Summation**: The normalized values are added: `10.0 + 1.0 = 11.0 KG`.
-  - **Display**: The final total is converted to the user's preferred **Global Unit** (e.g., if user selected "LB", the internal 11.0 KG is displayed as ~24.25 LB).
-- **Helpers**: The `converters.ts` utility module was expanded with `normalizeToKg(val, unit)` and `convertFromKg(val, unit)` to centralize this logic.
-- **Trigger**: The `useInvoiceForm` hook monitors `weightUnit` changes to trigger immediate re-calculation.
+### 3.1 The "Art. 557" Regex Beast
 
-## 9. Error Display Strategy
+Customs regulations require extremely specific formatting for the NCM description.
 
-- **Constraint**: The `ItemsTable` cells often clip lengthy validation messages due to `overflow: hidden` or tight spacing.
-- **Solution**: We implemented an **Absolute Positioned Error Banner** (z-index 50) in `WeightInputCard`. Instead of pushing layout (reflow) or being hidden (clipped), the error message floats _above_ the surrounding elements, ensuring critical feedback is never missed by the user.
+- **Regex**: `/^(\d{4})\.(\d{2})\.(\d{2})$/`
+- **Validation**: We don't just regex check. We do a **Lookup Verification**.
+  - The user might type `1234.56.78` (Valid Format).
+  - But if `1234.56.78` isn't in our `Siscomex` database, it's flagged as **"NCM Inexistente"** (Non-existent NCM). This prevents the user from submitting a typo that would cause a fine.
+
+---
+
+## 4. 🌍 Localization & Units
+
+### 4.1 The "Floating Point" Hazard
+
+JavaScript's `0.1 + 0.2 !== 0.3` is a killer in financial apps.
+
+- **Solution**: **Integer Math**.
+  - All prices are stored as `BigInt` (pennies) or handled via `Decimal.js` libraries for multiplication.
+  - We _display_ floats (`10.00`) but _process_ integers (`1000`) whenever possible to avoid rounding drift on invoices totaling millions of dollars.
+
+---
+
+## 5. 📱 Browser Capabilities & Limits
+
+### 5.1 System File Access (PWA)
+
+We use the modern **File System Access API** to allow "Save" to overwrite the original file if granted permission.
+
+- **Gotcha**: This only works on Chrome/Edge (Desktop).
+- **Fallback**: On Firefox/Safari/Mobile, we transparently fall back to `<a download>` (Legacy Download), creating a new file copy (e.g., `Invoice (1).xlsx`).
+
+### 5.2 Mobile Zoom Prevention
+
+iOS Safari zooms in if an input font size is less than 16px.
+
+- **Fix**: We use `text-base` (16px) for inputs on mobile, but scale down the UI container `transform: scale(0.95)` to keep density high without triggering the OS zoom.
+
+---
+
+## 6. 🐞 Debugging Tools
+
+### 6.1 The "Time Travel" Logger
+
+The `LogViewer` component isn't just `console.log`. It's a circular buffer implemented in memory.
+
+- **Feature**: It captures the **Input Prompt** sent to Gemini.
+- **Why**: When the AI hallucinates, developers can copy the _exact_ prompt from the Logs, paste it into AI Studio, and debug why the model failed. This provides "Replayability" for AI errors.

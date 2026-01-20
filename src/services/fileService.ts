@@ -32,7 +32,7 @@ const processSpreadsheet = async (file: File): Promise<FilePart> => {
         const base64Data = btoa(
           new TextEncoder()
             .encode(fullTextContent)
-            .reduce((data, byte) => data + String.fromCharCode(byte), "")
+            .reduce((data, byte) => data + String.fromCharCode(byte), ""),
         );
 
         resolve({
@@ -40,7 +40,7 @@ const processSpreadsheet = async (file: File): Promise<FilePart> => {
           data: base64Data,
           filename: file.name,
         });
-      } catch (err) {
+      } catch {
         reject(new Error(`Falha ao processar planilha: ${file.name}`));
       }
     };
@@ -93,7 +93,7 @@ export const readFileToBase64 = async (file: File): Promise<FilePart> => {
  */
 export const processFilesToBase64 = async (
   files: File[],
-  onProgress?: (msg: string) => void
+  onProgress?: (msg: string) => void,
 ): Promise<FilePart[]> => {
   onProgress?.(`📂 Preparando ${files.length} arquivo(s)...`);
   // Map files to promises and execute them

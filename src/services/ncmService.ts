@@ -107,7 +107,7 @@ class NcmService {
 
         if (loadedFromCache) {
           logger.info(
-            "[NCM Service] Dados carregados do Cache Storage. Serviço pronto."
+            "[NCM Service] Dados carregados do Cache Storage. Serviço pronto.",
           );
 
           // ESTRATÉGIA "ALWAYS UPDATE":
@@ -116,13 +116,13 @@ class NcmService {
           this.fetchAndProcess()
             .then(() => {
               logger.info(
-                "[NCM Service] Atualização em background concluída com sucesso."
+                "[NCM Service] Atualização em background concluída com sucesso.",
               );
             })
             .catch((err) => {
               logger.warn(
                 "[NCM Service] Atualização em background falhou (Cache preservado).",
-                err
+                err,
               );
             });
 
@@ -131,7 +131,7 @@ class NcmService {
 
         // 2. Se não tem cache, o download é OBRIGATÓRIO (Bloqueante)
         logger.info(
-          "[NCM Service] Cache ausente. Iniciando download obrigatório..."
+          "[NCM Service] Cache ausente. Iniciando download obrigatório...",
         );
         await this.fetchAndProcess();
 
@@ -224,7 +224,7 @@ class NcmService {
     if (Date.now() < penaltyUntil) {
       const remainingMinutes = Math.ceil((penaltyUntil - Date.now()) / 60000);
       logger.warn(
-        `[NCM Service] PENALTY BOX ATIVADO. Acesso à API Oficial bloqueado por ${remainingMinutes} min.`
+        `[NCM Service] PENALTY BOX ATIVADO. Acesso à API Oficial bloqueado por ${remainingMinutes} min.`,
       );
       return true;
     }
@@ -238,7 +238,7 @@ class NcmService {
     const penaltyUntil = Date.now() + hours * 60 * 60 * 1000;
     localStorage.setItem(PENALTY_BOX_KEY, penaltyUntil.toString());
     logger.error(
-      `[NCM Service] COTA EXCEDIDA ou ERRO DE API (429/PUCX-ER1001). Penalidade ativada por ${hours} hora(s).`
+      `[NCM Service] COTA EXCEDIDA ou ERRO DE API (429/PUCX-ER1001). Penalidade ativada por ${hours} hora(s).`,
     );
   }
 
@@ -298,7 +298,7 @@ class NcmService {
           blob.size /
           1024 /
           1024
-        ).toFixed(2)} MB`
+        ).toFixed(2)} MB`,
       );
     } catch (e) {
       logger.error("[NCM Service] Falha ao gravar no Cache Storage", e);
@@ -315,7 +315,7 @@ class NcmService {
   private async fetchWithRetry(
     url: string,
     retries: number = 3,
-    timeoutMs: number = 15000
+    timeoutMs: number = 15000,
   ): Promise<Response> {
     for (let i = 0; i < retries; i++) {
       try {
@@ -345,23 +345,23 @@ class NcmService {
             this.activatePenalty(1);
             throw new Error("Erro PUCX-ER1001: Cota Excedida (Siscomex)");
           }
-        } catch (ignore) {
+        } catch {
           // não era json ou não deu pra ler
         }
 
         logger.warn(
           `[NCM Service] Tentativa ${
             i + 1
-          }/${retries} falhou para ${url}. Status: ${res.status}`
+          }/${retries} falhou para ${url}. Status: ${res.status}`,
         );
 
         if (res.status >= 400 && res.status < 500) {
           throw new Error(`Erro Cliente (${res.status})`);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Se foi ativado penalty, não adianta tentar de novo
         if (
-          err.message &&
+          err instanceof Error &&
           (err.message.includes("429") || err.message.includes("PUCX-ER1001"))
         ) {
           throw err;
@@ -369,7 +369,7 @@ class NcmService {
 
         if (i === retries - 1) throw err;
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * Math.pow(2, i))
+          setTimeout(resolve, 1000 * Math.pow(2, i)),
         );
       }
     }
@@ -378,23 +378,25 @@ class NcmService {
 
   private async fetchAndProcess() {
     try {
-      let data: any = null;
+      let data: unknown = null;
       let sourceUsed = "";
 
       // Validação rápida para garantir que baixamos algo útil
-      const isValidNcmData = (d: any) => {
+      const isValidNcmData = (d: unknown) => {
         if (!d) return false;
         // Estrutura Oficial
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anyD = d as any;
         if (
-          d.Nomenclaturas &&
-          Array.isArray(d.Nomenclaturas) &&
-          d.Nomenclaturas.length > 0
+          anyD.Nomenclaturas &&
+          Array.isArray(anyD.Nomenclaturas) &&
+          anyD.Nomenclaturas.length > 0
         )
           return true;
         // Estrutura Legacy/Flat Array
         if (Array.isArray(d) && d.length > 0) return true;
         // Estrutura Recursiva (Legacy Mirror)
-        if (d.Nomenclatura) return true;
+        if (anyD.Nomenclatura) return true;
 
         return false;
       };
@@ -413,10 +415,10 @@ class NcmService {
           } else {
             throw new Error("JSON inválido (Direto).");
           }
-        } catch (err: any) {
+        } catch (err) {
           logger.warn(
             "[NCM Service] Falha download direto. Tentando Proxy...",
-            err
+            err,
           );
 
           // Se o erro foi Cota/429, o fetchWithRetry já ativou a flag e lançou erro.
@@ -446,7 +448,7 @@ class NcmService {
                 sourceUsed = "Oficial (CORS Proxy)";
               } else {
                 logger.warn(
-                  `[NCM Service] Proxy retornou dados inválidos: ${proxyUrl}`
+                  `[NCM Service] Proxy retornou dados inválidos: ${proxyUrl}`,
                 );
               }
             } catch (err) {
@@ -456,7 +458,7 @@ class NcmService {
         }
       } else {
         logger.info(
-          "[NCM Service] Pulando API Oficial devido a Penalidade Ativa."
+          "[NCM Service] Pulando API Oficial devido a Penalidade Ativa.",
         );
       }
 
@@ -481,12 +483,14 @@ class NcmService {
       }
 
       if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const safeData = data as any;
         // Log de Metadados Oficiais (se disponível)
-        if (data.Data_Ultima_Atualizacao_NCM) {
+        if (safeData.Data_Ultima_Atualizacao_NCM) {
           logger.info(
             `[NCM Service] Data Base Oficial: ${
-              data.Data_Ultima_Atualizacao_NCM
-            } (${data.Ato || "N/A"})`
+              safeData.Data_Ultima_Atualizacao_NCM
+            } (${safeData.Ato || "N/A"})`,
           );
         }
 
@@ -494,8 +498,8 @@ class NcmService {
         let count = 0;
 
         // Parser para estrutura Oficial (Array "Nomenclaturas")
-        if (data.Nomenclaturas && Array.isArray(data.Nomenclaturas)) {
-          for (const item of data.Nomenclaturas) {
+        if (safeData.Nomenclaturas && Array.isArray(safeData.Nomenclaturas)) {
+          for (const item of safeData.Nomenclaturas) {
             // SISCOMEX Oficial usa "Codigo" e "Descricao"
             if (item.Codigo && item.Descricao) {
               // Remove pontos do código para normalizar (Ex: "0101.21.00" -> "01012100")
@@ -510,19 +514,21 @@ class NcmService {
         }
         // Parser legado/mirror (Se a estrutura for diferente ou recursiva)
         else {
-          const traverse = (node: any) => {
-            if (node.Codigo && typeof node.Codigo === "string") {
-              const cleanCode = node.Codigo.replace(/\./g, "").trim();
-              if (cleanCode) newMap.set(cleanCode, node.Descricao);
+          const traverse = (node: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyNode = node as any;
+            if (anyNode.Codigo && typeof anyNode.Codigo === "string") {
+              const cleanCode = anyNode.Codigo.replace(/\./g, "").trim();
+              if (cleanCode) newMap.set(cleanCode, anyNode.Descricao);
             }
             ["Secoes", "Capitulos", "Posicoes", "SubPosicoes", "Itens"].forEach(
               (key) => {
-                if (node[key] && Array.isArray(node[key]))
-                  node[key].forEach(traverse);
-              }
+                if (anyNode[key] && Array.isArray(anyNode[key]))
+                  anyNode[key].forEach(traverse);
+              },
             );
           };
-          const root = data.Nomenclatura || data;
+          const root = safeData.Nomenclatura || safeData;
           if (Array.isArray(root)) root.forEach(traverse);
           count = newMap.size;
         }
@@ -532,7 +538,7 @@ class NcmService {
           this.isReady = true;
           await this.saveToCache();
           logger.info(
-            `[NCM Service] Sucesso! Fonte: ${sourceUsed}. Registros: ${count}.`
+            `[NCM Service] Sucesso! Fonte: ${sourceUsed}. Registros: ${count}.`,
           );
         } else {
           throw new Error("JSON baixado não contém registros NCM válidos.");
@@ -541,7 +547,7 @@ class NcmService {
     } catch (error) {
       logger.error(
         "[NCM Service] Erro fatal no processo de atualização.",
-        error
+        error,
       );
       throw error;
     }

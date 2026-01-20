@@ -169,7 +169,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
               <div
                 key={idx}
                 className={`p-3 rounded-lg border flex flex-col sm:flex-row gap-3 items-start sm:items-center ${getLevelColor(
-                  log.level
+                  log.level,
                 )}`}
               >
                 <div className="flex items-center gap-2 min-w-[140px]">
@@ -181,7 +181,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ onClose }) => {
                 </div>
                 <div className="flex-1 break-all">
                   <span className="font-medium mr-2">{log.message}</span>
-                  {log.data && (
+                  {!!log.data && (
                     <details className="mt-2 text-[11px] bg-surface/50 p-2 rounded cursor-pointer border border-outline-variant/20">
                       <summary className="font-bold opacity-70 hover:opacity-100 select-none">
                         View Data Payload

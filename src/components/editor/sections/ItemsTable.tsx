@@ -25,7 +25,7 @@ type ItemsTableProps = {
   onLineItemChange: (
     index: number,
     field: keyof LineItem,
-    value: string | number
+    value: string | number,
   ) => void;
   onNCMChange: (index: number, value: string) => void;
   onAdd: () => void;
@@ -46,7 +46,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   onDuplicate,
   onRemove,
   isReadOnly,
-  calculatedTotals,
 }) => {
   const t = useTranslation();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -59,9 +58,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
     setEditingIndex(null);
   };
 
-  const isNumeric = (v: any) => {
+  const isNumeric = (v: unknown) => {
     if (v === null || v === undefined || v === "") return false;
-    const n = Number(v.toString().replace(",", "."));
+    const n = Number(String(v).replace(",", "."));
     return !isNaN(n);
   };
 
@@ -242,7 +241,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         onLineItemChange(
                           index,
                           "taxClassificationDetail",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       error={
@@ -342,7 +341,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               index,
                               "weightUnit",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           className="h-full bg-transparent pl-1 pr-0.5 text-[11px] font-bold text-on-surface-variant cursor-pointer outline-none hover:text-primary appearance-none text-center min-w-[32px]"
@@ -585,12 +584,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "partNumber",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         error={
                           isFieldInvalid(
-                            data.lineItems[editingIndex].partNumber
+                            data.lineItems[editingIndex].partNumber,
                           )
                             ? t.editor.items.validation.required ||
                               "Obrigatório"
@@ -607,7 +606,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "productCode",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         error={
@@ -639,12 +638,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "description",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           error={
                             isFieldInvalid(
-                              data.lineItems[editingIndex].description
+                              data.lineItems[editingIndex].description,
                             ) ||
                             (data.lineItems[editingIndex].description?.length ||
                               0) > 254
@@ -667,7 +666,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "taxClassificationDetail",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         error={
@@ -702,7 +701,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "quantity",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           error={
@@ -722,12 +721,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "unitMeasure",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           error={
                             isFieldInvalid(
-                              data.lineItems[editingIndex].unitMeasure
+                              data.lineItems[editingIndex].unitMeasure,
                             )
                               ? t.editor.items.validation.required
                               : null
@@ -748,7 +747,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "unitPrice",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           error={
@@ -774,7 +773,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           }
                           error={
                             !isNumeric(
-                              data.lineItems[editingIndex].unitNetWeight
+                              data.lineItems[editingIndex].unitNetWeight,
                             )
                               ? t.editor.items.validation.numeric
                               : null
@@ -820,13 +819,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "manufacturerCode",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         error={
                           !data.lineItems[editingIndex].manufacturerCode ||
                           !isNumeric(
-                            data.lineItems[editingIndex].manufacturerCode
+                            data.lineItems[editingIndex].manufacturerCode,
                           )
                             ? t.editor.items.validation.numericRequired
                             : null
@@ -842,12 +841,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "manufacturerRef",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         error={
                           isFieldInvalid(
-                            data.lineItems[editingIndex].manufacturerRef
+                            data.lineItems[editingIndex].manufacturerRef,
                           )
                             ? t.editor.items.validation.required
                             : null
@@ -861,7 +860,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "material",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         isReadOnly={isReadOnly}
@@ -875,7 +874,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "manufacturerCountry",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         isReadOnly={isReadOnly}
@@ -905,7 +904,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Type",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -921,7 +920,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Issuer",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -937,7 +936,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Number",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -953,7 +952,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Year",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -967,7 +966,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Ex",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -983,7 +982,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct1Rate",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1007,7 +1006,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Type",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1023,7 +1022,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Issuer",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1039,7 +1038,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Number",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1055,7 +1054,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Year",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1069,7 +1068,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Ex",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1085,7 +1084,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "legalAct2Rate",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1115,7 +1114,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr1Level",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1129,7 +1128,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr1Name",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1143,7 +1142,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr1Value",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1162,7 +1161,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr2Level",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1176,7 +1175,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr2Name",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1190,7 +1189,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr2Value",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1209,7 +1208,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr3Level",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1223,7 +1222,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr3Name",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1237,7 +1236,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                             onLineItemChange(
                               editingIndex,
                               "attr3Value",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           isReadOnly={isReadOnly}
@@ -1256,7 +1255,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                           onLineItemChange(
                             editingIndex,
                             "complementaryNote",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         isReadOnly={isReadOnly}

@@ -16,7 +16,7 @@ import { usageService } from "./usageService";
  * 4. **Truncation Fallback**: If balancing fails, it aggressively cuts back to the
  *    last known valid closing position to salvage partial data.
  */
-const safeJsonParse = (text: string): any => {
+const safeJsonParse = (text: string): unknown => {
   // 1. Strip Markdown Code Blocks & aggressively find JSON start/end
   let clean = text
     .replace(/```json\s*/gi, "")
@@ -24,7 +24,7 @@ const safeJsonParse = (text: string): any => {
     .trim();
 
   // If text starts with non-JSON character, try to find the first '[' or '{'
-  const firstBracket = clean.search(/[\{\[]/);
+  const firstBracket = clean.search(/[{[]/);
   if (firstBracket > 0) {
     clean = clean.substring(firstBracket);
   }
@@ -162,14 +162,16 @@ async function withRetry<T>(
   operation: () => Promise<T>,
   onProgress?: (msg: string) => void,
   attempt = 1,
-  maxRetries = 3,
+  maxRetries = 5,
 ): Promise<T> {
   try {
     return await operation();
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Check for 429 (Rate Limit) or 503 (Overloaded)
-    const status = error?.status;
-    const msg = error?.message || "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const status = (error as any)?.status;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const msg = (error as any)?.message || "";
 
     const isRateLimit =
       status === 429 ||
@@ -183,7 +185,7 @@ async function withRetry<T>(
       msg.includes("UNAVAILABLE");
 
     if ((isRateLimit || isOverloaded) && attempt <= maxRetries) {
-      // Exponential backoff: 2s, 4s, 8s...
+      // Exponential backoff: 2s, 4s, 8s, 16s, 32s...
       let delay = 2000 * Math.pow(2, attempt - 1);
 
       // Simple regex to find "retry in X.XXs" or similar if provided by API message
@@ -197,22 +199,57 @@ async function withRetry<T>(
         ? "Servidor ocupado (503)"
         : "Limite de cota (429)";
 
-      onProgress?.(
-        `⚠️ ${reason}. Aguardando ${waitSeconds}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`,
-      );
-
-      logger.warn(`${reason}. Retrying in ${delay}ms`, {
+      const logMsg = `${reason}. Retrying in ${delay}ms`;
+      logger.warn(logMsg, {
         attempt,
         maxRetries,
         error: msg,
       });
-      await sleep(delay);
+
+      // Log to Tracer
+      extractionTracer.logEvent(
+        "API_CONNECT",
+        `⚠️ Retry ${attempt}/${maxRetries}: ${reason}`,
+        { error: msg, delayMs: delay },
+      );
+
+      // Countdown Loop for better UI feedback
+      for (let i = waitSeconds; i > 0; i--) {
+        onProgress?.(
+          `⚠️ ${reason}. Aguardando ${i}s para tentar novamente (Tentativa ${attempt}/${maxRetries})...`,
+        );
+        await sleep(1000);
+      }
 
       return withRetry(operation, onProgress, attempt + 1, maxRetries);
     }
+
+    // Log non-retriable or final failure
+    extractionTracer.logEvent(
+      "ERROR",
+      "API Request Failed (Final/Non-Retriable)",
+      { error: msg, status },
+    );
     throw error;
   }
 }
+
+/**
+ * Orchestrates the AI Extraction Workflow using the "Flash-Chunking" strategy.
+ *
+ * Process:
+ * 1. **Parallel Execution**: Dispatches two concurrent prompts:
+ *    - `metadataPrompt`: Extracts Header, Entities, Logistics (Fast, structured).
+ *    - `lineItemsPrompt`: Extracts Table Data in a Minified JSON Array format (High volume).
+ * 2. **Rate Limiting**: Implements a buffer sleep to respect Gemini's Requests Per Second (RPS) limits.
+ * 3. **Merging**: Combines the Metadata object with the parsed Line Items array.
+ * 4. **Post-Processing**: Normalizes numbers, weights, and dates.
+ *
+ * @param fileParts - Array of base64 file data.
+ * @param onProgress - Callback for UI updates.
+ * @param modelId - The Gemini model version to use.
+ */
+import { extractionTracer } from "./extractionTracer";
 
 /**
  * Orchestrates the AI Extraction Workflow using the "Flash-Chunking" strategy.
@@ -235,175 +272,256 @@ export async function extractInvoiceData(
   onProgress?: (msg: string) => void,
   modelId: string = "gemini-2.5-flash",
 ): Promise<InvoiceData> {
-  // 1. Prepare Prompts
-  const metadataPrompt = getMetadataPrompt();
-  const lineItemsPrompt = getLineItemsPrompt();
+  // Start Tracing
+  const totalSize = fileParts.reduce((acc, part) => acc + part.data.length, 0); // Approx size (base64 is larger than binary)
+  extractionTracer.start(fileParts.length, totalSize);
 
-  // Initialize AI Client
-  const ai = new GoogleGenAI({ apiKey });
+  try {
+    // 1. Prepare Prompts
+    extractionTracer.logEvent(
+      "PRE_PROCESSING",
+      "Preparing prompts and payloads...",
+    );
+    const metadataPrompt = getMetadataPrompt();
+    const lineItemsPrompt = getLineItemsPrompt();
 
-  // Helper for generation with Retry Logic
-  const generate = async (prompt: string, schema?: any) => {
-    // Configuration for Gemini 2.5 (New SDK Style)
-    const config = {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      temperature: 0,
-    };
+    // Initialize AI Client
+    const ai = new GoogleGenAI({ apiKey });
 
-    // Map FileParts to SDK InlineData format
-    const mediaParts = fileParts.map((part) => ({
-      inlineData: { mimeType: part.mimeType, data: part.data },
-    }));
+    // Helper for generation with Retry Logic
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const generate = async (prompt: string, taskName: string, schema?: any) => {
+      // Configuration for Gemini 2.5 (New SDK Style)
+      const config = {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0,
+      };
 
-    // Inner execution function
-    const execute = async () => {
-      return await ai.models.generateContent({
-        model: modelId,
-        contents: [
+      // Map FileParts to SDK InlineData format
+      const mediaParts = fileParts.map((part) => ({
+        inlineData: { mimeType: part.mimeType, data: part.data },
+      }));
+
+      // Inner execution function
+      const execute = async () => {
+        const start = Date.now();
+        extractionTracer.logEvent(
+          "API_CONNECT",
+          `Sending ${taskName} request to Gemini (${modelId})...`,
+        );
+
+        const result = await ai.models.generateContent({
+          model: modelId,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                ...mediaParts,
+                {
+                  text: `[SYSTEM: ATTACHED FILES CONTEXT]\n${fileParts
+                    .map((f, i) => `${i + 1}. ${f.filename || "Unknown File"}`)
+                    .join("\n")}\n\n${prompt}`,
+                },
+              ],
+            },
+          ],
+          config: config,
+        });
+
+        const duration = Date.now() - start;
+        const inputTokens = result.usageMetadata?.promptTokenCount || 0;
+        const outputTokens = result.usageMetadata?.candidatesTokenCount || 0;
+
+        extractionTracer.logEvent(
+          taskName === "Metadata" ? "METADATA_RESPONSE" : "LINE_ITEMS_RESPONSE",
+          `Received ${taskName} response`,
+          { textSnippet: result.text?.substring(0, 200) + "..." }, // Log snippet
           {
-            role: "user",
-            parts: [
-              ...mediaParts,
-              {
-                text: `[SYSTEM: ATTACHED FILES CONTEXT]\n${fileParts
-                  .map((f, i) => `${i + 1}. ${f.filename || "Unknown File"}`)
-                  .join("\n")}\n\n${prompt}`,
-              },
-            ],
+            latency: duration,
+            tokens: {
+              input: inputTokens,
+              output: outputTokens,
+              total: inputTokens + outputTokens,
+            },
           },
-        ],
-        config: config,
-      });
+        );
+
+        return result;
+      };
+
+      return withRetry(execute, onProgress);
     };
 
-    return withRetry(execute, onProgress);
-  };
+    const startTime = Date.now();
 
-  const startTime = Date.now();
+    // Task A: Metadata
+    onProgress?.(
+      `🚀 Solicitando extração de Cabeçalho e Metadados (${modelId})...`,
+    );
+    extractionTracer.logEvent(
+      "METADATA_REQUEST",
+      "Starting Metadata Extraction Loop",
+    );
 
-  // Task A: Metadata
-  onProgress?.(
-    `🚀 Solicitando extração de Cabeçalho e Metadados (${modelId})...`,
-  );
-  let metadataResult;
-  try {
-    metadataResult = await generate(metadataPrompt);
-  } catch (e) {
-    console.error("Metadata extraction failed", e);
-    throw e;
-  }
+    let metadataResult;
+    try {
+      metadataResult = await generate(metadataPrompt, "Metadata");
+    } catch (e) {
+      console.error("Metadata extraction failed", e);
+      extractionTracer.fail("Metadata extraction failed", e);
+      throw e;
+    }
 
-  // Rate Limit Buffer: Sleep 1s to ensure we don't hit the 2 Requests/Second burst limit
-  await sleep(1000);
+    // Rate Limit Buffer
+    extractionTracer.logEvent(
+      "API_CONNECT",
+      "Rate limit buffer: Pausing for 3s...",
+    );
+    await sleep(3000);
 
-  // Task B: Line Items
-  onProgress?.(`📦 Extraindo e analisando Linhas de Itens (${modelId})...`);
-  let lineItemsResult;
-  try {
-    lineItemsResult = await generate(lineItemsPrompt);
-  } catch (e) {
-    console.error("Line items extraction failed", e);
-    throw e;
-  }
+    // Task B: Line Items
+    onProgress?.(`📦 Extraindo e analisando Linhas de Itens (${modelId})...`);
+    extractionTracer.logEvent(
+      "LINE_ITEMS_REQUEST",
+      "Starting Line Items Extraction Loop",
+    );
 
-  const endTime = Date.now();
-  const duration = endTime - startTime;
+    let lineItemsResult;
+    try {
+      lineItemsResult = await generate(lineItemsPrompt, "LineItems");
+    } catch (e) {
+      console.error("Line items extraction failed", e);
+      extractionTracer.fail("Line items extraction failed", e);
+      throw e;
+    }
 
-  // 3. Log Usage (Approximate - we sum tokens)
-  // Note: usageService.logTransaction is fire-and-forget or we await it if we want strict logging
-  const totalInputTokens =
-    (metadataResult.usageMetadata?.promptTokenCount || 0) +
-    (lineItemsResult.usageMetadata?.promptTokenCount || 0);
-  const totalOutputTokens =
-    (metadataResult.usageMetadata?.candidatesTokenCount || 0) +
-    (lineItemsResult.usageMetadata?.candidatesTokenCount || 0);
+    const endTime = Date.now();
+    const duration = endTime - startTime;
 
-  usageService.logTransaction(
-    modelId,
-    totalInputTokens,
-    totalOutputTokens,
-    duration,
-  );
+    // 3. Log Usage (Accurate - derived from API Usage Metadata)
+    const totalInputTokens =
+      (metadataResult.usageMetadata?.promptTokenCount || 0) +
+      (lineItemsResult.usageMetadata?.promptTokenCount || 0);
+    const totalOutputTokens =
+      (metadataResult.usageMetadata?.candidatesTokenCount || 0) +
+      (lineItemsResult.usageMetadata?.candidatesTokenCount || 0);
 
-  // 4. Parse & Merge
-  onProgress?.("🔧 Processando, limpando e unificando dados...");
+    usageService.logTransaction(
+      modelId,
+      totalInputTokens,
+      totalOutputTokens,
+      duration,
+    );
 
-  const metadata = safeJsonParse(metadataResult.text || "{}");
+    // 4. Parse & Merge
+    onProgress?.("🔧 Processando, limpando e unificando dados...");
+    extractionTracer.logEvent("PARSING", "Parsing and unifying data...");
 
-  // Parse Minified Line Items
-  const rawItemsData = safeJsonParse(lineItemsResult.text || "[]");
-  let lineItemsObj: any[] = [];
+    const metadata = safeJsonParse(metadataResult.text || "{}");
 
-  // Check if we received the expected Array-of-Arrays format
-  if (Array.isArray(rawItemsData)) {
-    // Check if it's the new Minified format (Array of Arrays)
-    if (rawItemsData.length > 0 && Array.isArray(rawItemsData[0])) {
-      // Map Minified Arrays back to Objects
-      // Column Order: [Description, PartNumber, Quantity, UnitMeasure, UnitPrice, Total, NetWeight]
-      lineItemsObj = rawItemsData.map((row: any[]) => {
-        // Safety check for row length (fallback if AI hallucinates cols)
-        return {
-          description: row[0]?.toString() || "Item Desconhecido",
-          partNumber: row[1] || null, // Can be string or null
-          quantity:
-            typeof row[2] === "number" ? row[2] : parseFloat(row[2]) || 0,
-          unitMeasure: row[3] || "UN",
-          unitPrice:
-            typeof row[4] === "number" ? row[4] : parseFloat(row[4]) || 0,
-          total: typeof row[5] === "number" ? row[5] : parseFloat(row[5]) || 0,
-          netWeight:
-            typeof row[6] === "number" ? row[6] : parseFloat(row[6]) || 0,
-          // Default fields
-          productCode: null,
-          ncm: row[8]?.toString() || null, // Capture NCM from column 8
-          taxClassificationDetail: null,
-          unitNetWeight: 0, // Calculated later
-          manufacturerRef: row[7] || null,
-        };
-      });
-      logger.info(
-        `Parsed ${lineItemsObj.length} items from Minified Array format.`,
-      );
-    } else {
-      // Fallback: It might be the old object format (if model ignored instructions, rare but possible)
-      // OR it handles the wrapper object case { "lineItems": [...] }
-      // OR it handles the wrapper object case { "lineItems": [...] }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!Array.isArray(rawItemsData) && (rawItemsData as any).lineItems) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        lineItemsObj = (rawItemsData as any).lineItems;
+    // Parse Minified Line Items
+    const rawItemsData = safeJsonParse(lineItemsResult.text || "[]");
+    let lineItemsObj: unknown[] = [];
+
+    // Check if we received the expected Array-of-Arrays format
+    if (Array.isArray(rawItemsData)) {
+      // Check if it's the new Minified format (Array of Arrays)
+      if (rawItemsData.length > 0 && Array.isArray(rawItemsData[0])) {
+        // Map Minified Arrays back to Objects
+        // Column Order: [Description, PartNumber, Quantity, UnitMeasure, UnitPrice, Total, NetWeight]
+        lineItemsObj = rawItemsData.map((row: unknown[]) => {
+          // Safety check for row length (fallback if AI hallucinates cols)
+          return {
+            description: row[0]?.toString() || "Item Desconhecido",
+            partNumber: typeof row[1] === "string" ? row[1] : null,
+            quantity:
+              typeof row[2] === "number"
+                ? row[2]
+                : parseFloat(String(row[2])) || 0,
+            unitMeasure: typeof row[3] === "string" ? row[3] : "UN",
+            unitPrice:
+              typeof row[4] === "number"
+                ? row[4]
+                : parseFloat(String(row[4])) || 0,
+            total:
+              typeof row[5] === "number"
+                ? row[5]
+                : parseFloat(String(row[5])) || 0,
+            netWeight:
+              typeof row[6] === "number"
+                ? row[6]
+                : parseFloat(String(row[6])) || 0,
+            // Default fields
+            productCode: null,
+            ncm: row[8]?.toString() || null, // Capture NCM from column 8
+            taxClassificationDetail: null,
+            unitNetWeight: 0, // Calculated later
+            manufacturerCode: null,
+            manufacturerRef: typeof row[7] === "string" ? row[7] : null,
+          };
+        });
+        logger.info(
+          `Parsed ${lineItemsObj.length} items from Minified Array format.`,
+        );
       } else {
+        // Fallback: It might be the old object format (if model ignored instructions, rare but possible)
+        // OR it handles the wrapper object case { "lineItems": [...] }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        lineItemsObj = rawItemsData as any[]; // Assume it's array of objects
+        if (!Array.isArray(rawItemsData) && (rawItemsData as any).lineItems) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          lineItemsObj = (rawItemsData as any).lineItems;
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          lineItemsObj = rawItemsData as any[]; // Assume it's array of objects
+        }
       }
     }
+
+    // Merge: Metadata takes precedence for headers, ItemsData provides the list
+    const combinedData: InvoiceData = {
+      ...initialInvoiceData, // Defaults
+      ...(metadata as object), // Overwrite with metadata
+      lineItems: Array.isArray(lineItemsObj)
+        ? (lineItemsObj as InvoiceData["lineItems"])
+        : [],
+    };
+
+    // 5. Post-Processing (Normalization)
+    // Existing logic to normalize numbers, dates, weights...
+    const finalResult = postProcessInvoiceData(combinedData);
+
+    // 6. Validation (Soft Force)
+    extractionTracer.logEvent("VALIDATION", "Running schema validation...");
+    const validation = InvoiceSchema.safeParse(finalResult);
+    if (validation.success) {
+      logger.info("✅ Zod Validation Passed: Data is strictly compliant.");
+      extractionTracer.logEvent("VALIDATION", "Validation Passed");
+    } else {
+      logger.warn("⚠️ Zod Validation Failed: Data structure has mismatches.", {
+        errors: validation.error.format(),
+      });
+      extractionTracer.logEvent(
+        "VALIDATION",
+        "Validation Warnings (Soft Fail)",
+        {
+          errors: validation.error.format(),
+        },
+      );
+      // We do NOT throw here yet, to avoid breaking the UI for minor mismatches.
+    }
+
+    extractionTracer.complete();
+    return finalResult;
+  } catch (error) {
+    // Catch-all to ensure trace fails
+    if (error instanceof Error) {
+      extractionTracer.fail(error.message, error);
+    } else {
+      extractionTracer.fail("Unknown error occurred");
+    }
+    throw error;
   }
-
-  // Merge: Metadata takes precedence for headers, ItemsData provides the list
-  const combinedData: InvoiceData = {
-    ...initialInvoiceData, // Defaults
-    ...metadata, // Overwrite with metadata
-    lineItems: Array.isArray(lineItemsObj) ? lineItemsObj : [],
-  };
-
-  // 5. Post-Processing (Normalization)
-  // Existing logic to normalize numbers, dates, weights...
-  const finalResult = postProcessInvoiceData(combinedData);
-
-  // 6. Validation (Soft Force)
-  const validation = InvoiceSchema.safeParse(finalResult);
-  if (validation.success) {
-    logger.info("✅ Zod Validation Passed: Data is strictly compliant.");
-  } else {
-    logger.warn("⚠️ Zod Validation Failed: Data structure has mismatches.", {
-      errors: validation.error.format(),
-    });
-    // We do NOT throw here yet, to avoid breaking the UI for minor mismatches.
-    // In the future, we can return 'validation.data' if we want to enforce strictness.
-  }
-
-  return finalResult;
 }
 
 // --- Prompt Generators (Split) ---
@@ -507,7 +625,7 @@ function getLineItemsPrompt(): string {
  * Shared Post-Processing to normalize data types and calculated fields.
  * Refactored from the original extractInvoiceData logic.
  */
-function postProcessInvoiceData(data: any): InvoiceData {
+function postProcessInvoiceData(data: Partial<InvoiceData>): InvoiceData {
   // Ensure safe defaults
   const result: InvoiceData = { ...initialInvoiceData, ...data };
 

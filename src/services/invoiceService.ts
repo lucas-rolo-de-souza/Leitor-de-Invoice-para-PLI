@@ -32,7 +32,7 @@ export const invoiceService = {
       // 2. Enforce Limit
       if (count !== null && count >= MAX_INVOICES) {
         const error = new Error("Storage limit reached");
-        (error as any).code = "LIMIT_REACHED";
+        (error as { code?: string }).code = "LIMIT_REACHED";
         throw error;
       }
 

@@ -39,7 +39,7 @@ function getPrompt() {
 
 The prompt text must follow this structure for best results:
 
-1.  **Persona**: "You are an expert [Role] AI." (e.g., Customs Data Analyst).
+1.  **Persona**: "You are an expert <Role> AI." (e.g., Customs Data Analyst).
 2.  **Task**: Clear, single-sentence objective.
 3.  **Scope**: Numbered list of exactly what to look for.
 4.  **Exclusions**: Explicitly state what NOT to extract (e.g., "IGNORE line items").

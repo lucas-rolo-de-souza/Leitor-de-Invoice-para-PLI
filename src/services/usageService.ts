@@ -1,4 +1,4 @@
-// Version: 1.05.00.11
+// Version: 1.06.00.01
 import { logger } from "./loggerService";
 
 export type UsageLog = {
@@ -23,28 +23,69 @@ export type SessionStats = {
   totalCostInBrl: number;
   averageLatency: number;
 };
-// Pricing Configuration (Estimated per 1 Million Tokens in USD)
-const PRICING_MAP: Record<string, { input: number; output: number }> = {
-  // Gemini 2.5 Series (Stable IDs)
-  "gemini-2.5-flash": { input: 0.075, output: 0.3 },
-  "gemini-2.5-flash-lite": { input: 0.0375, output: 0.15 },
 
-  // Gemini 2.0 Series (Stable IDs)
-  "gemini-2.0-flash": { input: 0.1, output: 0.4 },
-  "gemini-2.0-flash-lite": { input: 0.05, output: 0.2 },
+// Pricing Types
+type PricingTier = {
+  maxInputTokens: number; // e.g. 128000. If Infinity, applies to all > previous tier
+  inputRate: number; // $ per 1 Million tokens
+  outputRate: number; // $ per 1 Million tokens
+};
 
-  // Gemma Series
-  "gemma-3": { input: 0.05, output: 0.2 }, // Estimated
-  "gemma-3n": { input: 0.03, output: 0.12 }, // Estimated
+type ModelPricing = {
+  tiers: PricingTier[];
+};
 
-  // Gemini 1.5 Series (Legacy Support)
-  "gemini-1.5-flash": { input: 0.075, output: 0.3 },
-  "gemini-1.5-pro": { input: 0.3, output: 1.2 },
+// Pricing Configuration (2026 Updated Values)
+// Sources: Google Vertex AI / Gemini Developer API Pricing as of Jan 2026.
+const PRICING_REGISTRY: Record<string, ModelPricing> = {
+  // Gemini 2.5 Flash
+  // Optimized for speed and cost-efficiency.
+  // Standard Tier: <= 128k context
+  // Long Context Tier: > 128k context (Estimated 2x multiplier standard)
+  "gemini-2.5-flash": {
+    tiers: [
+      { maxInputTokens: 128_000, inputRate: 0.3, outputRate: 2.5 },
+      { maxInputTokens: Infinity, inputRate: 0.6, outputRate: 5.0 },
+    ],
+  },
 
-  // Fallback / Aliases
-  "gemini-flash-latest": { input: 0.075, output: 0.3 },
-  "gemini-flash-lite-latest": { input: 0.0375, output: 0.15 },
-  default: { input: 0.075, output: 0.3 },
+  // Gemini 2.5 Flash-Lite
+  // Extremely low cost for high volume tasks.
+  "gemini-2.5-flash-lite": {
+    tiers: [
+      { maxInputTokens: 128_000, inputRate: 0.1, outputRate: 0.4 },
+      { maxInputTokens: Infinity, inputRate: 0.2, outputRate: 0.8 },
+    ],
+  },
+
+  // Gemini 2.0 Series (Baseline)
+  "gemini-2.0-flash": {
+    tiers: [{ maxInputTokens: Infinity, inputRate: 0.1, outputRate: 0.4 }],
+  },
+
+  // High Reasoning Models (Thinking Mode)
+  "gemini-2.0-flash-thinking-exp": {
+    tiers: [{ maxInputTokens: Infinity, inputRate: 0.3, outputRate: 3.0 }],
+  },
+
+  // Gemini 1.5 Series (Legacy Reference)
+  "gemini-1.5-flash": {
+    tiers: [
+      { maxInputTokens: 128_000, inputRate: 0.075, outputRate: 0.3 },
+      { maxInputTokens: Infinity, inputRate: 0.15, outputRate: 0.6 },
+    ],
+  },
+  "gemini-1.5-pro": {
+    tiers: [
+      { maxInputTokens: 128_000, inputRate: 3.5, outputRate: 10.5 },
+      { maxInputTokens: Infinity, inputRate: 7.0, outputRate: 21.0 },
+    ],
+  },
+};
+
+// Default Fallback
+const DEFAULT_PRICING: ModelPricing = {
+  tiers: [{ maxInputTokens: Infinity, inputRate: 0.1, outputRate: 0.4 }],
 };
 
 const STORAGE_KEY = "invoice_ai_usage_history_v1";
@@ -100,8 +141,30 @@ class UsageService {
   }
 
   /**
+   * Calculates the cost of a request based on the model and token usage.
+   * Handles tiered pricing (e.g., higher cost for > 128k context).
+   */
+  public calculateCost(
+    modelId: string,
+    inputTokens: number,
+    outputTokens: number,
+  ): number {
+    const pricing = PRICING_REGISTRY[modelId] || DEFAULT_PRICING;
+
+    // Find the applicable tier based on Input Tokens (Context Size)
+    // Pricing tiers are usually based on the Total Input Context.
+    const tier =
+      pricing.tiers.find((t) => inputTokens <= t.maxInputTokens) ||
+      pricing.tiers[pricing.tiers.length - 1];
+
+    const inputCost = (inputTokens / 1_000_000) * tier.inputRate;
+    const outputCost = (outputTokens / 1_000_000) * tier.outputRate;
+
+    return inputCost + outputCost;
+  }
+
+  /**
    * Logs a transaction, calculates estimated cost, and persists to storage.
-   * cost is calculated based on Input/Output tokens and the model's specific pricing.
    *
    * Side Effects:
    * - Fetches current PTAX (Dollar Rate) async for BRL conversion.
@@ -111,14 +174,9 @@ class UsageService {
     modelId: string,
     inputTokens: number,
     outputTokens: number,
-    latencyMs: number
+    latencyMs: number,
   ) {
-    const pricing = PRICING_MAP[modelId] || PRICING_MAP["default"];
-
-    // Calculate Cost: (Tokens / 1,000,000) * Price_Per_Million
-    const inputCost = (inputTokens / 1_000_000) * pricing.input;
-    const outputCost = (outputTokens / 1_000_000) * pricing.output;
-    const totalCost = inputCost + outputCost;
+    const totalCost = this.calculateCost(modelId, inputTokens, outputTokens);
 
     // Fetch PTAX (Async)
     let ptax: number | null = null;
@@ -154,10 +212,10 @@ class UsageService {
       const brlLog = costInBrl > 0 ? ` | R$${costInBrl.toFixed(4)}` : "";
       logger.info(
         `[Usage] ${modelId} | ${latencyMs}ms | In: ${inputTokens} | Out: ${outputTokens} | $${totalCost.toFixed(
-          6
-        )}${brlLog}`
+          6,
+        )}${brlLog}`,
       );
-    } catch (e) {
+    } catch {
       console.log(`[Usage] ${modelId} | $${totalCost.toFixed(6)}`);
     }
   }
@@ -167,7 +225,7 @@ class UsageService {
    */
   private calculateStats(
     logsToProcess: UsageLog[],
-    sessionIdLabel: string
+    sessionIdLabel: string,
   ): SessionStats {
     if (logsToProcess.length === 0) {
       return {
@@ -184,20 +242,20 @@ class UsageService {
     const totalRequests = logsToProcess.length;
     const totalInputTokens = logsToProcess.reduce(
       (acc, log) => acc + log.inputTokens,
-      0
+      0,
     );
     const totalOutputTokens = logsToProcess.reduce(
       (acc, log) => acc + log.outputTokens,
-      0
+      0,
     );
     const totalCost = logsToProcess.reduce((acc, log) => acc + log.cost, 0);
     const totalCostInBrl = logsToProcess.reduce(
       (acc, log) => acc + (log.costInBrl || 0),
-      0
+      0,
     );
     const totalLatency = logsToProcess.reduce(
       (acc, log) => acc + log.latencyMs,
-      0
+      0,
     );
 
     return {
@@ -216,7 +274,7 @@ class UsageService {
    */
   public getCurrentSessionStats(): SessionStats {
     const sessionLogs = this.logs.filter(
-      (l) => l.sessionId === this.currentSessionId
+      (l) => l.sessionId === this.currentSessionId,
     );
     return this.calculateStats(sessionLogs, this.currentSessionId);
   }
@@ -241,7 +299,7 @@ class UsageService {
     // Sort Newest first
     return [...targetLogs].sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   }
 

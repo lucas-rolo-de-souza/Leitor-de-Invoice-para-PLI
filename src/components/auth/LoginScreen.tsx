@@ -28,8 +28,12 @@ export const LoginScreen: React.FC = () => {
       if (error) {
         throw error;
       }
-    } catch (err: any) {
-      setError(err.message || "Falha ao entrar");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Falha ao entrar");
+      }
     } finally {
       setLoading(false);
     }

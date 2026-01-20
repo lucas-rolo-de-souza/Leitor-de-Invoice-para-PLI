@@ -28,8 +28,8 @@ export const useCompliance = (data: InvoiceData) => {
 
     const check = (
       field: string,
-      value: any,
-      msg: string = t.editor.items.validation.required
+      value: unknown,
+      msg: string = t.editor.items.validation.required,
     ) => {
       if (isFieldInvalid(value)) errs[field] = msg;
     };
@@ -38,12 +38,12 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "invoiceNumber",
       data.invoiceNumber,
-      t.editor.compliance.validation.invoiceNumber
+      t.editor.compliance.validation.invoiceNumber,
     );
     check(
       "packingListNumber",
       data.packingListNumber,
-      t.editor.compliance.validation.packingListNumber
+      t.editor.compliance.validation.packingListNumber,
     );
     check("date", data.date, t.editor.compliance.validation.date);
     check("dueDate", data.dueDate, t.editor.compliance.validation.dueDate);
@@ -59,34 +59,34 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "exporterName",
       data.exporterName,
-      t.editor.compliance.validation.exporterName
+      t.editor.compliance.validation.exporterName,
     );
     check(
       "exporterAddress",
       data.exporterAddress,
-      t.editor.compliance.validation.exporterAddress
+      t.editor.compliance.validation.exporterAddress,
     );
     check(
       "importerName",
       data.importerName,
-      t.editor.compliance.validation.importerName
+      t.editor.compliance.validation.importerName,
     );
     check(
       "importerAddress",
       data.importerAddress,
-      t.editor.compliance.validation.importerAddress
+      t.editor.compliance.validation.importerAddress,
     );
 
     // Logistics
     check(
       "totalNetWeight",
       data.totalNetWeight,
-      t.editor.compliance.validation.netWeight
+      t.editor.compliance.validation.netWeight,
     );
     check(
       "totalGrossWeight",
       data.totalGrossWeight,
-      t.editor.compliance.validation.grossWeight
+      t.editor.compliance.validation.grossWeight,
     );
 
     if (!errs.totalNetWeight && !errs.totalGrossWeight) {
@@ -100,19 +100,19 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "totalVolumes",
       data.totalVolumes,
-      t.editor.compliance.validation.volumes
+      t.editor.compliance.validation.volumes,
     );
     check(
       "volumeType",
       data.volumeType,
-      t.editor.compliance.validation.volumeType
+      t.editor.compliance.validation.volumeType,
     );
 
     // Trade & Cross-Field Logic
     check(
       "incoterm",
       data.incoterm,
-      t.editor.compliance.validation.incotermRequired
+      t.editor.compliance.validation.incotermRequired,
     );
     if (data.incoterm) {
       if (!isValidReference(data.incoterm, INCOTERMS_LIST)) {
@@ -145,7 +145,7 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "paymentTerms",
       data.paymentTerms,
-      t.editor.compliance.validation.paymentRequired
+      t.editor.compliance.validation.paymentRequired,
     );
     if (data.paymentTerms) {
       if (!isValidReference(data.paymentTerms, PAYMENT_TERMS_LIST)) {
@@ -156,7 +156,7 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "currency",
       data.currency,
-      t.editor.compliance.validation.currencyRequired
+      t.editor.compliance.validation.currencyRequired,
     );
     if (data.currency) {
       if (!isValidReference(data.currency, CURRENCIES_LIST)) {
@@ -171,12 +171,12 @@ export const useCompliance = (data: InvoiceData) => {
     check(
       "subtotal",
       data.subtotal,
-      t.editor.compliance.validation.subtotalInvalid
+      t.editor.compliance.validation.subtotalInvalid,
     );
     check(
       "grandTotal",
       data.grandTotal,
-      t.editor.compliance.validation.grandTotalInvalid
+      t.editor.compliance.validation.grandTotalInvalid,
     );
 
     return errs;
@@ -198,13 +198,13 @@ export const useCompliance = (data: InvoiceData) => {
           issues.push(
             `Item ${idx + 1}: Part Number '${item.partNumber}' ${
               t.editor.compliance.validation.itemPartNumberPossibleNcm
-            }`
+            }`,
           );
         }
       }
       if (item.ncm && /[a-zA-Z]/.test(item.ncm)) {
         issues.push(
-          `Item ${idx + 1}: ${t.editor.compliance.validation.itemNcmHasLetters}`
+          `Item ${idx + 1}: ${t.editor.compliance.validation.itemNcmHasLetters}`,
         );
       }
     });
@@ -219,12 +219,12 @@ export const useCompliance = (data: InvoiceData) => {
       id: string,
       title: string,
       isValid: boolean,
-      emptyValue: any,
+      emptyValue: unknown,
       successMsg: string,
       errorMsg: string,
       emptyMsg: string,
       expected: string,
-      details: string
+      details: string,
     ) => {
       let status = "ok";
       let msg = successMsg;
@@ -245,19 +245,19 @@ export const useCompliance = (data: InvoiceData) => {
       items.length > 0 &&
       items.every(
         (i) =>
-          !isFieldInvalid(i.description) && (i.description?.length || 0) <= 254
+          !isFieldInvalid(i.description) && (i.description?.length || 0) <= 254,
       );
     const descStatus =
       items.length === 0
         ? "missing"
         : allItemsHaveDescription
-        ? "ok"
-        : "invalid";
+          ? "ok"
+          : "invalid";
     const descMsg = allItemsHaveDescription
       ? t.editor.compliance.checklist.goods.success
       : items.some((i) => (i.description?.length || 0) > 254)
-      ? t.editor.compliance.checklist.goods.errorLength
-      : t.editor.compliance.checklist.goods.missing;
+        ? t.editor.compliance.checklist.goods.errorLength
+        : t.editor.compliance.checklist.goods.missing;
 
     // NCM Check
     const validNcms = items.length > 0 && items.every((i) => isValidNCM(i.ncm));
@@ -312,7 +312,7 @@ export const useCompliance = (data: InvoiceData) => {
       pliStatus = "invalid";
       pliMsg = `${t.editor.compliance.checklist.pli.error.replace(
         "Erros em itens",
-        `Erros em ${itemsInvalidPli.length} itens`
+        `Erros em ${itemsInvalidPli.length} itens`,
       )}`;
 
       // Hint for the first invalid item
@@ -344,7 +344,7 @@ export const useCompliance = (data: InvoiceData) => {
         t.editor.compliance.checklist.exporter.error,
         t.editor.compliance.checklist.exporter.missing,
         t.editor.compliance.checklist.exporter.expected,
-        !data.exporterName ? missingName : "OK"
+        !data.exporterName ? missingName : "OK",
       ),
 
       createCheck(
@@ -356,7 +356,7 @@ export const useCompliance = (data: InvoiceData) => {
         t.editor.compliance.checklist.importer.error,
         t.editor.compliance.checklist.importer.missing,
         t.editor.compliance.checklist.importer.expected,
-        !data.importerName ? missingName : "OK"
+        !data.importerName ? missingName : "OK",
       ),
 
       {
@@ -398,7 +398,7 @@ export const useCompliance = (data: InvoiceData) => {
         t.editor.compliance.checklist.volumes.error,
         t.editor.compliance.checklist.volumes.missing,
         t.editor.compliance.checklist.volumes.expected,
-        `Qtd: ${data.totalVolumes || "-"}`
+        `Qtd: ${data.totalVolumes || "-"}`,
       ),
 
       createCheck(
@@ -410,7 +410,7 @@ export const useCompliance = (data: InvoiceData) => {
         fieldErrors.totalGrossWeight || "Erro.",
         t.editor.compliance.checklist.grossWeight.missing,
         t.editor.compliance.checklist.grossWeight.expected,
-        `PB: ${data.totalGrossWeight}`
+        `PB: ${data.totalGrossWeight}`,
       ),
 
       createCheck(
@@ -422,7 +422,7 @@ export const useCompliance = (data: InvoiceData) => {
         fieldErrors.totalNetWeight || "Erro.",
         t.editor.compliance.checklist.netWeight.missing,
         t.editor.compliance.checklist.netWeight.expected,
-        `PL: ${data.totalNetWeight}`
+        `PL: ${data.totalNetWeight}`,
       ),
 
       createCheck(
@@ -435,7 +435,7 @@ export const useCompliance = (data: InvoiceData) => {
           t.editor.compliance.checklist.origin.invalid,
         t.editor.compliance.checklist.origin.missing,
         t.editor.compliance.checklist.origin.expected,
-        `${data.countryOfOrigin || "-"}`
+        `${data.countryOfOrigin || "-"}`,
       ),
 
       createCheck(
@@ -448,7 +448,7 @@ export const useCompliance = (data: InvoiceData) => {
           t.editor.compliance.checklist.payment.invalid,
         t.editor.compliance.checklist.payment.missing,
         t.editor.compliance.checklist.payment.expected,
-        `${data.paymentTerms || "-"}`
+        `${data.paymentTerms || "-"}`,
       ),
 
       createCheck(
@@ -460,7 +460,7 @@ export const useCompliance = (data: InvoiceData) => {
         fieldErrors.currency || t.editor.compliance.checklist.currency.invalid,
         t.editor.compliance.checklist.currency.missing,
         t.editor.compliance.checklist.currency.expected,
-        `${data.currency || "-"}`
+        `${data.currency || "-"}`,
       ),
 
       createCheck(
@@ -472,7 +472,7 @@ export const useCompliance = (data: InvoiceData) => {
         fieldErrors.incoterm || t.editor.compliance.checklist.incoterm.invalid,
         t.editor.compliance.checklist.incoterm.missing,
         t.editor.compliance.checklist.incoterm.expected,
-        `${data.incoterm || "-"}`
+        `${data.incoterm || "-"}`,
       ),
     ];
   }, [data, fieldErrors, itemIssues, t]);

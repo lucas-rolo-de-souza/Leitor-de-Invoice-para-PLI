@@ -1,90 +1,128 @@
-# Design System
+# Design System: "Enterprise Premium"
 
-## Overview
+## 1. Design Philosophy
 
-The **Invoice Reader AI** follows a "Flux" design philosophy: utility-first, cleaner, flatter, and bolder. It leverages **Material Design 3** (M3) principles for its foundation, particularly the color system and elevation model, but adapts them for a dense, productivity-focused desktop interface.
+The **Invoice Reader AI para PLI** adopts an **"Enterprise Premium"** aesthetic, blending the robust, information-dense utility of **Flux** with the refined, accessible foundations of **Material Design 3 (M3)**.
 
-## 🎨 Color Palette (Material Design 3)
+Our guiding principles:
 
-The application uses dynamic semantic color tokens defined in `src/styles/index.css` and mapped in `tailwind.config.js`.
+- **Information Density without Clutter**: We manage high-volume data (invoices with 100+ lines) using whitespace and subtle borders rather than heavy containers.
+- **Systemic Trust**: The UI uses specific colors (Blue/Green/Red) _only_ to communicate status (Validation/Success/Error). We avoid decorative colors that could be mistaken for data signals.
+- **Fluid Motion**: All state changes (sorting, filtering, opening modals) are animated to provide cognitive continuity, preserving the user's context.
 
-### Color Roles
+### 1.1 Strategic Architecture: Why Tailwind over Material Libraries?
 
-| Token               | Light Mode Value      | Dark Mode Value      | Usage                                       |
-| :------------------ | :-------------------- | :------------------- | :------------------------------------------ |
-| `primary`           | `#2551b8` (Aura Blue) | `#a8c7fa` (Blue 200) | Key CTA, active states, progress bars       |
-| `on-primary`        | `#ffffff`             | `#002568`            | Text on primary backgrounds                 |
-| `primary-container` | `#e0e7ff`             | `#003a94`            | Lower emphasis fills (e.g., selected chips) |
-| `surface`           | `#fef7ff`             | `#141218`            | Default page background                     |
-| `surface-container` | `#f3edf7`             | `#211f26`            | Card backgrounds, modest contrast           |
-| `surface-bright`    | `#fef7ff`             | `#3b383e`            | Highlighted areas                           |
-| `error`             | `#b3261e`             | `#f2b8b5`            | Error messages, destructive actions         |
-| `outline`           | `#79747e`             | `#938f99`            | Low emphasis borders                        |
-| `outline-variant`   | `#cac4d0`             | `#49454f`            | Dividers, disabled borders                  |
+We deliberately chose **Material Design 3 (Principles)** + **Tailwind CSS (Implementation)** instead of using an off-the-shelf component library (like MUI or Material Web) for three critical reasons:
 
-### Dark Mode Strategy
+1.  **Identity (The "Google Clone" Problem)**:
+    - Component libraries are opinionated. To achieve our unique "Enterprise Premium" look, we would spend more time overriding library defaults than writing actual styles. Tailwind allows us to build _our_ system from scratch using M3 only as a theoretical guide.
+2.  **Information Density**:
+    - Standard Material Design is mobile-first and "airy" (lots of padding). Our users need to see 50+ lines of an invoice at once. Tailwind lets us implement a "Flux-like" density—tighter spacing, smaller fonts—that heavy libraries fight against.
+3.  **Performance Check**:
+    - Libraries like MUI ship with heavy JavaScript runtimes (Emotion/Styled-Components). Tailwind compiles to raw, static CSS at build time, resulting in zero runtime overhead and instant page loads.
 
-- **True Black vs. Grey**: We use `#141218` (M3 Dark) as the base, not `#000000`.
-- **Elevation Overlays**: In dark mode, elevation is expressed via semi-transparent white overlays (5% - 16%) rather than shadows.
-- **Contrast**: Text colors use `on-surface` (`#1d1b20` / `#e6e1e5`) to ensure WCAG 2.1 AA compliance.
+---
 
-## ✒️ Typography
+## 2. 🎨 Color System (Semantic Tokens)
 
-We use a dual-font stack to establish hierarchy and readability.
+We use a strictly semantic color system. **Never use hardcoded hex values or raw Tailwind colors (e.g., `blue-500`) in components.** Always use the semantic abstraction.
 
-- **Headings**: `Merriweather` (Serif). Used for `h1` through `h6`. Adds a touch of formality and editorial feel.
-- **Body**: `Inter` (Sans-serif). Used for all interface text, tables, and inputs. selected for its excellent legibility at small sizes.
+### 2.1 Brand & Action
+
+| Token                  | Light (`#`) | Dark (`#`) | Usage                                         |
+| :--------------------- | :---------- | :--------- | :-------------------------------------------- |
+| `primary`              | `#2551b8`   | `#a8c7fa`  | Primary Buttons, Active States, Progress Bars |
+| `on-primary`           | `#ffffff`   | `#002568`  | Text on Primary Backgrounds                   |
+| `primary-container`    | `#eff6ff`   | `#003a94`  | Active Menu Items, Selected Chips             |
+| `on-primary-container` | `#1d4ed8`   | `#dbfafe`  | Text inside Primary Container                 |
+
+### 2.2 Surfaces & Backgrounds
+
+| Token               | Light (`#`) | Dark (`#`) | Usage                                     |
+| :------------------ | :---------- | :--------- | :---------------------------------------- |
+| `surface`           | `#fef7ff`   | `#141218`  | **Page Background**. The deepest layer.   |
+| `surface-container` | `#f3edf7`   | `#211f26`  | **Cards & Modals**. Rides above the page. |
+| `surface-bright`    | `#ffffff`   | `#3b383e`  | **Input Fields & Highlighted Areas**.     |
+
+### 2.3 Borders & Outlines
+
+| Token             | Light (`#`) | Dark (`#`) | Usage                                 |
+| :---------------- | :---------- | :--------- | :------------------------------------ |
+| `outline`         | `#79747e`   | `#938f99`  | Input Borders (Default), Card Strokes |
+| `outline-variant` | `#cac4d0`   | `#49454f`  | Dividers, Disabled Elements           |
+
+### 2.4 Functional Status (Validation)
+
+| Role        | Color         | Usage                                                  |
+| :---------- | :------------ | :----------------------------------------------------- |
+| **Error**   | `red-600`     | Critical failures, blocking validation errors.         |
+| **Warning** | `amber-500`   | Non-blocking issues (e.g., potential weight mismatch). |
+| **Success** | `emerald-600` | Validated NCMs, successful saves.                      |
+| **Info**    | `blue-500`    | Neutral system messages.                               |
+
+---
+
+## 3. ✒️ Typography
+
+We employ a **Dual-Typeface Stack** to create a professional, editorial feel that distinguishes us from generic admin dashboards.
+
+### 3.1 Font Families
+
+- **Headings**: `Merriweather` (Serif). Used for `h1`-`h3`. Adds Authority and Trust.
+- **Interface**: `Inter` (Sans-Serif). Used for `body`, `inputs`, `tables`. Optimized for legibility at small sizes (12px-14px).
+
+### 3.2 Type Scale
+
+| Element          | Font         | Size/Weight          | Tracking | Usage                               |
+| :--------------- | :----------- | :------------------- | :------- | :---------------------------------- |
+| **Display**      | Merriweather | `text-4xl` / Bold    | `tight`  | Marketing pages, Empty States       |
+| **H1**           | Merriweather | `text-2xl` / Bold    | `normal` | Page Titles                         |
+| **H2**           | Merriweather | `text-xl` / SemiBold | `normal` | Section Headers (e.g., "Logistics") |
+| **Body Large**   | Inter        | `text-lg` / Regular  | `normal` | Lead text, Modal descriptions       |
+| **Body Default** | Inter        | `text-sm` / Regular  | `normal` | Standard input text, table cells    |
+| **Caption**      | Inter        | `text-xs` / Medium   | `wide`   | Helper text, Labels, Badges         |
+
+---
+
+## 4. � Components & Patterns
+
+### 4.1 The "Glass" Card (`backdrop-blur`)
+
+We use a subtle glassmorphism effect for floating elements (Header, Sticky Actions) to maintain context while scrolling.
 
 ```css
-/* Tailwind Class Mappings */
-font-sans -> "Inter", sans-serif
-font-serif -> "Merriweather", serif
+.glass-panel {
+  @apply bg-surface/80 backdrop-blur-md border-b border-outline-variant;
+}
 ```
 
-## 🧱 Layout & Spacing
+### 4.2 Validated Inputs
 
-### Grid System
+Inputs are not just text boxes; they are communication channels.
 
-- **Desktop**: Flexible 12-column logic, typically split into sidebar/main or card grids.
-- **Mobile**: Single column stack with full-width inputs (`text-base` to prevent iOS zoom).
+- **Idle**: Grey border (`outline-variant`).
+- **Focus**: Primary Blue ring (`primary`).
+- **Error**: Red border + Shake Animation + Helper Text (`error`).
+- **Success**: Green Check icon right-aligned (`success`).
 
-### Rounding (Shape System)
+### 4.3 Floating Feedback (The "Toast")
 
-- **XS (`rounded-m3-xs`)**: 4px - Text inputs, Menu items
-- **SM (`rounded-m3-sm`)**: 8px - Chips, Menus
-- **MD (`rounded-m3-md`)**: 12px - Cards, Dialogs
-- **LG (`rounded-m3-lg`)**: 16px - Large Containers
+We do not block the user's view with large alerts. Validation errors often appear as **Floating Banners** anchored to the specific card causing the issue, ensuring the user knows exactly _where_ to look without losing the overall context.
 
-## 🧩 Core Components
+---
 
-### `ValidatedInput`
+## 5. ⚡ Motion & Interaction
 
-A wrapper around standard inputs that handles:
+Motion is not decoration; it is navigation.
 
-- Floating logic (label positioning).
-- Error checking (red border + helper text).
-- Success states.
+- **Duration**: `200ms` for micro-interactions (hover), `300ms` for layout changes (modal open).
+- **Easing**: `ease-out` (Fast entrance, slow exit).
+- **Stagger**: List items (like the Invoice Line Items) load with a `50ms` stagger to reduce perceived wait time.
 
-### `WeightInputCard` with Floating Error Banner
+---
 
-A specialized input component for mass/weight that handles:
+## 6. ♿ Accessibility (A11y)
 
-- **Unit Selector**: Embedded dropdown (KG, LB, G, OZ).
-- **Absolute Error Positioning**: To prevent layout clipping in tight tables, validation errors appear as a **Floating Banner** (z-index 50) directly below the card, overlaying adjacent content if necessary. This ensures visibility without breaking the refined grid layout.
-
-### `ThemeToggle`
-
-A specialized button that switches between `light` and `dark` classes on the `<html>` element. Persists preference to `localStorage`.
-
-### `LogisticsSection`
-
-A complex organism that handles:
-
-- Package types (Pallets, Cartons).
-- Weight/Measurement inputs.
-- "Smart Conversion" toggles (KG/LB).
-
-## 🔮 Future Improvements
-
-- **Motion**: Standardize transition durations (currently mixed `300ms` and `500ms`).
-- **Iconography**: Fully migrate to `lucide-react` (currently partial).
+- **Contrast**: All text meets WCAG 2.1 AA (4.5:1 ratio).
+- **Focus Indicators**: Custom focus rings ensure keyboard navigability without relying on browser defaults.
+- **Reduce Motion**: All animations respect the `prefers-reduced-motion` media query.

@@ -7,7 +7,18 @@ import markdown from "@eslint/markdown";
 import css from "@eslint/css";
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "coverage", ".git"] },
+  {
+    ignores: [
+      "dist",
+      "node_modules",
+      "coverage",
+      ".git",
+      "package-lock.json",
+      "lint-report.json",
+      "current_lint_errors.txt",
+      "src/index.css",
+    ],
+  },
 
   // Base JS/TS configs
   js.configs.recommended,
@@ -33,6 +44,7 @@ export default tseslint.config(
       ...pluginReact.configs.flat.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/display-name": "off",
+      "react/prop-types": "off",
     },
   },
 

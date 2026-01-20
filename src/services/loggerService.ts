@@ -12,8 +12,7 @@ export type LogEntry = {
   formattedTimestamp: string; // Local String (Human readable: DD/MM/YYYY HH:MM:SS)
   level: LogLevel;
   message: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  data?: unknown;
 };
 
 const STORAGE_KEY = "app_logs";
@@ -81,8 +80,7 @@ class LoggerService {
    * Adds a new log entry.
    * Also outputs to the browser console for immediate dev feedback.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private add(level: LogLevel, message: string, data?: any) {
+  private add(level: LogLevel, message: string, data?: unknown) {
     const now = new Date();
 
     const entry: LogEntry = {
@@ -116,7 +114,7 @@ class LoggerService {
       fractionalSecondDigits: 3,
     });
     const consoleMsg = `[${timeString}] ${message}`;
-    const consoleArgs = [consoleMsg];
+    const consoleArgs: unknown[] = [consoleMsg];
 
     if (data) consoleArgs.push(data);
 
@@ -141,8 +139,7 @@ class LoggerService {
   /**
    * Helper to safe-sanitize data for storage (handles circular refs & PII redaction).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private sanitize(data: any): any {
+  private sanitize(data: unknown): unknown {
     try {
       if (data instanceof Error) {
         return {
@@ -155,13 +152,12 @@ class LoggerService {
       // Deep clone and redact
       const json = JSON.stringify(data, this.getCircularReplacer());
       return this.redactLogObject(JSON.parse(json));
-    } catch (e) {
+    } catch {
       return "[Unable to serialize data]";
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private redactLogObject(obj: any): any {
+  private redactLogObject(obj: unknown): unknown {
     if (!obj) return obj;
 
     if (Array.isArray(obj)) {
@@ -169,9 +165,10 @@ class LoggerService {
     }
 
     if (typeof obj === "object") {
+      const safeObj = obj as Record<string, unknown>;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clean: any = {};
-      for (const key in obj) {
+      for (const key in safeObj) {
         const lowerKey = key.toLowerCase();
         // Redact Sensitive Keys
         if (
@@ -186,7 +183,7 @@ class LoggerService {
         ) {
           clean[key] = "[REDACTED]";
         } else {
-          clean[key] = this.redactLogObject(obj[key]);
+          clean[key] = this.redactLogObject(safeObj[key]);
         }
       }
       return clean;
@@ -224,6 +221,7 @@ class LoggerService {
 
   private getCircularReplacer() {
     const seen = new WeakSet();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (key: string, value: any) => {
       if (typeof value === "object" && value !== null) {
         if (seen.has(value)) {
@@ -237,20 +235,16 @@ class LoggerService {
 
   // --- Public API ---
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public info(message: string, data?: any) {
+  public info(message: string, data?: unknown) {
     this.add("INFO", message, data);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public warn(message: string, data?: any) {
+  public warn(message: string, data?: unknown) {
     this.add("WARN", message, data);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public error(message: string, data?: any) {
+  public error(message: string, data?: unknown) {
     this.add("ERROR", message, data);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public debug(message: string, data?: any) {
+  public debug(message: string, data?: unknown) {
     this.add("DEBUG", message, data);
   }
 

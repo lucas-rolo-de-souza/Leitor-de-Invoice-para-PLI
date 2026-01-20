@@ -10,6 +10,7 @@
  * 3. Parse the bullet points for specific changes
  * 4. Write to src/version.ts (which App.tsx imports)
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require("fs");
 const path = require("path");
 
@@ -20,11 +21,11 @@ try {
   const changelogContent = fs.readFileSync(changelogPath, "utf-8");
 
   // Regex Strategy:
-  // Matches headers like "## [1.05.00.38] - 2026-01-13"
+  // Matches headers like "## 1.05.00.38 - 2026-01-13" (No brackets)
   // Group 1: Version Number
   // Group 2: Date
   // The 'm' flag handles multi-line input, 'g' finds all matches.
-  const versionRegex = /^## \[(.+?)\] - (.+?)$/gm;
+  const versionRegex = /^## (.+?) - (.+?)$/gm;
   let match;
   const changes = [];
 
@@ -36,7 +37,7 @@ try {
     // We look for text strictly between this header (match.index) and the NEXT header.
     // If no next header exists, we go to the end of the file.
     const startIndex = match.index + match[0].length;
-    let endIndex = changelogContent.indexOf("## [", startIndex);
+    let endIndex = changelogContent.indexOf("## ", startIndex);
     if (endIndex === -1) endIndex = changelogContent.length;
 
     const content = changelogContent.substring(startIndex, endIndex).trim();
@@ -80,7 +81,7 @@ export const CHANGE_LOG: ChangeLogItem[] = ${JSON.stringify(changes, null, 2)};
 
   fs.writeFileSync(versionFilePath, fileContent);
   console.log(
-    `✅ Updated version.ts to v${latestVersion} with ${changes.length} changelog entries.`
+    `✅ Updated version.ts to v${latestVersion} with ${changes.length} changelog entries.`,
   );
 } catch (error) {
   console.error("❌ Error updating version.ts:", error);

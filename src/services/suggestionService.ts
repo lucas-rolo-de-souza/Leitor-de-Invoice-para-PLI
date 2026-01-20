@@ -102,15 +102,16 @@ class SuggestionService {
   /**
    * batchLearn: Learn multiple items at once (e.g. on Export)
    */
-  public async learnBatch(items: any[]) {
-    items.forEach((item) => this.learnItem(item));
+  public async learnBatch(items: unknown[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items.forEach((item) => this.learnItem(item as any));
   }
 
   /**
    * Retrieves a suggestion for a given Part Number.
    */
   public async getSuggestion(
-    partNumber: string | null
+    partNumber: string | null,
   ): Promise<ProductMemory | null> {
     if (!this.isReady || !this.db || !partNumber) return null;
 

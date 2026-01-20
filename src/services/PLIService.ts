@@ -66,7 +66,7 @@ const generateAndDownloadXls = (data: InvoiceData) => {
   // Helper to create cell object
   // t: 's' (string), 'n' (number)
   // z: format string (e.g. '@' for text)
-  const cell = (v: any, type: "s" | "n" = "s") => {
+  const cell = (v: unknown, type: "s" | "n" = "s") => {
     if (v === null || v === undefined) return { t: "s", v: "" }; // Default to empty string cell
 
     if (type === "n") {
@@ -79,7 +79,7 @@ const generateAndDownloadXls = (data: InvoiceData) => {
     return { t: "s", v: String(v), z: "@" }; // Force Text format
   };
 
-  const rows: any[][] = [
+  const rows: unknown[][] = [
     headers.map((h) => ({ t: "s", v: h, z: "@" })), // Header Row
   ];
 

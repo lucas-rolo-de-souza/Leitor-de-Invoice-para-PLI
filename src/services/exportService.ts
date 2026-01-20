@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { InvoiceData } from "../types";
+import { InvoiceData, LineItem } from "../types";
 import { generateValidationErrors } from "../utils/validators";
 import {
   INCOTERMS_LIST,
@@ -12,7 +12,7 @@ import {
 /**
  * Helper to calculate subtotal locally
  */
-const calculateSubtotal = (items: any[] | undefined): number => {
+const calculateSubtotal = (items: LineItem[] | undefined): number => {
   return (items || []).reduce(
     (sum, item) => sum + (Number(item.total) || 0),
     0,
@@ -223,7 +223,7 @@ export const exportToPDF = (data: InvoiceData) => {
     "PL Total",
     "Total",
   ];
-  const tableRows: any[] = [];
+  const tableRows: unknown[] = [];
 
   (data.lineItems || []).forEach((item) => {
     const qty = Number(item.quantity || 0);
@@ -252,7 +252,8 @@ export const exportToPDF = (data: InvoiceData) => {
 
   autoTable(doc, {
     head: [tableColumn],
-    body: tableRows,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    body: tableRows as any[],
     startY: 80,
     styles: { fontSize: 8 },
     columnStyles: {

@@ -21,7 +21,7 @@ export const HeaderSection: React.FC<SectionProps> = ({
         (
           ref.current as HTMLInputElement & { showPicker: () => void }
         ).showPicker();
-      } catch (e) {
+      } catch {
         // Fallback: Focus triggers picker on mobile, but not always on desktop
         ref.current.focus();
       }

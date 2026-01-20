@@ -1,96 +1,136 @@
 # System Architecture
 
-## Overview
+## 1. Overview
 
-The **Invoice Reader AI** is a client-side Single Page Application (SPA) built with React 19 and TypeScript. It leverages a functional/modular architecture designed for maintainability, strict typing (using `type` aliases exclusively), and separation of concerns.
+The **Invoice Reader AI para PLI** acts as a secure, ephemeral bridge between unstructured data (PDFs/Images) and structured compliance. It is architected as a **Local-First, Cloud-Enhanced PWA**.
 
-## 🏗 High-Level Design
+- **Core Principle**: "Client is King". All heavy lifting (Validation, Calculation, Correction) happens in the user's browser.
+- **Security Model**: "Trust No One". The backend (Supabase) assumes all client data is hostile until validated by RLS policies. The AI API keys are custodied by the client (BYOK).
+
+---
+
+## 2. 🏗 High-Level Design
+
+The system follows a **Layered Hexagonal Architecture** (Ports & Adapters) adapted for the frontend. This ensures that the core domain logic (Invoice Processing) is isolated from the external world (UI, API, Database).
 
 ```mermaid
 graph TD
-    User[User] -->|Uploads PDF/Image| FileUpload
-    FileUpload -->|Base64| GeminiService
-    GeminiService -->|Structured JSON| AppController
-    AppController -->|Initial State| UseInvoiceForm
+    Client[Client Browser (PWA)]
 
-    subgraph "Core Logic (Hooks)"
-        UseInvoiceForm[useInvoiceForm]
-        UseCompliance[useCompliance]
-        CalculatedTotals[Auto-Calculation]
+    subgraph "Layer 1: Presentation (React)"
+        UI[Components] <-->|Render| Store[State Manager]
+        Upload[File Handler] -->|Bytes| GeminiService
     end
 
-    UseInvoiceForm <-->|Sync| InvoiceEditor
-    UseInvoiceForm -->|Data| UseCompliance
-    UseCompliance -->|Errors/Checklist| InvoiceEditor
-
-    subgraph "External Services"
-        NCMService[NCM Service (Cache API)]
-        CurrencyService[Currency Service (PTAX)]
-        UsageService[Usage Monitor]
-        LoggerService[Logger]
+    subgraph "Layer 2: Core Domain (Logic)"
+        Store -->|State| ComplianceEngine[Art. 557 Validator]
+        RepairEngine[JSON Repair Engine] -->|Typed Data| Store
     end
 
-    InvoiceEditor -->|Validation| NCMService
-    AppController -->|Usage Stats| UsageService
+    subgraph "Layer 3: Infrastructure (Services)"
+        GeminiService -->|Raw JSON| RepairEngine
+        SyncService -->|CRUD| Supabase
+        CacheService -->|Read/Write| IndexedDB
+    end
 
-    InvoiceEditor -->|Export| ExportService
-    ExportService -->|XLSX/PDF| User
+    subgraph "Layer 4: External World"
+        Gemini[Google Gemini 2.5 API]
+        Supabase[Supabase Platform]
+    end
+
+    GeminiService <-->|HTTPS| Gemini
+    SyncService <-->|HTTPS/WSS| Supabase
 ```
 
-## 📂 Directory Structure
+### 2.1 Architectural Layers
 
-The project follows a feature-based and layered structure:
+#### Layer 1: Presentation (The "Skin")
 
-- **`docs/`**: Documentation including `ARCHITECTURE.md`, `CHANGELOG.md`, and the new **`DESIGN_SYSTEM.md`**.
-- **`components/`**: Pure UI components.
-  - `editor/`: specialized complex components (LogisticsSection, ItemsTable).
-  - `ui/`: Reusable atomic elements (ValidatedInput, Autocomplete).
-- **`hooks/`**: Business logic encapsulation.
-  - `useInvoiceForm.ts`: Manages the complex state of the invoice and line items. **(Refactored: Stateless/Controlled)**.
-  - `useCompliance.ts`: The "Rule Engine" that validates data against Customs regulations.
-- **`services/`**: Integration with external APIs and browser capabilities.
-  - `geminiService.ts`: AI interaction with **Robust JSON Repair**.
-  - `ncmService.ts`: Handling of large NCM datasets via Cache API.
-- **`utils/`**: Pure helper functions and constants.
-  - `converters.ts`: **New** engine for unit normalization (KG, LB, G, OZ) and currency handling.
-- **`types.ts`**: The single source of truth for the Data Model (`InvoiceData`).
+- **Responsibility**: Rendering UI, capturing user events, and displaying feedback.
+- **Tech Stack**: React 19, Tailwind CSS 4, Framer Motion.
+- **Key Concept**: **"Dumb UI, Smart Hooks"**. Components like `ItemsTable.tsx` receive data via props or strict selectors; they contain no business logic, only display logic.
 
-## 🔄 Data Flow
+#### Layer 2: Core Domain (The "Brain")
 
-1.  **Ingestion**: Files are converted to Base64 (Images/PDF) or parsed to CSV text (Excel).
-2.  **Extraction**: `GeminiService` sends data to Google's API.
-    - _New_: Includes a **Robust JSON Repair** mechanism. If the AI response is truncated (common with large token limits), the service uses a multi-pass strategy to artificially close the JSON structure, preserving valid data.
-3.  **Normalization**: The raw JSON is cleaned (null-bias) and typed into `InvoiceData`.
-4.  **State Management**:
-    - The app maintains three copies of state for Version Control: `Original`, `Saved`, and `Current`.
-    - `useInvoiceForm` is a **pure logic controller**. It does not hold internal state (useEffect/useState) to avoid race conditions.
-    - **Local Calculation**: Financial totals (Subtotal) are calculated locally in real-time by summing line item values (`qty * price`). This ensures the UI always displays mathematically correct data, even if the AI hallucinated the total.
-5.  **Validation**: `useCompliance` runs on every render/change, producing a `fieldErrors` map and a `checklist` array.
+- **Responsibility**: Validating trade rules, performing calculations, and managing session state.
+- **Tech Stack**: TypeScript 5.9, Zod, React Context/Zustand.
+- **Key Concept**: **"The Compliance Loop"**. Every update triggers a recalculation of the `ValidationReport`. If the `Unit Price` changes, the system auto-recalculates `Subtotal`, then `Total`, then checks `Art. 557` compliance—all in a single synchronous pass.
 
-## 🧩 Key Components
+#### Layer 3: Infrastructure (The "Limbs")
 
-### `App.tsx` (Controller)
+- **Responsibility**: Talking to the outside world (AI, Database, Browser APIs).
+- **Tech Stack**: `fetch`, `Cache API`, `Supabase Client`.
+- **Key Concept**: **"Adapter Pattern"**. The UI never calls `fetch('google.com')` directly. It calls `GeminiService.extract()`. This allows us to swap the AI provider (e.g., to OpenAI or infinite-local-LLM) without changing a single line of React code.
 
-Acts as the brain. It handles the API call, manages the high-level versioning state, and switches views (Upload vs. Editor).
+#### Layer 4: External World
 
-### `InvoiceEditor.tsx` (Orchestrator)
+- **Responsibility**: Persistent storage and heavy compute.
+- **Components**: Google Vertex AI (Gemini 2.5), Supabase (PostgreSQL 16 + Auth).
 
-Combines the form state and compliance state to render the specific sections. It ensures that validation errors are passed down to inputs.
+---
 
-### `ItemsTable.tsx` (Complex View)
+## 3. 🧩 Key Systems
 
-Now includes a **Details Modal** to handle the extensive fields required by the SCUD model (Manufacturer Info, Regulatory Acts, Attributes) without cluttering the main table view.
+### 3.1 The "Hybrid" AI Pipeline
 
-### `NcmService` (Data Provider)
+We do not rely solely on the LLM. We use a **Deterministic Sandwich** approach:
 
-A singleton service that manages the 10,000+ record NCM database using a sophisticated browser caching strategy (Cache API).
+1.  **Pre-Processing**: Files are converted to optimized formats (WebP for images) to reduce token cost.
+2.  **Stochastic Core**: Gemini 2.5 Multimodal processes the visual context.
+3.  **Post-Processing (The Repair Engine)**:
+    - **JSON Repair**: Uses a custom stack-based parser to fix truncated JSON from the LLM.
+    - **Type Guarding**: Zod schemas enforce rigid data types before the application even sees the data. If the AI returns a string for "Net Weight", the Zod layer coerces or rejects it.
 
-### `LogViewer.tsx` (Debugging)
+### 3.2 Data Persistence Strategy
 
-A real-time log visualization tool accessible via the UI. It hooks into the `LoggerService` to display validation errors, API calls, and system events with filtering capabilities.
+We use a **Tiered Storage Model** to balance speed and permanence.
 
-## 🛡 Security & Privacy
+| Tier              | Technology              | Data Type                            | Behavior                                                             |
+| :---------------- | :---------------------- | :----------------------------------- | :------------------------------------------------------------------- |
+| **Hot (Session)** | React Context           | Form State, UI Toggles               | Lost on refresh. High speed.                                         |
+| **Warm (Cache)**  | `IndexedDB` / Cache API | NCM Tables (10MB+), User Preferences | Persists across sessions. Offline ready. Served via **SWR** pattern. |
+| **Cold (Cloud)**  | Supabase (PostgreSQL)   | Validated Invoices, Audit Logs       | Permanent record. Secured by RLS.                                    |
 
-- **Client-Side Processing**: Files are processed in memory.
-- **API Key**: Injected via environment variables.
-- **Persistence**: Data is only stored in RAM during the session (except for NCM cache and usage logs which are local).
+### 3.3 Security & Trust Layer
+
+- **BYOK (Bring Your Own Key)**: The application does not bundle Gemini API keys. The user provides them, and they are stored in the browser's `localStorage` (encrypted). They travel directly from Browser -> Google, never touching our backend.
+- **RLS (Row-Level Security)**: Database policies strictly enforce data isolation.
+  - `SELECT * FROM invoices WHERE user_id = auth.uid()`
+  - This ensures that even if the API is compromised, users can only access their own data.
+
+---
+
+## 4. 📂 Directory Structure
+
+The project follows a **Feature-Sliced Design** (light version) approach:
+
+- **`docs/`**: The "Brain". `ARCHITECTURE.md`, `DESIGN_SYSTEM.md`, `PROJECT_PRESENTATION_TECHNICAL.md`.
+- **`src/`**
+  - **`components/`**: Pure UI.
+    - `ui/`: Design System Primitives (Buttons, Cards).
+    - `domain/`: Business-aware components (InvoiceTable, NcmPicker).
+  - **`hooks/`**: The "Nervous System".
+    - `useInvoiceForm`: Manages the complex state machine.
+    - `useCompliance`: The "Rule Engine" watching every keystroke.
+  - **`services/`**: The "Limbs" (External Tools).
+    - `gemini/`: AI Logic & Prompt Engineering.
+    - `supabase/`: Database & Auth connectors.
+  - **`lib/`**: Static definitions (Zod Schemas, Type Definitions).
+
+---
+
+## 5. 🔄 Data Flow (The Lifecycle)
+
+1.  **Ingestion**: User drops a PDF.
+2.  **Extraction**: `GeminiService` engages. Interactive "Loading" state is shown.
+3.  **Normalization**: Raw text -> JSON -> Zod Validation -> `InvoiceData` Type.
+4.  **Interaction**: User edits data. `useCompliance` re-runs validation on every keystroke (debounced 300ms).
+5.  **Commit**: User clicks "Save". Data is optimistically updated in UI, then pushed to Supabase.
+
+---
+
+## 6. Performance Optimizations
+
+- **Virtualization**: Large tables (500+ items) use `react-window` concepts to only render visible rows.
+- **Code Splitting**: Heavy dependencies (Chart.js, PDF generators) are explicitly lazy-loaded using `React.lazy`.
+- **Asset Hashing**: NCM tables are hashed. The client only downloads the 10MB update if the hash changes.

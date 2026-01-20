@@ -13,7 +13,7 @@ export const validatePliData = (data: InvoiceData): string | null => {
   const items = data.lineItems || [];
   const errors: PliError[] = [];
 
-  const isNumeric = (val: any) => {
+  const isNumeric = (val: unknown) => {
     if (val === null || val === undefined || val === "") return false;
     const num = Number(val.toString().replace(",", "."));
     return !isNaN(num);
@@ -28,13 +28,13 @@ export const validatePliData = (data: InvoiceData): string | null => {
 
     if (!item.productCode || item.productCode.trim() === "") {
       lineMessages.push(
-        "O campo CODIGO_PRODUTO deve ser formatado com o tipo: Texto"
+        "O campo CODIGO_PRODUTO deve ser formatado com o tipo: Texto",
       );
     }
 
     if (!item.ncm || item.ncm.trim() === "") {
       lineMessages.push(
-        "O campo CODIGO_NCM deve ser formatado com o tipo: Texto"
+        "O campo CODIGO_NCM deve ser formatado com o tipo: Texto",
       );
     }
 
@@ -44,11 +44,11 @@ export const validatePliData = (data: InvoiceData): string | null => {
       item.taxClassificationDetail.trim() === ""
     ) {
       lineMessages.push(
-        "O campo DETALHE_PRODUTO deve ser formatado com o tipo: Texto"
+        "O campo DETALHE_PRODUTO deve ser formatado com o tipo: Texto",
       );
     } else if (item.taxClassificationDetail.length > 4) {
       lineMessages.push(
-        `O campo DETALHE_PRODUTO excedeu o tamnho máximo permitido. Atual:${item.taxClassificationDetail.length}, Máximo 4.`
+        `O campo DETALHE_PRODUTO excedeu o tamnho máximo permitido. Atual:${item.taxClassificationDetail.length}, Máximo 4.`,
       );
     }
 
@@ -57,7 +57,7 @@ export const validatePliData = (data: InvoiceData): string | null => {
     // DESCRICAO (Max 254)
     if (item.description && item.description.length > 254) {
       lineMessages.push(
-        `O campo DESCRICAO excedeu o tamnho máximo permitido. Atual:${item.description.length}, Máximo 254.`
+        `O campo DESCRICAO excedeu o tamnho máximo permitido. Atual:${item.description.length}, Máximo 254.`,
       );
     }
 
@@ -67,13 +67,13 @@ export const validatePliData = (data: InvoiceData): string | null => {
 
     if (!isNumeric(item.netWeight)) {
       lineMessages.push(
-        `É permitido apenas números para o campo: PESO_LIQUIDO`
+        `É permitido apenas números para o campo: PESO_LIQUIDO`,
       );
     }
 
     if (!isNumeric(item.unitPrice)) {
       lineMessages.push(
-        `É permitido apenas números para o campo: VALOR_UNITARIO`
+        `É permitido apenas números para o campo: VALOR_UNITARIO`,
       );
     }
 
@@ -82,7 +82,7 @@ export const validatePliData = (data: InvoiceData): string | null => {
       lineMessages.push(`O campo CODIGO_FABRICANTE é obrigatorio.`);
     } else if (!isNumeric(item.manufacturerCode)) {
       lineMessages.push(
-        `É permitido apenas números para o campo: CODIGO_FABRICANTE`
+        `É permitido apenas números para o campo: CODIGO_FABRICANTE`,
       );
     }
 

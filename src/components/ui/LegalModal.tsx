@@ -81,11 +81,11 @@ export const LegalModal: React.FC<LegalModalProps> = ({ onClose }) => {
               <h4>{t.modals.legal.license}</h4>
             </div>
             <p className="text-xs text-on-surface-variant leading-relaxed text-justify">
-              Este software ("Leitor de Faturas AI") e seu código-fonte são
-              propriedade intelectual exclusiva da equipe de desenvolvimento.
-              Todos os direitos são reservados. A reprodução, distribuição,
-              engenharia reversa ou uso não autorizado deste código é
-              estritamente proibida sem permissão expressa por escrito.
+              Este software (&quot;Leitor de Faturas AI&quot;) e seu
+              código-fonte são propriedade intelectual exclusiva da equipe de
+              desenvolvimento. Todos os direitos são reservados. A reprodução,
+              distribuição, engenharia reversa ou uso não autorizado deste
+              código é estritamente proibida sem permissão expressa por escrito.
             </p>
             <div className="mt-3 flex items-center gap-1 text-[10px] text-primary/80 font-medium">
               <Copyright className="w-3 h-3" /> 2024 Invoice Reader Team. All
