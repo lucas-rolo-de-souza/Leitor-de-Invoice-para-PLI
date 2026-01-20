@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { InvoiceSchema } from "../domain/schemas";
 import { InvoiceData, FilePart, initialInvoiceData } from "../types";
@@ -286,6 +285,7 @@ export async function extractInvoiceData(
     const lineItemsPrompt = getLineItemsPrompt();
 
     // Initialize AI Client
+    const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey });
 
     // Helper for generation with Retry Logic

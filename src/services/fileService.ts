@@ -1,12 +1,12 @@
 // Version: 1.05.00.23
 import { FilePart } from "../types";
-import * as XLSX from "xlsx";
 
 /**
  * Helper to process Spreadsheet files (XLSX, XLS, CSV).
  * Converts all sheets to a single CSV string to be fed as text to the AI.
  */
 const processSpreadsheet = async (file: File): Promise<FilePart> => {
+  const XLSX = await import("xlsx");
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);

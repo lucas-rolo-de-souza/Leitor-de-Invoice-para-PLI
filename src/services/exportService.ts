@@ -1,6 +1,3 @@
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { InvoiceData, LineItem } from "../types";
 import { generateValidationErrors } from "../utils/validators";
 import {
@@ -57,7 +54,8 @@ const formatDualWeight = (value: number | string | null, unit: string) => {
  * - Recalculates Subtotal locally to ensure consistency with Items.
  * - Prioritizes `TotalNetWeight` > `UnitNetWeight` logic for accuracy.
  */
-export const exportToExcel = (data: InvoiceData) => {
+export const exportToExcel = async (data: InvoiceData) => {
+  const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
 
   // Validation Check before Export
@@ -160,7 +158,9 @@ export const exportToExcel = (data: InvoiceData) => {
  * - **Layout**: Follows standard Commercial Invoice layout (Header -> Entities -> Table -> Footer).
  * - **Auto-Table**: Handles pagination for long lists of items automatically.
  */
-export const exportToPDF = (data: InvoiceData) => {
+export const exportToPDF = async (data: InvoiceData) => {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
   const doc = new jsPDF();
 
   // Validation Check

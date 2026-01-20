@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { InvoiceData } from "../types";
 import { validatePliData } from "./PLIValidator";
 
@@ -21,7 +20,7 @@ const downloadTextReport = (content: string, filename: string) => {
  * Generates and downloads the PLI XLS file.
  * We use a low-level SheetJS construction to strictly enforce Cell Types (Text vs Number).
  */
-const generateAndDownloadXls = (data: InvoiceData) => {
+const generateAndDownloadXls = async (data: InvoiceData) => {
   const sheetName = "MODELO PLI";
 
   // Headers
@@ -132,6 +131,7 @@ const generateAndDownloadXls = (data: InvoiceData) => {
     rows.push(rowData);
   });
 
+  const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
@@ -144,7 +144,7 @@ const generateAndDownloadXls = (data: InvoiceData) => {
  * Main Handler for PLI Export.
  * Orchestrates Validation -> Error Report OR XLS Generation.
  */
-export const handlePLIExport = (data: InvoiceData) => {
+export const handlePLIExport = async (data: InvoiceData) => {
   // 1. Run Validation
   const errorReport = validatePliData(data);
 
@@ -165,5 +165,5 @@ export const handlePLIExport = (data: InvoiceData) => {
   }
 
   // 2b. Always download XLS regardless of errors
-  generateAndDownloadXls(data);
+  await generateAndDownloadXls(data);
 };

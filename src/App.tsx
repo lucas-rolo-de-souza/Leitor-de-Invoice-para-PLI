@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { FileUpload } from "./components/FileUpload";
-import { LoginScreen } from "./components/auth/LoginScreen";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
+// import { FileUpload } from "./components/FileUpload";
+// import { LoginScreen } from "./components/auth/LoginScreen";
 import { useAuth } from "./contexts/AuthContext";
-import { InvoiceEditor } from "./components/InvoiceEditor";
+// import { InvoiceEditor } from "./components/InvoiceEditor";
 import { VersionBar } from "./components/ui/VersionBar";
 import { extractInvoiceData } from "./services/geminiService";
 import { processFilesToBase64 } from "./services/fileService";
@@ -21,13 +21,9 @@ import { logger } from "./services/loggerService";
 import { invoiceService } from "./services/invoiceService";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UsageWidget } from "./components/ui/UsageWidget";
-import { LegalModal } from "./components/ui/LegalModal";
-import { LogViewer } from "./components/ui/LogViewer";
 import { LanguageSelector } from "./components/ui/LanguageSelector";
 import { useLanguage } from "./contexts/TranslationContext";
 import { useTranslation } from "./hooks/useTranslation";
-import { ImportInvoiceModal } from "./components/ui/ImportInvoiceModal";
-import { ExtractionDebugger } from "./components/debug/ExtractionDebugger";
 import {
   FileText,
   Download,
@@ -43,12 +39,57 @@ import {
   Cloud,
   CloudDownload,
   Activity,
+  Code2,
+  Settings,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
-import { Code2, Settings } from "lucide-react";
 import { useSettings } from "./contexts/SettingsContext";
-import { SettingsModal } from "./components/ui/SettingsModal";
+
+// Lazy Loaded Components
+const LoginScreen = React.lazy(() =>
+  import("./components/auth/LoginScreen").then((module) => ({
+    default: module.LoginScreen,
+  })),
+);
+
+const InvoiceEditor = React.lazy(() =>
+  import("./components/InvoiceEditor").then((module) => ({
+    default: module.InvoiceEditor,
+  })),
+);
+
+const FileUpload = React.lazy(() =>
+  import("./components/FileUpload").then((module) => ({
+    default: module.FileUpload,
+  })),
+);
+
+const LegalModal = React.lazy(() =>
+  import("./components/ui/LegalModal").then((module) => ({
+    default: module.LegalModal,
+  })),
+);
+const LogViewer = React.lazy(() =>
+  import("./components/ui/LogViewer").then((module) => ({
+    default: module.LogViewer,
+  })),
+);
+const ImportInvoiceModal = React.lazy(() =>
+  import("./components/ui/ImportInvoiceModal").then((module) => ({
+    default: module.ImportInvoiceModal,
+  })),
+);
+const ExtractionDebugger = React.lazy(() =>
+  import("./components/debug/ExtractionDebugger").then((module) => ({
+    default: module.ExtractionDebugger,
+  })),
+);
+const SettingsModal = React.lazy(() =>
+  import("./components/ui/SettingsModal").then((module) => ({
+    default: module.SettingsModal,
+  })),
+);
 
 const App: React.FC = () => {
   // --- File & Processing State ---
@@ -677,28 +718,36 @@ const App: React.FC = () => {
       </footer>
 
       {/* Modals */}
-      {showDebugger && (
-        <ExtractionDebugger onClose={() => setShowDebugger(false)} />
-      )}
-      {(!isConfigured || showSettings) && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          canClose={isConfigured}
-        />
-      )}
-      {showImportModal && (
-        <ImportInvoiceModal
-          onClose={() => {
-            setShowImportModal(false);
-            setImportModalMode("import");
-          }}
-          onSelect={handleImportInvoice}
-          onOverwrite={handleOverwriteInvoice}
-          mode={importModalMode}
-        />
-      )}
-      {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
-      {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
+      <Suspense
+        fallback={
+          <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }
+      >
+        {showDebugger && (
+          <ExtractionDebugger onClose={() => setShowDebugger(false)} />
+        )}
+        {(!isConfigured || showSettings) && (
+          <SettingsModal
+            onClose={() => setShowSettings(false)}
+            canClose={isConfigured}
+          />
+        )}
+        {showImportModal && (
+          <ImportInvoiceModal
+            onClose={() => {
+              setShowImportModal(false);
+              setImportModalMode("import");
+            }}
+            onSelect={handleImportInvoice}
+            onOverwrite={handleOverwriteInvoice}
+            mode={importModalMode}
+          />
+        )}
+        {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
+        {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
+      </Suspense>
       {showChangelog && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-slide-up border border-outline-variant">
