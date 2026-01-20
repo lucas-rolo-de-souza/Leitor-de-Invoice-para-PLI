@@ -15,6 +15,9 @@ export default defineConfig(() => {
       port: 3000,
       host: "0.0.0.0",
     },
+    css: {
+      postcss: "./config/postcss.config.js",
+    },
     plugins: [react()],
     define: {
       // "process.env.API_KEY": JSON.stringify(apiKey), // REMOVED FOR SECURITY (BYOK)
@@ -22,7 +25,7 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(__dirname, "../src"),
       },
     },
   };

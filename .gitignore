@@ -36,3 +36,10 @@ lint-report.json
 lint_output.txt
 
 docs/PENDING_COMMIT.md
+lint_log.txt
+.test.credentials.md
+secrets/apikey.json.example
+
+artifacts/
+dummy_invoice.csv
+current_lint_errors.txt

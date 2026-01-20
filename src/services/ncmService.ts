@@ -38,6 +38,8 @@ const SECONDARY_URL =
 
 const HEADERS = {
   Accept: "application/json",
+  "Role-Type": "PUBLICO",
+  "User-Agent": "PLI-API-Mao",
 };
 
 const FALLBACK_NCMS: NcmRecord[] = [

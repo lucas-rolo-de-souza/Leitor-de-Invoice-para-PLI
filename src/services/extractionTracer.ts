@@ -1,4 +1,5 @@
 import { logger } from "./loggerService";
+import { generateUUID } from "../utils/uuidUtils";
 
 export type TraceStep =
   | "INIT"
@@ -58,7 +59,7 @@ class ExtractionTracerService {
    */
   start(fileCount: number, totalSizeBytes: number) {
     this.currentState = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       startTime: Date.now(),
       status: "RUNNING",
       currentStep: "INIT",
@@ -93,7 +94,7 @@ class ExtractionTracerService {
     this.currentState.currentStep = step;
 
     const event: TraceEvent = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: new Date().toISOString(),
       step,
       message,

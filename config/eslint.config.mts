@@ -5,18 +5,35 @@ import pluginReact from "eslint-plugin-react";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = resolve(__dirname, "..");
 
 export default tseslint.config(
   {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: projectRoot,
+      },
+    },
+  },
+  {
     ignores: [
-      "dist",
-      "node_modules",
-      "coverage",
-      ".git",
-      "package-lock.json",
-      "lint-report.json",
-      "current_lint_errors.txt",
-      "src/index.css",
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/.git/**",
+      "**/package-lock.json",
+      "**/artifacts/**",
+      "**/mocks/**",
+      "**/secrets/**",
+      "**/src/index.css",
+      "**/*.min.js",
+      "**/*.map",
     ],
   },
 

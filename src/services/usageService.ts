@@ -1,5 +1,6 @@
 // Version: 1.06.00.01
 import { logger } from "./loggerService";
+import { generateUUID } from "../utils/uuidUtils";
 
 export type UsageLog = {
   id: string;
@@ -104,14 +105,7 @@ class UsageService {
    * Helper to generate UUIDs safely in any environment
    */
   private generateId(): string {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    // Fallback for insecure contexts (http) or older browsers
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15)
-    );
+    return generateUUID();
   }
 
   /**

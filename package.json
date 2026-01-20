@@ -32,11 +32,11 @@
     "url": "https://github.com/your-username/leitor-faturas-ai.git"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "preview": "vite preview",
+    "dev": "vite --config config/vite.config.ts",
+    "build": "tsc -b && vite build --config config/vite.config.ts",
+    "lint": "eslint . --config config/eslint.config.mts",
+    "lint:fix": "eslint --fix . --config config/eslint.config.mts",
+    "preview": "vite preview --config config/vite.config.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
