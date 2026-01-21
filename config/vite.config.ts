@@ -14,6 +14,14 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: "0.0.0.0",
+      proxy: {
+        "/api/bcb": {
+          target: "https://olinda.bcb.gov.br",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/bcb/, ""),
+          secure: false,
+        },
+      },
     },
     css: {
       postcss: "./config/postcss.config.js",

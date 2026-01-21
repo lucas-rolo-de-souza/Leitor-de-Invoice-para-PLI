@@ -31,15 +31,19 @@ const VIRTUAL_FILE_URL = "https://internal/ncm-db.json"; // URL virtual interna 
 const LAST_UPDATE_KEY = "SISCOMEX_NCM_DATE";
 const PENALTY_BOX_KEY = "SISCOMEX_PENALTY_UNTIL"; // Key para armazenar timestamp de fim da penalidade
 
-const PRIMARY_URL =
-  "https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json";
+const getPrimaryUrl = () => {
+  if (typeof window !== "undefined" && window._env_?.NCM_FILENAME) {
+    return `/${window._env_.NCM_FILENAME}`;
+  }
+  return "/ncm.json";
+};
+
+const PRIMARY_URL = getPrimaryUrl();
 const SECONDARY_URL =
-  "https://raw.githubusercontent.com/leogregianin/siscomex-ncm/cacd1cda19acf22e34a82e30c9b31cc508ee73e9/ncm.json";
+  "https://cdn.jsdelivr.net/gh/leogregianin/siscomex-ncm@master/ncm.json";
 
 const HEADERS = {
   Accept: "application/json",
-  "Role-Type": "PUBLICO",
-  "User-Agent": "PLI-API-Mao",
 };
 
 const FALLBACK_NCMS: NcmRecord[] = [

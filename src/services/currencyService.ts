@@ -3,7 +3,7 @@ import { logger } from "./loggerService";
 // PTAX API Endpoint (Banco Central do Brasil)
 // Returns the official PTAX rate used for accounting and trade.
 const BCB_API_BASE =
-  "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)";
+  "/api/bcb/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)";
 const PTAX_CACHE_KEY = "ptax_daily_rates_v1";
 
 class CurrencyService {
@@ -39,7 +39,7 @@ class CurrencyService {
    * Persists the found rate for that specific day to avoid re-fetching.
    */
   public async getUSDtoBRLRate(
-    date: Date = new Date()
+    date: Date = new Date(),
   ): Promise<number | null> {
     const dateKey = this.formatDateForCache(date);
 
@@ -73,31 +73,66 @@ class CurrencyService {
 
         const url = `${BCB_API_BASE}?@dataCotacao='${dateStr}'&$top=1&$format=json&$select=cotacaoVenda`;
 
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.value && data.value.length > 0) {
-            rate = data.value[0].cotacaoVenda;
-            logger.info(
-              `[Currency] Taxa PTAX encontrada para ${dateStr}: R$ ${rate}`
-            );
-
-            // Cache the Found Rate for the Found Date
-            if (typeof rate === "number") {
-              this.cache[searchKey] = rate;
-              // Also Cache it for the Original Query Date if distinct (e.g. if today is Sunday, map Sunday -> Friday's rate)
-              // This prevents re-searching for Sunday every time.
-              if (dateKey !== searchKey) {
-                this.cache[dateKey] = rate;
-              }
-              this.saveCache();
+        try {
+          // Attempt 1: BCB (Official)
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.value && data.value.length > 0) {
+              rate = data.value[0].cotacaoVenda;
             }
+          }
+        } catch (bcbError) {
+          logger.warn(
+            `[Currency] BCB API falhou para ${dateStr}. Tentando fallback...`,
+            bcbError,
+          );
+        }
+
+        // Attempt 2: AwesomeAPI (Fallback)
+        if (!rate) {
+          try {
+            const awesomeDate = this.formatDateForAwesome(searchDate);
+            const fallbackUrl = `https://economia.awesomeapi.com.br/json/daily/USD-BRL/?start_date=${awesomeDate}&end_date=${awesomeDate}`;
+            const res = await fetch(fallbackUrl);
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data) && data.length > 0) {
+                // "ask" is the selling rate (Venda) which matches cotacaoVenda
+                rate = parseFloat(data[0].ask);
+                logger.info(
+                  `[Currency] Fallback (AwesomeAPI) usado para ${dateStr}`,
+                );
+              }
+            }
+          } catch (fallbackError) {
+            logger.warn(
+              `[Currency] AwesomeAPI falhou para ${dateStr}`,
+              fallbackError,
+            );
+          }
+        }
+
+        if (rate) {
+          logger.info(
+            `[Currency] Taxa PTAX encontrada para ${dateStr}: R$ ${rate}`,
+          );
+
+          // Cache the Found Rate for the Found Date
+          if (typeof rate === "number") {
+            this.cache[searchKey] = rate;
+            // Also Cache it for the Original Query Date if distinct (e.g. if today is Sunday, map Sunday -> Friday's rate)
+            // This prevents re-searching for Sunday every time.
+            if (dateKey !== searchKey) {
+              this.cache[dateKey] = rate;
+            }
+            this.saveCache();
           }
         }
       } catch (e) {
         logger.warn(
           `[Currency] Falha ao buscar taxa para ${searchDate.toDateString()}`,
-          e
+          e,
         );
       }
 
@@ -111,7 +146,7 @@ class CurrencyService {
     this.isLoading = false;
     if (!rate) {
       logger.error(
-        "[Currency] Não foi possível obter a taxa de câmbio PTAX recente."
+        "[Currency] Não foi possível obter a taxa de câmbio PTAX recente.",
       );
     }
 
@@ -136,6 +171,16 @@ class CurrencyService {
     const day = date.getDate().toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Formats date to YYYYMMDD (AwesomeAPI Requirement)
+   */
+  private formatDateForAwesome(date: Date): string {
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${year}${month}${day}`;
   }
 }
 

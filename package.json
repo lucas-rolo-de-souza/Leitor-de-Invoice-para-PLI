@@ -32,16 +32,18 @@
     "url": "https://github.com/your-username/leitor-faturas-ai.git"
   },
   "scripts": {
-    "dev": "vite --config config/vite.config.ts",
+    "dev": "node scripts/generate-env-config.js && vite --config config/vite.config.ts",
     "build": "tsc -b && vite build --config config/vite.config.ts",
     "lint": "eslint . --config config/eslint.config.mts",
     "lint:fix": "eslint --fix . --config config/eslint.config.mts",
     "preview": "vite preview --config config/vite.config.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "update-data": "npx jiti server/fetch-logistics-data.ts"
   },
   "dependencies": {
     "@google/genai": "^1.37.0",
     "@supabase/supabase-js": "^2.90.1",
+    "csv-parse": "^6.1.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.562.0",
@@ -60,10 +62,12 @@
     "@eslint/json": "^0.14.0",
     "@eslint/markdown": "^7.5.1",
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^25.0.9",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",

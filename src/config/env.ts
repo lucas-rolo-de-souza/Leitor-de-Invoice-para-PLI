@@ -16,13 +16,6 @@ const envSchema = z.object({
 // Logic: Favor window._env_ (runtime) if available, fallback to import.meta.env (dev/build)
 
 // Define interface for Window to include _env_
-declare global {
-  interface Window {
-    _env_?: {
-      [key: string]: string;
-    };
-  }
-}
 
 const runtimeEnv = typeof window !== "undefined" ? window._env_ || {} : {};
 const buildTimeEnv = import.meta.env;

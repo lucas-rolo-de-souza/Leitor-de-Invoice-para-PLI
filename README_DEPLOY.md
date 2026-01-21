@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide explains how to deploy the **Leitor de Faturas AI** application using Docker.
+This guide explains how to deploy the **Leitor de Faturas AI para PLI** application using Docker.
 
 ## Prerequisites
 

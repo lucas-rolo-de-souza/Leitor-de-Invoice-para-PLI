@@ -44,3 +44,9 @@ secrets/apikey.json.example
 artifacts/
 dummy_invoice.csv
 current_lint_errors.txt
+
+# Automation / Server Data
+server/temp_data/
+public/Tabela_NCM_*.json
+*.csv
+*.zip

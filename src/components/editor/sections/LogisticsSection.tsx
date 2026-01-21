@@ -8,7 +8,9 @@ import {
   COUNTRIES_LIST,
   VOLUME_TYPES_LIST,
 } from "../../../utils/validationConstants";
+import { ISO_3166_COUNTRIES } from "../../../utils/iso-3166";
 import { useTranslation } from "../../../hooks/useTranslation";
+import { useLogisticsData } from "../../../hooks/useLogisticsData";
 import { SectionHeader } from "../../ui/SectionHeader";
 import { WeightInputCard } from "../shared/WeightInputCard";
 
@@ -19,6 +21,30 @@ export const LogisticsSection: React.FC<SectionProps> = ({
   isReadOnly,
 }) => {
   const t = useTranslation();
+  const { data: locations, isLoading: isLoadingLocations } = useLogisticsData();
+
+  // Enrich locations with Country Names/Aliases for search
+  // e.g. "Manaus, BRA" -> keywords: ["Brazil", "Brasil"]
+  const enrichedLocations = React.useMemo(() => {
+    return locations.map((loc) => {
+      const country = COUNTRIES_LIST.find((c) => c.code === loc.country) as
+        | (typeof ISO_3166_COUNTRIES)[0]
+        | undefined;
+      // Note: COUNTRIES_LIST in validationConstants is ReferenceItem[].
+      // We need to match with ISO_3166_COUNTRIES to get aliases if validationConstants doesn't have them.
+      // Actually, standard COUNTRIES_LIST is just code/name.
+      // Let's import ISO_3166 directly? Or rely on validationConstants to be passed correctly?
+      // validationConstants COUNTRIES_LIST comes from ISO 3166 alpha-3 list.
+      // Let's check `src/utils/iso-3166.ts` imports.
+      // Ideally we import ISO_3166_COUNTRIES directly here to get full metadata.
+      return {
+        ...loc,
+        keywords: country
+          ? [country.name, ...(country.aliases || [])]
+          : undefined,
+      };
+    });
+  }, [locations]);
 
   const preventNegativeInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "-" || e.key === "Minus") {
@@ -52,18 +78,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
               value={data.totalGrossWeight}
               unit={data.weightUnit || "KG"}
               onChangeValue={(val) => handleChange("totalGrossWeight", val)}
-              onChangeUnit={(val) => handleChange("weightUnit", val)} // Keeps units synced as per original logic if needed, or if they should be independent we'd need a separate field. Orig code used same 'weightUnit' for both visual display in the second card but only had one select in the first card.  Wait, original code had a select in the first card and a display-only div in the second.
-              // My new component has a select in both if I use it blindly.
-              // Use case correction: The second card in original code was READ-ONLY for unit.
-              // I should check if my generic component supports read-only unit.
-              // The generic component takes `isReadOnly` which disables everything.
-              // I might need to adjust the generic component or just pass `isReadOnly` for the second one if I want strict parity, BUT:
-              // In the original code, the second card displayed the unit controlled by the first card.
-              // If I use the component, the user *could* try to change it if I don't disable it.
-              // Let's look at `WeightInputCard` again. It has `onChangeUnit`.
-              // If I pass a no-op or just handle it, it updates the same field.
-              // Ideally, for the second card, the unit should probably be disabled or just strictly controlled.
-              // Let's proceed with valid functional parity: updating the unit in either card updates the global unit. This is actually a UX improvement.
+              onChangeUnit={(val) => handleChange("weightUnit", val)}
               error={errors.totalGrossWeight}
               isReadOnly={isReadOnly}
             />
@@ -119,32 +134,32 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                   <Autocomplete
                     label={t.editor.logistics.loadingPort}
                     id="portOfLoading"
-                    options={[]} // Add relevant default ports if available
+                    options={enrichedLocations}
                     value={data.portOfLoading || ""}
                     onChange={(val) => handleChange("portOfLoading", val)}
                     isReadOnly={isReadOnly}
-                    placeholder="Ex: Shanghai"
+                    placeholder={
+                      isLoadingLocations
+                        ? "Loading locations..."
+                        : "Ex: Shanghai"
+                    }
                   />
                   <Autocomplete
                     label={t.editor.logistics.dischargePort}
                     id="portOfDischarge"
-                    options={[]} // Add relevant default ports if available
+                    options={enrichedLocations}
                     value={data.portOfDischarge || ""}
                     onChange={(val) => handleChange("portOfDischarge", val)}
                     isReadOnly={isReadOnly}
-                    placeholder="Ex: Santos"
+                    placeholder={
+                      isLoadingLocations ? "Loading locations..." : "Ex: Santos"
+                    }
                   />
                 </div>
                 <Autocomplete
                   label={t.editor.logistics.transshipment}
                   id="transshipment"
-                  options={[
-                    { code: "Miami", name: "Miami" },
-                    { code: "Campinas", name: "Campinas (VCP)" },
-                    { code: "Guarulhos", name: "Guarulhos (GRU)" },
-                    { code: "Santos", name: "Santos (SSZ)" },
-                    { code: "New York", name: "New York (JFK/EWR)" },
-                  ]}
+                  options={enrichedLocations} // Also use locations for transshipment? Or keep default? Plan implies unified.
                   value={data.transshipment || ""}
                   onChange={(val) => handleChange("transshipment", val)}
                   isReadOnly={isReadOnly}
@@ -173,6 +188,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 error={errors.incoterm}
                 isReadOnly={isReadOnly}
                 placeholder={t.editor.logistics.incotermPlaceholder}
+                displayMode="code"
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -185,6 +201,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 error={errors.countryOfOrigin}
                 isReadOnly={isReadOnly}
                 placeholder={t.editor.logistics.originPlaceholder}
+                displayMode="code"
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
@@ -197,6 +214,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 error={errors.countryOfAcquisition}
                 isReadOnly={isReadOnly}
                 placeholder={t.editor.logistics.acquisitionPlaceholder}
+                displayMode="code"
               />
             </div>
             <div className="col-span-2">
@@ -209,6 +227,7 @@ export const LogisticsSection: React.FC<SectionProps> = ({
                 error={errors.countryOfProvenance}
                 isReadOnly={isReadOnly}
                 placeholder={t.editor.logistics.provenancePlaceholder}
+                displayMode="code"
               />
             </div>
           </div>
