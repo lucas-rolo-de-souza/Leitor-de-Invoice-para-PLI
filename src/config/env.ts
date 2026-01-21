@@ -12,10 +12,28 @@ const envSchema = z.object({
     .min(1, "VITE_SUPABASE_ANON_KEY is required"),
 });
 
-// Validate import.meta.env
-// Note: We use safeParse to allow for custom error handling or partial loading if needed,
-// but for critical infrastructure like database, we might want to throw early.
-const _env = envSchema.safeParse(import.meta.env);
+// Validate runtime/build-time env
+// Logic: Favor window._env_ (runtime) if available, fallback to import.meta.env (dev/build)
+
+// Define interface for Window to include _env_
+declare global {
+  interface Window {
+    _env_?: {
+      [key: string]: string;
+    };
+  }
+}
+
+const runtimeEnv = typeof window !== "undefined" ? window._env_ || {} : {};
+const buildTimeEnv = import.meta.env;
+
+// Merge envs, preferring runtime
+const mergedEnv = {
+  ...buildTimeEnv,
+  ...runtimeEnv,
+};
+
+const _env = envSchema.safeParse(mergedEnv);
 
 if (!_env.success) {
   console.error("❌ Invalid URL/Key configuration:", _env.error.format());
