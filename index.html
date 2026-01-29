@@ -6,13 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://portalunico.siscomex.gov.br https://corsproxy.io https://api.allorigins.win https://raw.githubusercontent.com https://teukonlnqupyafywounz.supabase.co ws:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;"
+      content="default-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://generativelanguage.googleapis.com https://portalunico.siscomex.gov.br https://corsproxy.io https://api.allorigins.win https://raw.githubusercontent.com https://cdn.jsdelivr.net https://teukonlnqupyafywounz.supabase.co ws:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;"
     />
 
     <title>Leitor de Faturas AI</title>
     <!-- Runtime Environment Config -->
-    <script src="/env-config.js"></script>
-    <link rel="manifest" href="/manifest.json" />
+    <script src="./env-config.js"></script>
+    <link rel="manifest" href="./manifest.json" />
     <link
       rel="apple-touch-icon"
       href="https://cdn-icons-png.flaticon.com/512/2921/2921222.png"
@@ -44,6 +44,6 @@
     class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-brand-100 selection:text-brand-900"
   >
     <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
+    <script type="module" src="./src/index.tsx"></script>
   </body>
 </html>

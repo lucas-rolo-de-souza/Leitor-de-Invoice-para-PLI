@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Ensure backend directory is in path for local imports
+sys.path.insert(0, str(Path(__file__).parent))
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from services.gemini_service import gemini_service
@@ -57,6 +63,10 @@ async def get_ncm_details(code: str):
     if not result:
         raise HTTPException(status_code=404, detail="NCM not found")
     return {"code": code, "description": result}
+
+@app.get("/api/ncm/{code}/hierarchy")
+async def get_ncm_hierarchy(code: str):
+    return ncm_service.get_hierarchy(code)
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

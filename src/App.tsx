@@ -38,13 +38,12 @@ import {
   LogOut,
   Cloud,
   CloudDownload,
-  Activity,
-  Code2,
   Settings,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
 import { mockInvoiceData } from "./mocks/mockInvoice";
 import { useSettings } from "./contexts/SettingsContext";
+import { DeveloperMenu } from "./components/developer/DeveloperMenu";
 
 // Lazy Loaded Components
 const LoginScreen = React.lazy(() =>
@@ -103,6 +102,10 @@ const App: React.FC = () => {
   const [refreshUsage, setRefreshUsage] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [showDevMenu, setShowDevMenu] = useState(false);
+  const [devMenuTab, setDevMenuTab] = useState<
+    "general" | "state" | "debug" | "usage"
+  >("general");
 
   // --- Data State (Simplified) ---
   const [data, setData] = useState<InvoiceData>(initialInvoiceData); // Current Editing State
@@ -251,10 +254,24 @@ const App: React.FC = () => {
   };
 
   const handleDevBypass = () => {
+    // Kept for DeveloperMenu
     setOriginalData(mockInvoiceData);
     setData(mockInvoiceData);
     setHasProcessed(true);
+    setHasProcessed(true);
     setRefreshUsage((prev) => prev + 1);
+  };
+
+  const handleCreateBlank = () => {
+    setOriginalData(initialInvoiceData);
+    setData(initialInvoiceData);
+    setHasProcessed(true); // Switch to editor view
+    setRefreshUsage((prev) => prev + 1);
+  };
+
+  const handleOpenUsage = () => {
+    setDevMenuTab("usage");
+    setShowDevMenu(true);
   };
 
   // Active Data Logic
@@ -403,6 +420,17 @@ const App: React.FC = () => {
                     progressMessage={progressMessage}
                   />
                 </div>
+                {user && (
+                  <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant/10 text-center">
+                    <button
+                      onClick={handleCreateBlank}
+                      className="text-sm font-medium text-primary hover:text-primary/80 hover:underline transition-colors flex items-center justify-center gap-2 mx-auto"
+                    >
+                      <FileText className="w-4 h-4" />
+                      {t.app.actions.createBlank}
+                    </button>
+                  </div>
+                )}
                 <div className="bg-surface-container-lowest px-6 py-3 border-t border-outline-variant/10 text-center">
                   <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold flex items-center justify-center gap-2">
                     <Scale className="w-3 h-3" />
@@ -431,25 +459,16 @@ const App: React.FC = () => {
                 placement="top"
               />
               <span className="text-outline-variant">|</span>
-              <span>v{APP_VERSION}</span>
 
               <span className="hidden md:inline text-outline-variant">|</span>
-              <UsageWidget refreshTrigger={refreshUsage} />
+              <UsageWidget
+                refreshTrigger={refreshUsage}
+                onClick={handleOpenUsage}
+              />
             </div>
 
             <div className="flex items-center gap-6">
-              <button
-                onClick={() => setShowDebugger(true)}
-                className="hover:text-primary transition-colors flex items-center gap-1.5"
-              >
-                <Activity className="w-3.5 h-3.5" /> Debug
-              </button>
-              <button
-                onClick={handleDevBypass}
-                className="hover:text-primary transition-colors flex items-center gap-1.5"
-              >
-                <Code2 className="w-3.5 h-3.5" /> {t.app.actions.devConsole}
-              </button>
+              {/* Debug buttons moved to Developer Menu */}
               <a href="#" className="hover:text-primary transition-colors">
                 {t.app.footer.docs}
               </a>
@@ -536,6 +555,20 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+        <DeveloperMenu
+          files={files}
+          data={activeData}
+          user={user}
+          showDebugger={showDebugger}
+          setShowDebugger={setShowDebugger}
+          showLogs={showLogs}
+          setShowLogs={setShowLogs}
+          onLoadMockData={handleDevBypass}
+          onCreateBlank={handleCreateBlank}
+          isOpen={showDevMenu}
+          onClose={() => setShowDevMenu(false)}
+          initialTab={devMenuTab}
+        />
       </div>
     );
   }
@@ -678,7 +711,12 @@ const App: React.FC = () => {
             <span>{t.app.footer.legal}</span>
           </button>
           <div className="w-px h-4 bg-on-surface/20"></div>
-          <UsageWidget refreshTrigger={refreshUsage} fullSize={true} />
+          <div className="w-px h-4 bg-on-surface/20"></div>
+          <UsageWidget
+            refreshTrigger={refreshUsage}
+            onClick={handleOpenUsage}
+          />
+          <div className="w-px h-4 bg-on-surface/20"></div>
           <div className="w-px h-4 bg-on-surface/20"></div>
           <button
             onClick={() => setShowLogs(true)}
@@ -688,13 +726,7 @@ const App: React.FC = () => {
             <span>{t.app.footer.logs}</span>
           </button>
           <div className="w-px h-4 bg-on-surface/20"></div>
-          <button
-            onClick={() => setShowDebugger(true)}
-            className="flex items-center gap-2 px-3 py-1.5 hover:bg-on-surface/10 rounded-m3-full transition-colors"
-          >
-            <Activity className="w-3.5 h-3.5 text-blue-500" />
-            <span>Debug</span>
-          </button>
+          {/* Debug and Dev Console buttons removed in favor of DeveloperMenu */}
           <div className="w-px h-4 bg-on-surface/20"></div>
           <div className="flex items-center gap-2 px-4">
             <div
@@ -748,6 +780,20 @@ const App: React.FC = () => {
         {showLegal && <LegalModal onClose={() => setShowLegal(false)} />}
         {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
       </Suspense>
+      <DeveloperMenu
+        files={files}
+        data={activeData}
+        user={user}
+        showDebugger={showDebugger}
+        setShowDebugger={setShowDebugger}
+        showLogs={showLogs}
+        setShowLogs={setShowLogs}
+        onLoadMockData={handleDevBypass}
+        onCreateBlank={handleCreateBlank}
+        isOpen={showDevMenu}
+        onClose={() => setShowDevMenu(false)}
+        initialTab={devMenuTab}
+      />
       {showChangelog && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-slide-up border border-outline-variant">

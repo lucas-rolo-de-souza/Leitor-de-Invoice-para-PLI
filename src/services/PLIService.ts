@@ -18,10 +18,12 @@ const downloadTextReport = (content: string, filename: string) => {
 
 /**
  * Generates and downloads the PLI XLS file.
- * We use a low-level SheetJS construction to strictly enforce Cell Types (Text vs Number).
+ * Uses ExcelJS for workbook construction with cell type enforcement.
  */
 const generateAndDownloadXls = async (data: InvoiceData) => {
-  const sheetName = "MODELO PLI";
+  const ExcelJS = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("MODELO PLI");
 
   // Headers
   const headers = [
@@ -62,82 +64,62 @@ const generateAndDownloadXls = async (data: InvoiceData) => {
     "ESPECIFICAÇÃO",
   ];
 
-  // Helper to create cell object
-  // t: 's' (string), 'n' (number)
-  // z: format string (e.g. '@' for text)
-  const cell = (v: unknown, type: "s" | "n" = "s") => {
-    if (v === null || v === undefined) return { t: "s", v: "" }; // Default to empty string cell
-
-    if (type === "n") {
-      // Check if it's a valid number
-      const num = Number(v.toString().replace(",", "."));
-      if (isNaN(num)) return { t: "s", v: String(v) }; // Fallback to string if strictly not a number
-      return { t: "n", v: num };
-    }
-
-    return { t: "s", v: String(v), z: "@" }; // Force Text format
-  };
-
-  const rows: unknown[][] = [
-    headers.map((h) => ({ t: "s", v: h, z: "@" })), // Header Row
-  ];
+  worksheet.addRow(headers);
 
   const items = data.lineItems || [];
 
   items.forEach((item) => {
     const rowData = [
-      cell(item.partNumber), // PART_NUMBER (Buyer/Customer Part Number)
-      cell(item.description), // ESPECIFICAÇÃO_TECNICA
-      cell(item.productCode, "s"), // CODIGO_PRODUTO
-      cell(item.ncm ? item.ncm.replace(/\./g, "") : "", "s"), // CODIGO_NCM
-      cell(item.taxClassificationDetail, "s"), // DETALHE_PRODUTO
-      cell(item.unitMeasure, "s"), // UNIDADE
-      cell(item.netWeight, "n"), // PESO_LIQUIDO
-      cell(item.quantity, "n"), // QUANTIDADE
-      cell(item.unitPrice, "n"), // VALOR_UNITARIO
-      cell(item.manufacturerCode, "s"), // CODIGO_FABRICANTE
-      cell(item.material), // MATERIA_PRIMA
-      cell(item.manufacturerRef), // REFERENCIA_FABRICANTE (Seller/Exporter Part Number)
-      cell(""), // CODIGO_PAIS_FABRICANTE_DESCONHECIDO (Cleared)
-
-      // Ato Legal 1
-      cell(item.legalAct1Type),
-      cell(item.legalAct1Issuer),
-      cell(item.legalAct1Number),
-      cell(item.legalAct1Year),
-      cell(item.legalAct1Ex),
-      cell(""), // Alíquota 1 cleared
-
-      // Ato Legal 2
-      cell(item.legalAct2Type),
-      cell(item.legalAct2Issuer),
-      cell(item.legalAct2Number),
-      cell(item.legalAct2Year),
-      cell(item.legalAct2Ex),
-      cell(""), // Alíquota 2 cleared
-
-      // Attributes
-      cell(item.complementaryNote),
-      cell(item.attr1Level),
-      cell(item.attr1Name),
-      cell(item.attr1Value),
-      cell(item.attr2Level),
-      cell(item.attr2Name),
-      cell(item.attr2Value),
-      cell(item.attr3Level),
-      cell(item.attr3Name),
-      cell(item.attr3Value),
+      item.partNumber ?? "",
+      item.description ?? "",
+      item.productCode ?? "",
+      item.ncm ? item.ncm.replace(/\./g, "") : "",
+      item.taxClassificationDetail ?? "",
+      item.unitMeasure ?? "",
+      Number(item.netWeight) || 0,
+      Number(item.quantity) || 0,
+      Number(item.unitPrice) || 0,
+      item.manufacturerCode ?? "",
+      item.material ?? "",
+      item.manufacturerRef ?? "",
+      "",
+      item.legalAct1Type ?? "",
+      item.legalAct1Issuer ?? "",
+      item.legalAct1Number ?? "",
+      item.legalAct1Year ?? "",
+      item.legalAct1Ex ?? "",
+      "",
+      item.legalAct2Type ?? "",
+      item.legalAct2Issuer ?? "",
+      item.legalAct2Number ?? "",
+      item.legalAct2Year ?? "",
+      item.legalAct2Ex ?? "",
+      "",
+      item.complementaryNote ?? "",
+      item.attr1Level ?? "",
+      item.attr1Name ?? "",
+      item.attr1Value ?? "",
+      item.attr2Level ?? "",
+      item.attr2Name ?? "",
+      item.attr2Value ?? "",
+      item.attr3Level ?? "",
+      item.attr3Name ?? "",
+      item.attr3Value ?? "",
     ];
-    rows.push(rowData);
+    worksheet.addRow(rowData);
   });
 
-  const XLSX = await import("xlsx");
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-  // Export as XLSX (Modern Excel)
-  XLSX.writeFile(wb, `IMPORTACAO_MODELO_INDUSTRIA_PLI.xlsx`);
+  // Download file in browser
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `IMPORTACAO_MODELO_INDUSTRIA_PLI.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 /**

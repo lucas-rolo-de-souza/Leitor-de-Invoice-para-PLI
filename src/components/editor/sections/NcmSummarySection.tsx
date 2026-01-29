@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Layers,
   Package,
@@ -6,10 +6,11 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import { InvoiceData } from "../../../types";
 import { isValidNCM } from "../../../utils/validators";
-import { ncmService } from "../../../services/ncmService";
+import { ncmService, NcmHierarchyItem } from "../../../services/ncmService";
 
 type NcmSummaryProps = {
   data: InvoiceData;
@@ -17,6 +18,10 @@ type NcmSummaryProps = {
 
 export const NcmSummarySection: React.FC<NcmSummaryProps> = ({ data }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [hierarchies, setHierarchies] = useState<
+    Record<string, NcmHierarchyItem[]>
+  >({});
+  const [isLoading, setIsLoading] = useState(false);
 
   // Extract Unique and VALID NCMs
   const uniqueNcms: string[] = Array.from(
@@ -24,10 +29,38 @@ export const NcmSummarySection: React.FC<NcmSummaryProps> = ({ data }) => {
       (data.lineItems || [])
         .map((item) => item.ncm)
         .filter(
-          (ncm): ncm is string => typeof ncm === "string" && isValidNCM(ncm)
-        )
-    )
+          (ncm): ncm is string => typeof ncm === "string" && isValidNCM(ncm),
+        ),
+    ),
   );
+
+  useEffect(() => {
+    const fetchHierarchies = async () => {
+      setIsLoading(true);
+      const newHierarchies: Record<string, NcmHierarchyItem[]> = {};
+
+      await Promise.all(
+        uniqueNcms.map(async (ncm) => {
+          try {
+            const result = await ncmService.getHierarchy(ncm);
+            newHierarchies[ncm] = result;
+          } catch (error) {
+            console.error(`Failed to load hierarchy for ${ncm}`, error);
+            newHierarchies[ncm] = [];
+          }
+        }),
+      );
+
+      setHierarchies(newHierarchies);
+      setIsLoading(false);
+    };
+
+    if (uniqueNcms.length > 0) {
+      fetchHierarchies();
+    } else {
+      setHierarchies({});
+    }
+  }, [uniqueNcms.join(",")]);
 
   if (uniqueNcms.length === 0) return null;
 
@@ -45,6 +78,9 @@ export const NcmSummarySection: React.FC<NcmSummaryProps> = ({ data }) => {
         </h3>
 
         <div className="flex items-center gap-3">
+          {isLoading && (
+            <Loader2 className="w-3 h-3 animate-spin text-primary" />
+          )}
           <span className="text-xs bg-primary-container text-primary px-2 py-0.5 rounded-full font-bold">
             {uniqueNcms.length} Códigos Únicos
           </span>
@@ -61,12 +97,12 @@ export const NcmSummarySection: React.FC<NcmSummaryProps> = ({ data }) => {
       {isExpanded && (
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 animate-in slide-in-from-top-2 fade-in duration-200">
           {uniqueNcms.map((ncmCode, idx) => {
-            const hierarchy = ncmService.getHierarchy(ncmCode);
+            const hierarchy = hierarchies[ncmCode] || [];
             // Handle 9999.99.99 format manually if needed, or rely on service clean logic
             const clean = ncmCode.replace(/\D/g, "");
             const formattedCode = `${clean.slice(0, 4)}.${clean.slice(
               4,
-              6
+              6,
             )}.${clean.slice(6, 8)}`;
 
             return (
@@ -113,10 +149,19 @@ export const NcmSummarySection: React.FC<NcmSummaryProps> = ({ data }) => {
                       ))
                     ) : (
                       <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100">
-                        <AlertTriangle className="w-5 h-5" />
-                        <span className="text-sm font-medium">
-                          Descrição não encontrada.
-                        </span>
+                        {isLoading ? (
+                          <div className="flex items-center gap-2 px-1">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-sm">Carregando...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <AlertTriangle className="w-5 h-5" />
+                            <span className="text-sm font-medium">
+                              Descrição não encontrada.
+                            </span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -24,7 +24,12 @@ export function useLogisticsData() {
     }
 
     if (!fetchPromise) {
-      fetchPromise = fetch("/data/locations.json")
+      // Use BASE_URL to correctly resolve the path when deployed in a subdirectory
+      const baseUrl = import.meta.env.BASE_URL.endsWith("/")
+        ? import.meta.env.BASE_URL
+        : `${import.meta.env.BASE_URL}/`;
+
+      fetchPromise = fetch(`${baseUrl}data/locations.json`)
         .then(async (res) => {
           if (!res.ok)
             throw new Error(`Failed to load locations: ${res.statusText}`);

@@ -36,7 +36,7 @@ export async function extractInvoiceData(
   formData.append("api_key", apiKey);
 
   try {
-    const response = await fetch("http://localhost:8000/api/extract", {
+    const response = await fetch("/api/extract", {
       method: "POST",
       body: formData,
     });

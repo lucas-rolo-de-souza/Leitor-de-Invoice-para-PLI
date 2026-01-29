@@ -6,48 +6,51 @@ import { FilePart } from "../types";
  * Converts all sheets to a single CSV string to be fed as text to the AI.
  */
 const processSpreadsheet = async (file: File): Promise<FilePart> => {
-  const XLSX = await import("xlsx");
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
+  const ExcelJS = await import("exceljs");
 
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+  const arrayBuffer = await file.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(arrayBuffer);
 
-        let fullTextContent = "";
+  let fullTextContent = "";
 
-        // Iterate over all sheets to ensure we capture Invoice and Packing List tabs
-        workbook.SheetNames.forEach((sheetName) => {
-          const sheet = workbook.Sheets[sheetName];
-          const csvContent = XLSX.utils.sheet_to_csv(sheet);
-          if (csvContent && csvContent.trim().length > 0) {
-            fullTextContent += `\n--- SHEET: ${sheetName} ---\n${csvContent}`;
-          }
-        });
+  // Iterate over all sheets to ensure we capture Invoice and Packing List tabs
+  workbook.eachSheet((worksheet, sheetId) => {
+    const sheetName = worksheet.name;
+    const rows: string[] = [];
 
-        // Encode the text content to Base64 so it matches the FilePart interface
-        // We use btoa with a workaround for UTF-8 characters
-        const base64Data = btoa(
-          new TextEncoder()
-            .encode(fullTextContent)
-            .reduce((data, byte) => data + String.fromCharCode(byte), ""),
-        );
+    worksheet.eachRow((row) => {
+      const values = row.values as (
+        | string
+        | number
+        | boolean
+        | null
+        | undefined
+      )[];
+      // row.values is 1-indexed, first element is undefined
+      const cellValues = values.slice(1).map((v) => v?.toString() ?? "");
+      rows.push(cellValues.join(","));
+    });
 
-        resolve({
-          mimeType: "text/csv", // We normalize all spreadsheet data to CSV text
-          data: base64Data,
-          filename: file.name,
-        });
-      } catch {
-        reject(new Error(`Falha ao processar planilha: ${file.name}`));
-      }
-    };
-
-    reader.onerror = () =>
-      reject(new Error(`Erro ao ler arquivo ${file.name}`));
+    const csvContent = rows.join("\n");
+    if (csvContent && csvContent.trim().length > 0) {
+      fullTextContent += `\n--- SHEET: ${sheetName} ---\n${csvContent}`;
+    }
   });
+
+  // Encode the text content to Base64 so it matches the FilePart interface
+  // We use btoa with a workaround for UTF-8 characters
+  const base64Data = btoa(
+    new TextEncoder()
+      .encode(fullTextContent)
+      .reduce((data, byte) => data + String.fromCharCode(byte), ""),
+  );
+
+  return {
+    mimeType: "text/csv", // We normalize all spreadsheet data to CSV text
+    data: base64Data,
+    filename: file.name,
+  };
 };
 
 /**

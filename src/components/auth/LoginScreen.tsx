@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { DeveloperMenu } from "../developer/DeveloperMenu";
+
 import {
   FileSpreadsheet,
   Lock,
@@ -11,7 +13,7 @@ import {
 import { ThemeToggle } from "../ThemeToggle";
 
 export const LoginScreen: React.FC = () => {
-  const { signInWithPassword } = useAuth();
+  const { signInWithPassword, user } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -138,6 +140,8 @@ export const LoginScreen: React.FC = () => {
       <div className="absolute bottom-6 text-[10px] text-on-surface-variant/50 font-mono">
         Secured by Supabase Integration
       </div>
+
+      <DeveloperMenu user={user} />
     </div>
   );
 };

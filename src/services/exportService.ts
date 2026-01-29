@@ -55,8 +55,8 @@ const formatDualWeight = (value: number | string | null, unit: string) => {
  * - Prioritizes `TotalNetWeight` > `UnitNetWeight` logic for accuracy.
  */
 export const exportToExcel = async (data: InvoiceData) => {
-  const XLSX = await import("xlsx");
-  const wb = XLSX.utils.book_new();
+  const ExcelJS = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
 
   // Validation Check before Export
   const errors = generateValidationErrors(data, {
@@ -65,15 +65,15 @@ export const exportToExcel = async (data: InvoiceData) => {
     countries: COUNTRIES_LIST,
   });
   if (errors.length > 0) {
-    const errorData = [["CAMPO", "ERRO"]];
-    errors.forEach((err) => errorData.push([err.field, err.message]));
-    const wsErrors = XLSX.utils.aoa_to_sheet(errorData);
-    XLSX.utils.book_append_sheet(wb, wsErrors, "RELATÓRIO DE ERROS");
+    const wsErrors = workbook.addWorksheet("RELATÓRIO DE ERROS");
+    wsErrors.addRow(["CAMPO", "ERRO"]);
+    errors.forEach((err) => wsErrors.addRow([err.field, err.message]));
   }
 
   const localSubtotal = calculateSubtotal(data.lineItems);
 
   // Create Header Info Sheet
+  const wsHeader = workbook.addWorksheet("Dados Gerais");
   const headerData = [
     ["CAMPO", "VALOR"],
     ["Fatura Comercial", data.invoiceNumber],
@@ -104,49 +104,65 @@ export const exportToExcel = async (data: InvoiceData) => {
     ["Porto de Embarque", data.portOfLoading],
     ["Porto de Descarga", data.portOfDischarge],
     ["Transbordo", data.transshipment],
-    ["Subtotal", localSubtotal], // Use local calculation
+    ["Subtotal", localSubtotal],
     ["Frete", Number(data.freight || 0)],
     ["Seguro", Number(data.insurance || 0)],
     ["Total Geral", Number(data.grandTotal || 0)],
   ];
-
-  const wsHeader = XLSX.utils.aoa_to_sheet(headerData);
-  XLSX.utils.book_append_sheet(wb, wsHeader, "Dados Gerais");
+  headerData.forEach((row) => wsHeader.addRow(row));
 
   // Create Standard Items Sheet
-  const itemsData = (data.lineItems || []).map((item) => {
+  const wsItems = workbook.addWorksheet("Itens");
+  wsItems.addRow([
+    "Part Number",
+    "Descrição",
+    "NCM",
+    "Código Produto",
+    "Quantidade",
+    "Unidade",
+    "Preço Unit.",
+    "Total",
+    "Peso Líq. Unit.",
+    "Peso Líq. Total",
+  ]);
+
+  (data.lineItems || []).forEach((item) => {
     const qty = Number(item.quantity || 0);
-    // Priority: Trust item.totalNetWeight (if valid) > Derive from Unit
     let totalNet = Number(item.netWeight || 0);
     let unitNet = Number(item.unitNetWeight || 0);
 
-    // If Total is present, force consistency on Unit
     if (totalNet !== 0) {
       if (qty > 0) unitNet = totalNet / qty;
     } else {
-      // If Total is missing, derive from Unit
       totalNet = unitNet * qty;
     }
 
-    return {
-      "Part Number": item.partNumber,
-      Descrição: item.description,
-      NCM: item.ncm,
-      "Código Produto": item.productCode,
-      Quantidade: qty,
-      Unidade: item.unitMeasure || "UN",
-      "Preço Unit.": Number(item.unitPrice || 0),
-      Total: Number(item.total || 0),
-      "Peso Líq. Unit.": unitNet,
-      "Peso Líq. Total": totalNet,
-    };
+    wsItems.addRow([
+      item.partNumber,
+      item.description,
+      item.ncm,
+      item.productCode,
+      qty,
+      item.unitMeasure || "UN",
+      Number(item.unitPrice || 0),
+      Number(item.total || 0),
+      unitNet,
+      totalNet,
+    ]);
   });
 
-  const wsItems = XLSX.utils.json_to_sheet(itemsData);
-  XLSX.utils.book_append_sheet(wb, wsItems, "Itens");
-
+  // Download file in browser
   const safeInvoiceNumber = sanitizeFilename(data.invoiceNumber || "Draft");
-  XLSX.writeFile(wb, `Invoice_${safeInvoiceNumber}.xlsx`);
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Invoice_${safeInvoiceNumber}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 /**

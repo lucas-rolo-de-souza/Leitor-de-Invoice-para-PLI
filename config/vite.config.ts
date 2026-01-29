@@ -11,6 +11,7 @@ export default defineConfig(() => {
   // The client now manages keys via SettingsContext
 
   return {
+    base: "/pli/",
     server: {
       port: 3000,
       host: "0.0.0.0",
@@ -19,6 +20,11 @@ export default defineConfig(() => {
           target: "https://olinda.bcb.gov.br",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/bcb/, ""),
+          secure: false,
+        },
+        "/api": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
           secure: false,
         },
       },

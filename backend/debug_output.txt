@@ -1,0 +1,7 @@
+INFO:__main__:Starting NCM Service Debug...
+INFO:services.ncm_service:Initializing NCM Service and downloading database...
+INFO:services.ncm_service:NCM Service initialized. Loaded 15141 records.
+INFO:__main__:Is Ready: True
+INFO:__main__:Map Size: 15141
+INFO:__main__:Test Code 01012100: -- Reprodutores de raþa pura
+INFO:__main__:Hierarchy for 01012100: [{'code': '01', 'description': 'Animais vivos.', 'level': 'CapÝtulo'}, {'code': '0101', 'description': 'Cavalos, asininos e muares, vivos.', 'level': 'PosiþÒo'}, {'code': '01012100', 'description': '-- Reprodutores de raþa pura', 'level': 'Item'}]

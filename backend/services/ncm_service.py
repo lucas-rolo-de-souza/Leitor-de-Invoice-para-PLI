@@ -81,4 +81,33 @@ class NcmService:
         clean_code = code.replace(".", "").strip()
         return self.ncm_map.get(clean_code)
 
+    def get_hierarchy(self, code: str) -> List[Dict]:
+        clean_code = code.replace(".", "").strip()
+        hierarchy = []
+        
+        # Define hierarchy levels: 2 (Chapter), 4 (Position), 6 (Subposition), 8 (Item)
+        levels_map = {
+            2: "Capítulo",
+            4: "Posição",
+            6: "Subposição",
+            8: "Item"
+        }
+        
+        # Build hierarchy by checking progressively longer prefixes
+        current_code = ""
+        for char in clean_code:
+            current_code += char
+            length = len(current_code)
+            
+            if length in levels_map:
+                desc = self.ncm_map.get(current_code)
+                if desc:
+                    hierarchy.append({
+                        "code": current_code,
+                        "description": desc,
+                        "level": levels_map[length]
+                    })
+                    
+        return hierarchy
+
 ncm_service = NcmService()

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSettings } from "../../contexts/SettingsContext";
 import { Key, Eye, EyeOff, CheckCircle, AlertCircle, X } from "lucide-react";
-import { useTranslation } from "../../hooks/useTranslation";
+import { useLanguage } from "../../contexts/TranslationContext";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -16,7 +16,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [inputKey, setInputKey] = useState(apiKey || "");
   const [showKey, setShowKey] = useState(false);
   const [msg, setMsg] = useState("");
-  const t = useTranslation();
+  /* const t = useTranslation(); */
+  const { t } = useLanguage();
 
   const handleSave = () => {
     if (inputKey.length < 20) {

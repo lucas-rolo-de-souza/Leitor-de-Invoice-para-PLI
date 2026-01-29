@@ -22,7 +22,7 @@ class NcmService {
    */
   public async init(): Promise<void> {
     try {
-      await fetch("http://localhost:8000/api/health");
+      await fetch("/api/health");
       logger.info("[NCM Service] Backend connected.");
     } catch (e) {
       logger.error("[NCM Service] Backend health check failed.", e);
@@ -35,7 +35,7 @@ class NcmService {
     if (cleanCode.length !== 8) return null;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/ncm/${cleanCode}`);
+      const res = await fetch(`/api/ncm/${cleanCode}`);
       if (res.ok) {
         const data = await res.json();
         return data.description;
@@ -47,8 +47,22 @@ class NcmService {
     }
   }
 
-  public getHierarchy(ncmCode: string | null): NcmHierarchyItem[] {
+  public async getHierarchy(
+    ncmCode: string | null,
+  ): Promise<NcmHierarchyItem[]> {
     if (!ncmCode) return [];
+
+    const cleanCode = ncmCode.replace(/\D/g, "");
+    if (cleanCode.length < 2) return [];
+
+    try {
+      const res = await fetch(`/api/ncm/${cleanCode}/hierarchy`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      logger.error("Failed to fetch NCM hierarchy", e);
+    }
     return [];
   }
 
@@ -56,7 +70,7 @@ class NcmService {
     if (!term || term.length < 3) return [];
     try {
       const res = await fetch(
-        `http://localhost:8000/api/ncm/search?term=${encodeURIComponent(term)}`,
+        `/api/ncm/search?term=${encodeURIComponent(term)}`,
       );
       if (res.ok) {
         return await res.json();
