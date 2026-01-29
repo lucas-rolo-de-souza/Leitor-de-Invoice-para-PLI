@@ -445,7 +445,7 @@ const App: React.FC = () => {
         <footer className="py-6 border-t border-outline-variant/10 bg-surface-container-lowest/50">
           <div className="max-w-7xl mx-auto px-6 h-full flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-on-surface-variant">
             <div className="flex items-center gap-4">
-              <span className="font-semibold">&copy; 2025 PLI.ai</span>
+              <span className="font-semibold">&copy; 2026 PLI.ai</span>
               <span className="hidden md:inline text-outline-variant">|</span>
 
               <span className="flex items-center gap-2">
@@ -459,7 +459,12 @@ const App: React.FC = () => {
                 placement="top"
               />
               <span className="text-outline-variant">|</span>
-
+              <button
+                onClick={() => setShowChangelog(true)}
+                className="hover:text-primary transition-colors font-mono"
+              >
+                v{APP_VERSION}
+              </button>
               <span className="hidden md:inline text-outline-variant">|</span>
               <UsageWidget
                 refreshTrigger={refreshUsage}

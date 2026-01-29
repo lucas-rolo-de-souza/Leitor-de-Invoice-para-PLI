@@ -14,6 +14,7 @@ export type NcmHierarchyItem = {
 
 class NcmService {
   private isReady: boolean = true;
+  private descriptionCache: Record<string, string> = {};
 
   constructor() {}
 
@@ -29,16 +30,29 @@ class NcmService {
     }
   }
 
+  public getCachedDescription(ncmCode: string | null): string | null {
+    if (!ncmCode) return null;
+    const cleanCode = ncmCode.replace(/\D/g, "");
+    return this.descriptionCache[cleanCode] || null;
+  }
+
   public async getDescription(ncmCode: string | null): Promise<string | null> {
     if (!ncmCode) return null;
     const cleanCode = ncmCode.replace(/\D/g, "");
     if (cleanCode.length !== 8) return null;
 
+    if (this.descriptionCache[cleanCode]) {
+      return this.descriptionCache[cleanCode];
+    }
+
     try {
       const res = await fetch(`/api/ncm/${cleanCode}`);
       if (res.ok) {
         const data = await res.json();
-        return data.description;
+        if (data.description) {
+          this.descriptionCache[cleanCode] = data.description;
+          return data.description;
+        }
       }
       return null;
     } catch (e) {

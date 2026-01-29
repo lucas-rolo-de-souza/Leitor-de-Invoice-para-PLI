@@ -1,6 +1,5 @@
-import { InvoiceData, FilePart, initialInvoiceData } from "../types";
+import { InvoiceData, FilePart } from "../types";
 import { logger } from "./loggerService";
-import { InvoiceSchema } from "../domain/schemas";
 
 /**
  * Frontend API client for the backend extraction service.

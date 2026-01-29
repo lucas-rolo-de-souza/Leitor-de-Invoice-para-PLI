@@ -1,0 +1,5 @@
+src/components/editor/sections/ItemsTable.tsx(225,27): error TS2801: This condition will always return true since this 'Promise<string | null>' is always defined.
+src/components/editor/sections/ItemsTable.tsx(228,24): error TS2801: This condition will always return true since this 'Promise<string | null>' is always defined.
+src/hooks/useCompliance.ts(197,37): error TS2801: This condition will always return true since this 'Promise<string | null>' is always defined.
+src/services/geminiService.ts(1,33): error TS6133: 'initialInvoiceData' is declared but its value is never read.
+src/services/geminiService.ts(3,1): error TS6133: 'InvoiceSchema' is declared but its value is never read.

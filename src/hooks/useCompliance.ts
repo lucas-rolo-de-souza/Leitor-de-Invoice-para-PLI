@@ -194,7 +194,7 @@ export const useCompliance = (data: InvoiceData) => {
     items.forEach((item, idx) => {
       if (item.partNumber) {
         const cleanPN = item.partNumber.replace(/\D/g, "");
-        if (cleanPN.length === 8 && ncmService.getDescription(cleanPN)) {
+        if (cleanPN.length === 8 && ncmService.getCachedDescription(cleanPN)) {
           issues.push(
             `Item ${idx + 1}: Part Number '${item.partNumber}' ${
               t.editor.compliance.validation.itemPartNumberPossibleNcm

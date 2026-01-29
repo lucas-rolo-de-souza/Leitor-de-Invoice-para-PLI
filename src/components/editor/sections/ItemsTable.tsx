@@ -70,6 +70,31 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
     }
   };
 
+  /* Effect to prefetch NCM descriptions for all items */
+  React.useEffect(() => {
+    const fetchNcms = async () => {
+      const uniqueNcms = Array.from(
+        new Set(
+          data.lineItems?.map((i) => i.ncm).filter((n) => n && n.length >= 8) ||
+            [],
+        ),
+      );
+      await Promise.all(
+        uniqueNcms.map((ncm) => ncmService.getDescription(ncm)),
+      );
+      // Force re-render after fetching not strictly needed if we rely on parent or local state update,
+      // but since cache is external, we might strictly need it.
+      // However, React often re-renders on parent updates.
+      // For now, let's assume the user interaction triggers renders, or we add a dummy state to force update if needed.
+      // Actually, we can just rely on the fact that when data changes, this runs.
+      // To really refresh the UI when data arrives, we might need a local state tick.
+      setLastUpdate(Date.now());
+    };
+    fetchNcms();
+  }, [data.lineItems]);
+
+  const [, setLastUpdate] = useState(Date.now()); // Force update when cache populates
+
   return (
     <section className="flex flex-col relative" id="items-section">
       <div className="flex justify-between items-center mb-6">
@@ -135,7 +160,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           <tbody className="divide-y divide-outline-variant/20 bg-surface">
             {(data.lineItems || []).map((item, index) => {
               const isNCMValid = isValidNCM(item.ncm);
-              const ncmDesc = ncmService.getDescription(item.ncm);
+              const ncmDesc = ncmService.getCachedDescription(item.ncm);
 
               // Comprehensive Check for PLI Mandatory Fields & Constraints
               const missingMandatory =
