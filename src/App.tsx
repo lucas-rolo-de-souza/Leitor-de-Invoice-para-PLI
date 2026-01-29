@@ -274,6 +274,30 @@ const App: React.FC = () => {
     setShowDevMenu(true);
   };
 
+  // Handler for loading partial extraction data from debugger
+  const handleLoadPartialData = (partialData: {
+    metadata?: Record<string, unknown>;
+    lineItems?: Record<string, unknown>[];
+  }) => {
+    // Merge partial data with initial structure
+    const mergedData: InvoiceData = {
+      ...initialInvoiceData,
+      ...(partialData.metadata || {}),
+      lineItems: (partialData.lineItems || []) as InvoiceData["lineItems"],
+    };
+
+    setOriginalData(mergedData);
+    setData(mergedData);
+    setHasProcessed(true);
+    setError(null);
+    setRefreshUsage((prev) => prev + 1);
+
+    logger.info("Loaded partial extraction data", {
+      hasMetadata: !!partialData.metadata,
+      lineItemCount: partialData.lineItems?.length || 0,
+    });
+  };
+
   // Active Data Logic
   const activeData = showOriginal ? originalData : data;
   const validationErrors = useMemo(
@@ -486,7 +510,10 @@ const App: React.FC = () => {
 
         {/* Modals for Landing Screen */}
         {showDebugger && (
-          <ExtractionDebugger onClose={() => setShowDebugger(false)} />
+          <ExtractionDebugger
+            onClose={() => setShowDebugger(false)}
+            onLoadPartialData={handleLoadPartialData}
+          />
         )}
         {(!isConfigured || showSettings) && (
           <SettingsModal
@@ -763,7 +790,10 @@ const App: React.FC = () => {
         }
       >
         {showDebugger && (
-          <ExtractionDebugger onClose={() => setShowDebugger(false)} />
+          <ExtractionDebugger
+            onClose={() => setShowDebugger(false)}
+            onLoadPartialData={handleLoadPartialData}
+          />
         )}
         {(!isConfigured || showSettings) && (
           <SettingsModal

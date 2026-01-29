@@ -264,6 +264,17 @@ class GeminiService:
     def _post_process_invoice_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         result = data.copy()
         
+        # Normalize numeric metadata fields (convert None to 0)
+        numeric_fields = [
+            "grandTotal", "totalNetWeight", "totalGrossWeight", "totalPackages",
+            "freightValue", "insuranceValue", "otherChargesValue"
+        ]
+        for field in numeric_fields:
+            if field in result:
+                result[field] = float(result[field]) if result[field] is not None else 0.0
+            else:
+                result[field] = 0.0
+        
         # Line Items Normalization
         if "lineItems" in result and isinstance(result["lineItems"], list):
             processed_items = []
@@ -330,7 +341,8 @@ class GeminiService:
           1. PRIORITIZE it for extracting **Total Net Weight**, **Total Gross Weight**, **Total Volumes** (Count), and **Volume Type**.
           2. Packing Lists are often the source of truth for logistics data. use them!
           
-          OUTPUT JSON matching the structure needed for the application.
+          OUTPUT: Return JSON using these exact field names:
+          invoiceNumber, date, exporterName, exporterAddress, exporterTaxId, importerName, importerAddress, importerTaxId, currency, grandTotal, incoterm, countryOfOrigin, countryOfAcquisition, countryOfProvenance, portOfLoading, portOfDischarge, totalNetWeight, totalGrossWeight, totalPackages, volumeType, paymentTerms, freightValue, insuranceValue, otherChargesValue, lineItems
         """
 
     def _get_line_items_prompt(self) -> str:

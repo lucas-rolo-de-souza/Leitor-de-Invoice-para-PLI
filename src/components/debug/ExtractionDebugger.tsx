@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   X,
   Activity,
@@ -8,6 +8,10 @@ import {
   Cpu,
   ChevronRight,
   ChevronDown,
+  Timer,
+  History,
+  Download,
+  Trash2,
 } from "lucide-react";
 import {
   extractionTracer,
@@ -17,19 +21,36 @@ import {
 
 interface ExtractionDebuggerProps {
   onClose: () => void;
+  onLoadPartialData?: (data: {
+    metadata?: Record<string, unknown>;
+    lineItems?: Record<string, unknown>[];
+  }) => void;
 }
+
+// Helper to format milliseconds to human-readable time
+const formatTime = (ms: number): string => {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const mins = Math.floor(ms / 60000);
+  const secs = ((ms % 60000) / 1000).toFixed(0);
+  return `${mins}m ${secs}s`;
+};
 
 export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
   onClose,
+  onLoadPartialData,
 }) => {
   const [state, setState] = useState<ExtractionState | null>(
-    extractionTracer.getCurrentState(),
+    extractionTracer.getDisplayState(),
   );
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"timeline" | "metrics">(
     "timeline",
   );
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [remainingTimeout, setRemainingTimeout] = useState(0);
 
+  // Subscribe to tracer updates
   useEffect(() => {
     const unsub = extractionTracer.subscribe((newState) => {
       setState(newState);
@@ -37,8 +58,83 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
     return unsub;
   }, []);
 
+  // Live elapsed time counter
+  useEffect(() => {
+    if (!state || state.status !== "RUNNING") {
+      // If not running but has end time, show final duration
+      if (state?.endTime) {
+        setElapsedTime(state.endTime - state.startTime);
+        setRemainingTimeout(0);
+      }
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setElapsedTime(extractionTracer.getElapsedTime());
+      setRemainingTimeout(extractionTracer.getRemainingTimeout());
+    }, 100); // Update every 100ms for smooth display
+
+    return () => clearInterval(interval);
+  }, [state?.status, state?.id]);
+
+  const handleLoadPartialData = useCallback(() => {
+    const partial = extractionTracer.getPartialData();
+    if (onLoadPartialData && (partial.metadata || partial.lineItems)) {
+      onLoadPartialData(partial);
+      onClose();
+    }
+  }, [onLoadPartialData, onClose]);
+
+  const handleClearHistory = useCallback(() => {
+    if (confirm("Limpar todo o histórico de extração?")) {
+      extractionTracer.clearHistory();
+    }
+  }, []);
+
+  const hasPartialData = extractionTracer.hasPartialData();
+  const isRunning = state?.status === "RUNNING";
+  const isHistorical = !extractionTracer.getCurrentState() && state;
+
+  // Show empty state when no extraction data at all
   if (!state) {
-    return null;
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                <Activity className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                Extraction Debugger
+              </h3>
+            </div>
+            <button
+              onClick={onClose}
+              title="Close debugger"
+              className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Empty State Content */}
+          <div className="p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+              <Activity className="w-8 h-8 text-slate-400" />
+            </div>
+            <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+              Nenhuma extração registrada
+            </h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+              O debugger mostrará informações quando você iniciar uma extração
+              de fatura. O histórico será mantido entre sessões.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const getStepStatus = (step: TraceStep, currentStep: TraceStep) => {
@@ -58,7 +154,10 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
     const currentIndex = stepsOrder.indexOf(currentStep);
     const stepIndex = stepsOrder.indexOf(step);
 
-    if (state.status === "FAILURE" && stepIndex === currentIndex)
+    if (
+      (state.status === "FAILURE" || state.status === "PARTIAL") &&
+      stepIndex === currentIndex
+    )
       return "error";
     if (stepIndex < currentIndex) return "completed";
     if (stepIndex === currentIndex) return "active";
@@ -80,32 +179,83 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
     }
   };
 
+  const getStatusColor = () => {
+    switch (state.status) {
+      case "RUNNING":
+        return "bg-blue-100 text-blue-600";
+      case "SUCCESS":
+        return "bg-green-100 text-green-600";
+      case "FAILURE":
+        return "bg-red-100 text-red-600";
+      case "PARTIAL":
+        return "bg-amber-100 text-amber-600";
+      default:
+        return "bg-slate-100 text-slate-600";
+    }
+  };
+
+  const getStatusLabel = () => {
+    switch (state.status) {
+      case "RUNNING":
+        return "Em execução";
+      case "SUCCESS":
+        return "Concluído";
+      case "FAILURE":
+        return "Falhou";
+      case "PARTIAL":
+        return "Parcial";
+      default:
+        return "Inativo";
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
           <div className="flex items-center gap-3">
-            <div
-              className={`p-2 rounded-lg ${
-                state.status === "FAILURE"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-blue-100 text-blue-600"
-              }`}
-            >
+            <div className={`p-2 rounded-lg ${getStatusColor()}`}>
               <Activity className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                Extraction Debugger
-              </h3>
-              <p className="text-xs text-slate-500 font-mono">
-                ID: {state.id.split("-")[0]}... • Time:{" "}
-                {(Date.now() - state.startTime) / 1000}s
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+                  Extraction Debugger
+                </h3>
+                {isHistorical && (
+                  <span className="text-[10px] font-bold uppercase tracking-wide bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <History className="w-3 h-3" /> Histórico
+                  </span>
+                )}
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${getStatusColor()}`}
+                >
+                  {getStatusLabel()}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-mono flex items-center gap-3">
+                <span>ID: {state.id.split("-")[0]}...</span>
+                <span className="flex items-center gap-1">
+                  <Timer className="w-3 h-3" />
+                  {isRunning ? (
+                    <span className="text-blue-600 font-bold tabular-nums">
+                      {formatTime(elapsedTime)}
+                    </span>
+                  ) : (
+                    <span>{formatTime(state.metrics.totalDuration)}</span>
+                  )}
+                </span>
+                {isRunning && remainingTimeout > 0 && (
+                  <span className="text-amber-600 text-[10px]">
+                    Timeout em: {formatTime(remainingTimeout)}
+                  </span>
+                )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Tabs */}
             <div className="flex bg-slate-200 dark:bg-slate-700 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab("timeline")}
@@ -130,6 +280,19 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                 Metrics
               </button>
             </div>
+
+            {/* Clear History */}
+            {isHistorical && (
+              <button
+                onClick={handleClearHistory}
+                title="Limpar histórico"
+                className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-500 hover:text-red-600 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Close */}
             <button
               onClick={onClose}
               title="Close debugger"
@@ -179,6 +342,27 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                 </div>
               );
             })}
+
+            {/* Timeout Configuration Info */}
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                Timeout Config
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Server Timeout:</span>
+                  <span className="font-mono">
+                    {formatTime(state.timeoutConfig?.serverTimeoutMs || 300000)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>API Call Timeout:</span>
+                  <span className="font-mono">
+                    {formatTime(state.timeoutConfig?.apiTimeoutMs || 120000)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Main Content Area */}
@@ -235,7 +419,9 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                         Duration:
                       </span>
                       <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-                        {(state.metrics.totalDuration / 1000).toFixed(2)}s
+                        {isRunning
+                          ? formatTime(elapsedTime)
+                          : formatTime(state.metrics.totalDuration)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -256,6 +442,8 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Error Details */}
                 {state.error && (
                   <div className="col-span-2 bg-red-50 dark:bg-red-900/20 p-6 rounded-xl border border-red-200 dark:border-red-800">
                     <div className="flex items-center gap-3 mb-4">
@@ -269,6 +457,37 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* Partial Data Recovery */}
+                {hasPartialData &&
+                  onLoadPartialData &&
+                  (state.status === "FAILURE" ||
+                    state.status === "PARTIAL") && (
+                    <div className="col-span-2 bg-amber-50 dark:bg-amber-900/20 p-6 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Download className="w-6 h-6 text-amber-600" />
+                          <div>
+                            <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400">
+                              Dados Parciais Disponíveis
+                            </h3>
+                            <p className="text-sm text-amber-600 dark:text-amber-300">
+                              Parte da extração foi concluída. Você pode
+                              carregar os dados parciais e continuar
+                              manualmente.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleLoadPartialData}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Usar Dados Parciais
+                        </button>
+                      </div>
+                    </div>
+                  )}
               </div>
             ) : (
               <div className="p-4 space-y-4">
@@ -299,12 +518,27 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                                 : "bg-blue-500"
                             }`}
                           />
-                          <span className="font-mono text-xs text-slate-400">
-                            {event.timestamp.split("T")[1].replace("Z", "")}
-                          </span>
-                          <span className="font-bold text-sm text-slate-700 dark:text-slate-100">
-                            {event.message}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-slate-700 dark:text-slate-100">
+                              {event.message}
+                            </span>
+                            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono">
+                              <span>
+                                {event.timestamp.split("T")[1].replace("Z", "")}
+                              </span>
+                              {event.elapsedMs !== undefined && (
+                                <span className="text-blue-500">
+                                  +{formatTime(event.elapsedMs)} total
+                                </span>
+                              )}
+                              {event.deltaMsFromPrevious !== undefined &&
+                                event.deltaMsFromPrevious > 0 && (
+                                  <span className="text-green-500">
+                                    Δ{formatTime(event.deltaMsFromPrevious)}
+                                  </span>
+                                )}
+                            </div>
+                          </div>
                         </div>
                         <div className="flex items-center gap-4">
                           {event.tokens && (
@@ -318,9 +552,9 @@ export const ExtractionDebugger: React.FC<ExtractionDebuggerProps> = ({
                             </span>
                           )}
                           {expandedEventId === event.id ? (
-                            <ChevronDown className="w-4 h-4 text-slate-100" />
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-slate-100" />
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
                           )}
                         </div>
                       </div>
