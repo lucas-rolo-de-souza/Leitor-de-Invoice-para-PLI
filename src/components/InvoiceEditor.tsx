@@ -49,6 +49,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
     addLineItem,
     duplicateLineItem,
     removeLineItem,
+    copyFieldToItems,
     calculatedTotals,
   } = useInvoiceForm(externalData, onChange, isReadOnly);
 
@@ -96,7 +97,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               onAdd={addLineItem}
               onDuplicate={duplicateLineItem}
               onRemove={removeLineItem}
-              isReadOnly={true}
+              onCopyField={copyFieldToItems}
+              isReadOnly={isReadOnly}
               calculatedTotals={calculatedTotals}
             />
             <div className="h-px bg-outline-variant/30 w-full" />
@@ -125,8 +127,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               compliancePercentage >= 100
                 ? "bg-green-50 border-green-500 text-green-700 shadow-green-500/10"
                 : compliancePercentage >= 50
-                ? "bg-amber-50 border-amber-500 text-amber-700 shadow-amber-500/10"
-                : "bg-red-50 border-red-500 text-red-700 shadow-red-500/10"
+                  ? "bg-amber-50 border-amber-500 text-amber-700 shadow-amber-500/10"
+                  : "bg-red-50 border-red-500 text-red-700 shadow-red-500/10"
             } w-full sm:w-auto`}
           >
             <div
@@ -134,8 +136,8 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                 compliancePercentage >= 100
                   ? "bg-green-500 animate-pulse"
                   : compliancePercentage >= 50
-                  ? "bg-amber-500"
-                  : "bg-red-500"
+                    ? "bg-amber-500"
+                    : "bg-red-500"
               }`}
             ></div>
             <span className="text-sm font-black tracking-wide">
@@ -156,7 +158,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                   <AlertCircle className="w-3 h-3" />
                   {item.title}
                 </div>
-              )
+              ),
           )}
           {compliancePercentage === 100 && (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 border border-green-100 text-green-700 text-[10px] font-bold">
@@ -215,6 +217,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               onAdd={addLineItem}
               onDuplicate={duplicateLineItem}
               onRemove={removeLineItem}
+              onCopyField={copyFieldToItems}
               isReadOnly={isReadOnly}
               calculatedTotals={calculatedTotals}
             />

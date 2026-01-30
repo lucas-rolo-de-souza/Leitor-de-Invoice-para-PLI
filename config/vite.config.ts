@@ -15,6 +15,11 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: "0.0.0.0",
+      allowedHosts: [
+        "comex-suit-app-hub.duckdns.org",
+        "localhost",
+        "192.168.70.195",
+      ],
       proxy: {
         "/api/bcb": {
           target: "https://olinda.bcb.gov.br",

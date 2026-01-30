@@ -31,6 +31,11 @@ type ItemsTableProps = {
   onAdd: () => void;
   onDuplicate: (index: number) => void;
   onRemove: (index: number) => void;
+  onCopyField: (
+    sourceIndex: number,
+    field: keyof LineItem,
+    targetIndices: number[],
+  ) => void;
   isReadOnly: boolean;
   calculatedTotals: CalculatedTotals;
 };
@@ -45,10 +50,17 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   onAdd,
   onDuplicate,
   onRemove,
+  onCopyField,
   isReadOnly,
 }) => {
   const t = useTranslation();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  // Copy Field State
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [sourceIndex, setSourceIndex] = useState<number | null>(null);
+  const [fieldToCopy, setFieldToCopy] = useState<keyof LineItem>("ncm");
+  const [targetIndices, setTargetIndices] = useState<number[]>([]);
 
   const handleEdit = (index: number) => {
     setEditingIndex(index);
@@ -103,19 +115,209 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
           icon={<Package className="w-3.5 h-3.5" />}
           className="mb-0"
         />
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={isReadOnly}
-          className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-m3-full font-bold transition-all ${
-            isReadOnly
-              ? "bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed"
-              : "bg-primary text-on-primary hover:bg-primary/90 hover:shadow-md"
-          }`}
-        >
-          <Plus className="w-3 h-3" /> {t.editor.items.actions.addItem}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onAdd}
+            disabled={isReadOnly}
+            className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-m3-full font-bold transition-all ${
+              isReadOnly
+                ? "bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed"
+                : "bg-primary text-on-primary hover:bg-primary/90 hover:shadow-md"
+            }`}
+          >
+            <Plus className="w-3 h-3" /> {t.editor.items.actions.addItem}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCopyModalOpen(true)}
+            disabled={isReadOnly || (data.lineItems?.length || 0) < 2}
+            className={`text-[10px] uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-m3-full font-bold transition-all ${
+              isReadOnly || (data.lineItems?.length || 0) < 2
+                ? "bg-surface-container-highest text-on-surface-variant/50 cursor-not-allowed"
+                : "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80"
+            }`}
+            title={t.editor.items.actions.copyField?.title}
+          >
+            <Copy className="w-3 h-3" />{" "}
+            {t.editor.items.actions.copyField?.title || "Copiar"}
+          </button>
+        </div>
       </div>
+
+      {/* --- COPY FIELD MODAL --- */}
+      {copyModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface rounded-m3-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container">
+              <h3 className="font-bold text-on-surface flex items-center gap-2">
+                <Copy className="w-4 h-4 text-secondary" />
+                {t.editor.items.actions.copyField?.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCopyModalOpen(false)}
+                className="p-2 hover:bg-surface-container-highest rounded-m3-full text-on-surface-variant hover:text-on-surface"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 bg-surface">
+              {/* Source Item Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  {t.editor.items.actions.copyField?.sourceItem}
+                </label>
+                <select
+                  value={sourceIndex ?? ""}
+                  onChange={(e) => setSourceIndex(Number(e.target.value))}
+                  className="w-full text-sm bg-surface-container-high border border-outline-variant/50 rounded-m3-md px-3 py-2 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none"
+                >
+                  <option value="" disabled>
+                    Selecione um item...
+                  </option>
+                  {data.lineItems?.map((item, idx) => (
+                    <option key={idx} value={idx}>
+                      #{idx + 1} - {item.description?.substring(0, 30)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Field Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  {t.editor.items.actions.copyField?.selectField}
+                </label>
+                <select
+                  value={fieldToCopy}
+                  onChange={(e) =>
+                    setFieldToCopy(e.target.value as keyof LineItem)
+                  }
+                  className="w-full text-sm bg-surface-container-high border border-outline-variant/50 rounded-m3-md px-3 py-2 text-on-surface focus:ring-2 focus:ring-primary/50 outline-none"
+                >
+                  <option value="description">Descrição</option>
+                  <option value="ncm">NCM</option>
+                  <option value="partNumber">Part Number</option>
+                  <option value="productCode">Código do Produto</option>
+                  <option value="unitMeasure">Unidade de Medida</option>
+                  <option value="unitNetWeight">Peso Líquido Unitário</option>
+                  <option value="netWeight">Peso Líquido Total</option>
+                  <option value="weightUnit">Unidade de Peso</option>
+                  <option value="manufacturerCode">Código do Fabricante</option>
+                  <option value="manufacturerName">Nome do Fabricante</option>
+                  <option value="manufacturerCountry">
+                    País do Fabricante
+                  </option>
+                  <option value="manufacturerAddress">
+                    Endereço do Fabricante
+                  </option>
+                  <option value="ntType">Tipo de NT</option>
+                  <option value="ntNumber">Número da NT</option>
+                  <option value="ntDate">Data da NT</option>
+                  {/* Add more fields as needed */}
+                </select>
+              </div>
+
+              {/* Target Items Selection */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    {t.editor.items.actions.copyField?.targetItems}
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allIndices =
+                          data.lineItems
+                            ?.map((_, idx) => idx)
+                            .filter((idx) => idx !== sourceIndex) || [];
+                        setTargetIndices(allIndices);
+                      }}
+                      className="text-[10px] text-primary font-bold hover:underline"
+                    >
+                      {t.editor.items.actions.copyField?.selectAll}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTargetIndices([])}
+                      className="text-[10px] text-on-surface-variant/70 font-bold hover:underline"
+                    >
+                      {t.editor.items.actions.copyField?.deselectAll}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-40 overflow-y-auto border border-outline-variant/30 rounded-m3-md p-2 bg-surface-container-low custom-scrollbar">
+                  {data.lineItems?.map((item, idx) => {
+                    if (idx === sourceIndex) return null; // Skip source
+                    return (
+                      <label
+                        key={idx}
+                        className="flex items-center gap-2 p-2 hover:bg-surface-container-highest/50 rounded-m3-sm cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={targetIndices.includes(idx)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setTargetIndices((prev) => [...prev, idx]);
+                            } else {
+                              setTargetIndices((prev) =>
+                                prev.filter((i) => i !== idx),
+                              );
+                            }
+                          }}
+                          className="rounded border-outline-variant text-primary focus:ring-primary"
+                        />
+                        <span className="text-xs text-on-surface">
+                          #{idx + 1} -{" "}
+                          <span className="opacity-70">
+                            {item.description?.substring(0, 40) ||
+                              "Sem descrição"}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {targetIndices.length === 0 && (
+                  <p className="text-[10px] text-error font-medium">
+                    {t.editor.items.actions.copyField?.noTargets}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-outline-variant/30 bg-surface-container-low flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCopyModalOpen(false)}
+                className="px-4 py-2 rounded-m3-full text-sm font-medium text-on-surface-variant hover:bg-surface-container-highest"
+              >
+                {t.editor.items.actions.copyField?.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={sourceIndex === null || targetIndices.length === 0}
+                onClick={() => {
+                  if (sourceIndex !== null && targetIndices.length > 0) {
+                    onCopyField(sourceIndex, fieldToCopy, targetIndices);
+                    setCopyModalOpen(false);
+                    // Reset logic or keep values? Resetting target seems safer
+                    setTargetIndices([]);
+                  }
+                }}
+                className="px-4 py-2 rounded-m3-full text-sm font-bold text-on-primary bg-primary hover:bg-primary/90 hover:shadow-md disabled:bg-surface-container-highest disabled:text-on-surface-variant/50 disabled:shadow-none transition-all"
+              >
+                {t.editor.items.actions.copyField?.apply}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- DESKTOP TABLE --- */}
       <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar border border-outline-variant/30 rounded-m3-md">

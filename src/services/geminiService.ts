@@ -110,6 +110,16 @@ export async function extractInvoiceData(
       data.lineItems = [];
     }
 
+    // DEBUG: Log received line items to inspect weight values
+    console.debug("[GeminiService] Received lineItems:", data.lineItems);
+    if (data.lineItems.length > 0) {
+      console.debug("[GeminiService] Sample Item Weights:", {
+        netWeight: data.lineItems[0].netWeight,
+        unitNetWeight: data.lineItems[0].unitNetWeight,
+        weightUnit: data.lineItems[0].weightUnit,
+      });
+    }
+
     // Cache the extracted data in tracer for recovery
     extractionTracer.savePartialData("metadata", {
       invoiceNumber: data.invoiceNumber,

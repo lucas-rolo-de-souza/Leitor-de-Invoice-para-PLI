@@ -340,6 +340,35 @@ export const useInvoiceForm = (
     [formData, isReadOnly, onDataChange],
   );
 
+  const copyFieldToItems = useCallback(
+    (sourceIndex: number, field: keyof LineItem, targetIndices: number[]) => {
+      if (isReadOnly) return;
+      const sourceItem = formData.lineItems?.[sourceIndex];
+      if (!sourceItem) return;
+
+      const sourceValue = sourceItem[field];
+
+      const newItems = (formData.lineItems || []).map((item, idx) => {
+        if (!targetIndices.includes(idx)) return item;
+        return { ...item, [field]: sourceValue };
+      });
+
+      let newData = { ...formData, lineItems: newItems };
+
+      // If copying weight fields, recalculate totals
+      if (
+        field === "netWeight" ||
+        field === "unitNetWeight" ||
+        field === "weightUnit"
+      ) {
+        newData = calculateGlobalTotals(newData);
+      }
+
+      onDataChange(newData);
+    },
+    [formData, isReadOnly, onDataChange],
+  );
+
   const handleNCMChange = useCallback(
     (index: number, rawValue: string) => {
       if (isReadOnly) return;
@@ -389,6 +418,7 @@ export const useInvoiceForm = (
     addLineItem,
     duplicateLineItem,
     removeLineItem,
+    copyFieldToItems,
     calculatedTotals,
   };
 };
