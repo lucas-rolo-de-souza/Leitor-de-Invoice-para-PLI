@@ -16,6 +16,7 @@ import {
   COUNTRIES_LIST,
 } from "./utils/validationConstants";
 import { ncmService } from "./services/ncmService";
+import { formatNcmString } from "./utils/ncmValidator";
 import { suggestionService } from "./services/suggestionService";
 import { logger } from "./services/loggerService";
 import { invoiceService } from "./services/invoiceService";
@@ -139,6 +140,15 @@ const App: React.FC = () => {
     initServices();
   }, []);
 
+  const sanitizeInvoiceData = (data: InvoiceData): InvoiceData => {
+    if (!data.lineItems) return data;
+    const sanitizedItems = data.lineItems.map((item) => ({
+      ...item,
+      ncm: item.ncm ? formatNcmString(item.ncm) : item.ncm,
+    }));
+    return { ...data, lineItems: sanitizedItems };
+  };
+
   const handleFilesSelect = async (selectedFiles: File[]) => {
     if (!isConfigured) {
       setShowSettings(true);
@@ -165,7 +175,7 @@ const App: React.FC = () => {
       );
 
       setOriginalData(extractedData);
-      setData(extractedData);
+      setData(sanitizeInvoiceData(extractedData));
       setHasProcessed(true);
       setRefreshUsage((prev) => prev + 1);
     } catch (err) {
@@ -199,8 +209,9 @@ const App: React.FC = () => {
   const handleImportInvoice = (importedData: InvoiceData) => {
     // Ensure we have valid data structure before setting state
     const validData = { ...initialInvoiceData, ...importedData };
-    setOriginalData(validData);
-    setData(validData);
+    const sanitizedData = sanitizeInvoiceData(validData);
+    setOriginalData(sanitizedData);
+    setData(sanitizedData);
     setHasProcessed(true);
     setRefreshUsage((prev) => prev + 1);
     setShowImportModal(false);
@@ -286,8 +297,9 @@ const App: React.FC = () => {
       lineItems: (partialData.lineItems || []) as InvoiceData["lineItems"],
     };
 
-    setOriginalData(mergedData);
-    setData(mergedData);
+    const sanitized = sanitizeInvoiceData(mergedData);
+    setOriginalData(sanitized);
+    setData(sanitized);
     setHasProcessed(true);
     setError(null);
     setRefreshUsage((prev) => prev + 1);

@@ -46,7 +46,23 @@ export const validateNCM = (ncm: string | null): NCMValidationResult => {
     isValid: true,
     formatted: `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(
       6,
-      8
+      8,
     )}`,
   };
+};
+
+/**
+ * Formats a raw string into standard NCM format (XXXX.XX.XX).
+ * Handles partial inputs gracefully.
+ */
+export const formatNcmString = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  const limited = digits.slice(0, 8);
+  let masked = limited;
+  if (limited.length > 4) masked = `${limited.slice(0, 4)}.${limited.slice(4)}`;
+  if (limited.length > 6)
+    masked = `${limited.slice(0, 4)}.${limited.slice(4, 6)}.${limited.slice(
+      6,
+    )}`;
+  return masked;
 };

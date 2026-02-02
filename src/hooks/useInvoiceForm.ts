@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { InvoiceData, LineItem } from "../types";
 import { normalizeToKg, convertFromKg } from "../utils/converters";
+import { formatNcmString } from "../utils/ncmValidator";
 
 /**
  * Hook to manage Invoice Data Logic (Stateless / Controlled).
@@ -372,16 +373,7 @@ export const useInvoiceForm = (
   const handleNCMChange = useCallback(
     (index: number, rawValue: string) => {
       if (isReadOnly) return;
-      const digits = rawValue.replace(/\D/g, "");
-      const limited = digits.slice(0, 8);
-      let masked = limited;
-      if (limited.length > 4)
-        masked = `${limited.slice(0, 4)}.${limited.slice(4)}`;
-      if (limited.length > 6)
-        masked = `${limited.slice(0, 4)}.${limited.slice(4, 6)}.${limited.slice(
-          6,
-        )}`;
-
+      const masked = formatNcmString(rawValue);
       handleLineItemChange(index, "ncm", masked);
     },
     [isReadOnly, handleLineItemChange],

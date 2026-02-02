@@ -21,9 +21,9 @@ export const useNetworkStatus = () => {
 
     const start = performance.now();
     try {
-      // Use a lightweight HEAD request to the current origin to avoid downloading data
+      // Use a lightweight HEAD request to the current page to ensure we test the active route
       // Cache-control: no-cache to ensure we hit the network
-      await fetch(window.location.origin, {
+      await fetch(window.location.href, {
         method: "HEAD",
         cache: "no-cache",
         mode: "no-cors",
