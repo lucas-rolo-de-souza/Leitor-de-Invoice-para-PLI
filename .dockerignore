@@ -1,0 +1,14 @@
+**/node_modules
+**/.git
+**/.vscode
+**/.idea
+
+backend
+benchmarks
+docs
+logfiles
+output_data
+dist
+build
+.env
+secrets
