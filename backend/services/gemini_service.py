@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import os
 import re
 import time
 from typing import Dict, Any, List, Optional, Union
@@ -11,8 +12,10 @@ from models import InvoiceData
 logger = logging.getLogger(__name__)
 
 class GeminiService:
+
+
     def __init__(self):
-        pass
+        self.mock_mode = os.getenv("MOCK_GEMINI_MODE", "false").lower() == "true"
 
     def _safe_json_parse(self, text: str) -> Any:
         """
@@ -159,8 +162,6 @@ class GeminiService:
         api_key: str
     ) -> InvoiceData:
         
-        # Initialize the new Client
-        client = genai.Client(api_key=api_key)
         model_id = "gemini-2.5-flash"
         
         metadata_prompt = self._get_metadata_prompt()
@@ -198,7 +199,46 @@ class GeminiService:
         # The TS code waits 3s between metadata success and line items start.
         
         try:
+            if self.mock_mode:
+                logger.info("MOCK MODE: Returning simulated LLM response...")
+                # Simulate network latency
+                await asyncio.sleep(2.0) 
+                
+                # Mock Metadata Response (Messy to test parser)
+                metadata_response = type('obj', (object,), {'text': '''
+                ```json
+                {
+                    "invoiceNumber": "INV-MOCK-2026",
+                    "date": "2026-02-12",
+                    "exporterName": "China Electronics Ltd",
+                    "currency": "USD",
+                    "grandTotal": 15000.50,
+                    "totalNetWeight": 500.0,
+                    "lineItems": []
+                }
+                ```
+                '''})
+                
+                # Mock Line Items Response (Minified Array)
+                line_items_response = type('obj', (object,), {'text': '''
+                [
+                    ["iPhone 15 Mock", "SKU-001", 10, "PCS", 1000, 10000, 10, "Mfg-1", "8517.13.00"],
+                    ["Samsung S24 Mock", "SKU-002", 5, "PCS", 1000.10, 5000.50, 5, "Mfg-2", "8517.12.00"]
+                ]
+                '''})
+                
+                # Parse
+                metadata = self._safe_json_parse(metadata_response.text or "{}")
+                raw_items = self._safe_json_parse(line_items_response.text or "[]")
+                line_items_obj = self._parse_line_items(raw_items)
+                combined_data = {**metadata, "lineItems": line_items_obj}
+                final_result = self._post_process_invoice_data(combined_data)
+                return InvoiceData(**final_result)
+
+            # Real Execution Flow (No Else Needed)
+            client = genai.Client(api_key=api_key)
             # 1. Metadata
+
             logger.info(f"Requests Metadata extraction ({model_id})...")
             metadata_response = await generate(metadata_prompt, "Metadata")
             
