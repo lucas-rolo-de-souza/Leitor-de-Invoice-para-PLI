@@ -1,0 +1,22 @@
+services:
+  benchmark_leitor:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: benchmark_leitor
+    environment:
+      - MOCK_GEMINI_MODE=true
+      - GEMINI_API_KEY=AIzaSyCl92sFFIqtQyYKaZuHBXMht0tDuNFo3FA # User provided key for testing
+    ports:
+      - "8000:8000"
+    networks:
+      - bench_net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "512M"
+
+networks:
+  bench_net:
+    driver: bridge
