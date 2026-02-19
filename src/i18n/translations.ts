@@ -859,6 +859,18 @@ export const translations = {
           edit: "Edit",
           editDetails: "Edit Details",
           close: "Close",
+          copyField: {
+            title: "Copy Field",
+            sourceItem: "Source Item",
+            selectField: "Field to Copy",
+            targetItems: "Target Items",
+            selectAll: "Select All",
+            deselectAll: "Deselect All",
+            apply: "Apply",
+            cancel: "Cancel",
+            success: "Field copied to {count} items!",
+            noTargets: "Select at least one target item",
+          },
         },
         validation: {
           ncm: "Invalid NCM",

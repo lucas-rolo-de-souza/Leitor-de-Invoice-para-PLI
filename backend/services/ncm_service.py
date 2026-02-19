@@ -9,8 +9,20 @@ logger = logging.getLogger(__name__)
 class NcmService:
     def __init__(self):
         self.ncm_map: Dict[str, str] = {}
+    def __init__(self):
+        self.ncm_map: Dict[str, str] = {}
         self.is_ready = False
-        self.data_url = "https://cdn.jsdelivr.net/gh/leogregianin/siscomex-ncm@master/ncm.json"
+        self.primary_url = "https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json"
+        self.fallback_url = "https://cdn.jsdelivr.net/gh/leogregianin/siscomex-ncm@master/ncm.json"
+        
+        self.metrics = {
+            "source_url": None,
+            "download_time_ms": 0,
+            "total_items": 0,
+            "last_updated": None,
+            "status": "not_initialized"
+        }
+        self.raw_data = None
 
     async def init(self):
         if self.is_ready:
@@ -33,13 +45,40 @@ class NcmService:
             logger.error(f"Error initializing NCM Service: {e}")
 
     def _download_data(self):
-        try:
-            response = requests.get(self.data_url, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Download failed: {e}")
-            return None
+        urls = [self.primary_url, self.fallback_url]
+        import time
+        from datetime import datetime
+        
+        for url in urls:
+            try:
+                start_time = time.time()
+                logger.info(f"Attempting download from {url}")
+                response = requests.get(url, timeout=60)
+                response.raise_for_status()
+                data = response.json()
+                duration = (time.time() - start_time) * 1000
+                
+                self.metrics.update({
+                    "source_url": url,
+                    "download_time_ms": round(duration, 2),
+                    "last_updated": datetime.now().isoformat(),
+                    "status": "ok"
+                })
+                self.metrics.update({
+                    "source_url": url,
+                    "download_time_ms": round(duration, 2),
+                    "last_updated": datetime.now().isoformat(),
+                    "status": "ok"
+                })
+                self.is_ready = True
+                self.raw_data = data
+                return data
+            except Exception as e:
+                logger.warning(f"Download failed from {url}: {e}")
+        
+        self.metrics["status"] = "error"
+        logger.error("All download attempts failed.")
+        return None
 
     def _build_map(self, data):
         new_map = {}
@@ -59,6 +98,13 @@ class NcmService:
                      new_map[item[0]] = item[1]
                      
         self.ncm_map = new_map
+        self.metrics["total_items"] = len(new_map)
+
+    def get_metrics(self) -> Dict:
+        return self.metrics
+
+    def get_raw_data(self) -> Optional[Dict]:
+        return self.raw_data
 
     def search(self, term: str) -> List[Dict]:
         results = []

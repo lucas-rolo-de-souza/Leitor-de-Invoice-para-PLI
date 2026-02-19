@@ -24,6 +24,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
+    print("DEBUG: Registering NCM routes...")
     await ncm_service.init()
 
 @app.get("/api/health")
@@ -57,6 +58,19 @@ async def extract_invoice(
 async def search_ncm(term: str = ""):
     return ncm_service.search(term)
 
+@app.get("/api/ncm/status")
+async def get_ncm_status():
+    """Get current status and metrics of the NCM service."""
+    return ncm_service.get_metrics()
+
+@app.get("/api/ncm/inspect")
+async def inspect_ncm_data():
+    """Get the raw NCM data loaded in memory."""
+    data = ncm_service.get_raw_data()
+    if not data:
+        raise HTTPException(status_code=404, detail="NCM data not loaded or unavailable")
+    return data
+
 @app.get("/api/ncm/{code}")
 async def get_ncm_details(code: str):
     result = ncm_service.get_description(code)
@@ -67,6 +81,8 @@ async def get_ncm_details(code: str):
 @app.get("/api/ncm/{code}/hierarchy")
 async def get_ncm_hierarchy(code: str):
     return ncm_service.get_hierarchy(code)
+
+
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

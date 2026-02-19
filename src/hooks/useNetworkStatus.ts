@@ -21,12 +21,11 @@ export const useNetworkStatus = () => {
 
     const start = performance.now();
     try {
-      // Use a lightweight HEAD request to the current page to ensure we test the active route
-      // Cache-control: no-cache to ensure we hit the network
-      await fetch(window.location.href, {
-        method: "HEAD",
+      // Use a GET request to the API health check endpoint
+      // This confirms full system connectivity (frontend + backend)
+      await fetch("/api/health", {
+        method: "GET",
         cache: "no-cache",
-        mode: "no-cors",
       });
       const end = performance.now();
       const latency = Math.round(end - start);

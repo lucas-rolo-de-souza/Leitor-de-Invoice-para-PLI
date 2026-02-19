@@ -21,6 +21,7 @@ const RETENTION_DAYS = 7;
 class LoggerService {
   private logs: LogEntry[] = [];
   private maxLogs = 2000; // Increased limit for persisted history
+  private saveTimeout: number | undefined;
 
   constructor() {
     this.loadLogs();
@@ -43,13 +44,31 @@ class LoggerService {
   }
 
   /**
-   * Saves logs to LocalStorage
+   * Saves logs to LocalStorage asynchronously to avoid blocking the main thread
    */
   private saveLogs() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs));
-    } catch (e) {
-      console.error("Failed to save logs to storage (quota exceeded?)", e);
+    if (this.saveTimeout) {
+      if (typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(this.saveTimeout);
+      } else {
+        window.clearTimeout(this.saveTimeout);
+      }
+    }
+
+    const save = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs));
+      } catch (e) {
+        console.error("Failed to save logs to storage (quota exceeded?)", e);
+      }
+      this.saveTimeout = undefined;
+    };
+
+    // Use requestIdleCallback if available, otherwise fallback to setTimeout
+    if (typeof window.requestIdleCallback === "function") {
+      this.saveTimeout = window.requestIdleCallback(save, { timeout: 1000 });
+    } else {
+      this.saveTimeout = window.setTimeout(save, 500);
     }
   }
 
