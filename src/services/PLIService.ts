@@ -20,10 +20,13 @@ const downloadTextReport = (content: string, filename: string) => {
  * Generates and downloads the PLI XLS file.
  * Uses ExcelJS for workbook construction with cell type enforcement.
  */
+/**
+ * Generates and downloads the PLI XLS file (BIFF8 format).
+ * Uses SheetJS (xlsx) for legacy .xls compatibility.
+ */
 const generateAndDownloadXls = async (data: InvoiceData) => {
-  const ExcelJS = await import("exceljs");
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("MODELO PLI");
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
 
   // Headers
   const headers = [
@@ -64,62 +67,59 @@ const generateAndDownloadXls = async (data: InvoiceData) => {
     "ESPECIFICAÇÃO",
   ];
 
-  worksheet.addRow(headers);
-
   const items = data.lineItems || [];
+  const rows = items.map((item) => [
+    { v: item.partNumber ?? "", t: "s" },
+    { v: item.description ?? "", t: "s" },
+    { v: item.productCode ?? "", t: "s" },
+    { v: item.ncm ? item.ncm.replace(/\./g, "") : "", t: "n" },
+    { v: item.taxClassificationDetail ?? "", t: "n" },
+    { v: item.unitMeasure ?? "", t: "s" },
+    Number(item.netWeight) || 0,
+    Number(item.quantity) || 0,
+    Number(item.unitPrice) || 0,
+    { v: item.manufacturerCode ?? "", t: "n" },
+    { v: item.material ?? "", t: "n" },
+    { v: item.manufacturerRef ?? "", t: "n" },
+    "", // CODIGO_PAIS_FABRICANTE_DESCONHECIDO
+    { v: item.legalAct1Type ?? "", t: "n" },
+    { v: item.legalAct1Issuer ?? "", t: "n" },
+    { v: item.legalAct1Number ?? "", t: "n" },
+    { v: item.legalAct1Year ?? "", t: "n" },
+    { v: item.legalAct1Ex ?? "", t: "n" },
+    { v: "", t: "s" }, // Alíquota Ad Valorem (%)
+    { v: item.legalAct2Type ?? "", t: "n" },
+    { v: item.legalAct2Issuer ?? "", t: "n" },
+    { v: item.legalAct2Number ?? "", t: "n" },
+    { v: item.legalAct2Year ?? "", t: "n" },
+    { v: item.legalAct2Ex ?? "", t: "n" },
+    { v: "", t: "s" }, // Alíquota Ad Valorem (%)
+    { v: item.complementaryNote ?? "", t: "n" },
+    { v: item.attr1Level ?? "", t: "n" },
+    { v: item.attr1Name ?? "", t: "n" },
+    { v: item.attr1Value ?? "", t: "n" },
+    { v: item.attr2Level ?? "", t: "n" },
+    { v: item.attr2Name ?? "", t: "n" },
+    { v: item.attr2Value ?? "", t: "n" },
+    { v: item.attr3Level ?? "", t: "n" },
+    { v: item.attr3Name ?? "", t: "n" },
+    { v: item.attr3Value ?? "", t: "n" },
+  ]);
 
-  items.forEach((item) => {
-    const rowData = [
-      item.partNumber ?? "",
-      item.description ?? "",
-      item.productCode ?? "",
-      item.ncm ? item.ncm.replace(/\./g, "") : "",
-      item.taxClassificationDetail ?? "",
-      item.unitMeasure ?? "",
-      Number(item.netWeight) || 0,
-      Number(item.quantity) || 0,
-      Number(item.unitPrice) || 0,
-      item.manufacturerCode ?? "",
-      item.material ?? "",
-      item.manufacturerRef ?? "",
-      "",
-      item.legalAct1Type ?? "",
-      item.legalAct1Issuer ?? "",
-      item.legalAct1Number ?? "",
-      item.legalAct1Year ?? "",
-      item.legalAct1Ex ?? "",
-      "",
-      item.legalAct2Type ?? "",
-      item.legalAct2Issuer ?? "",
-      item.legalAct2Number ?? "",
-      item.legalAct2Year ?? "",
-      item.legalAct2Ex ?? "",
-      "",
-      item.complementaryNote ?? "",
-      item.attr1Level ?? "",
-      item.attr1Name ?? "",
-      item.attr1Value ?? "",
-      item.attr2Level ?? "",
-      item.attr2Name ?? "",
-      item.attr2Value ?? "",
-      item.attr3Level ?? "",
-      item.attr3Name ?? "",
-      item.attr3Value ?? "",
-    ];
-    worksheet.addRow(rowData);
-  });
+  // Combine headers and data
+  const wsData = [headers, ...rows];
 
-  // Download file in browser
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  // Create worksheet
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Append worksheet to workbook
+  XLSX.utils.book_append_sheet(wb, ws, "MODELO PLI");
+
+  // Generate and download file
+  // bookType: 'xls' ensures BIFF8 format
+  XLSX.writeFile(wb, "IMPORTACAO_MODELO_INDUSTRIA_PLI.xls", {
+    bookType: "xls",
   });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `IMPORTACAO_MODELO_INDUSTRIA_PLI.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 };
 
 /**

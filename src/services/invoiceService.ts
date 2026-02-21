@@ -3,7 +3,7 @@ import { InvoiceData, SavedInvoice } from "../types";
 import { logger } from "./loggerService";
 
 const TABLE_NAME = "invoices";
-const MAX_INVOICES = 3;
+const MAX_INVOICES = 10;
 
 /**
  * Service to handle persistent storage of invoices.
