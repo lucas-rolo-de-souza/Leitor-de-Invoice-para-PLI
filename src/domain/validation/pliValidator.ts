@@ -1,4 +1,4 @@
-import { InvoiceData } from "../types";
+import { InvoiceData } from "../../types";
 
 type PliError = {
   line: number;

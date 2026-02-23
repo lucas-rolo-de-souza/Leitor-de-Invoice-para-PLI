@@ -1,8 +1,8 @@
 // Version: 1.05.00.26
-import { InvoiceData } from "../types";
-import { ReferenceItem } from "./validationConstants";
+import { InvoiceData } from "../../types";
+import { ReferenceItem } from "../../utils/validationConstants";
 import { validateNCM } from "./ncmValidator";
-import { ncmService } from "../services/ncmService";
+import { ncmService } from "../../services/ncmService";
 
 /**
  * Pure function to check if a generic value is considered 'invalid' (empty/null/NaN).
