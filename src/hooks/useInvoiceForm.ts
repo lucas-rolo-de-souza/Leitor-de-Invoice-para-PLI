@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { InvoiceData, LineItem } from "../types";
 import { normalizeToKg, convertFromKg } from "../utils/converters";
-import { formatNcmString } from "../utils/ncmValidator";
+import { formatNcmString } from "../domain/validation/ncmValidator";
 
 /**
  * Hook to manage Invoice Data Logic (Stateless / Controlled).

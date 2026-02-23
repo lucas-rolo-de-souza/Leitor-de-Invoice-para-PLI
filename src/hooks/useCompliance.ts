@@ -5,7 +5,7 @@ import {
   isFieldInvalid,
   isValidNCM,
   isValidReference,
-} from "../utils/validators";
+} from "../domain/validation/invoiceValidator";
 import {
   INCOTERMS_LIST,
   PAYMENT_TERMS_LIST,
