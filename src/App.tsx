@@ -1,25 +1,17 @@
-import React, { useState, useMemo, useEffect, Suspense } from "react";
-// import { FileUpload } from "./components/FileUpload";
-// import { LoginScreen } from "./components/auth/LoginScreen";
+import React, { useState, useEffect, Suspense } from "react";
+import { useInvoiceProcessor } from "./hooks/useInvoiceProcessor";
+import { useInvoiceActions } from "./hooks/useInvoiceActions";
 import { useAuth } from "./contexts/AuthContext";
-// import { InvoiceEditor } from "./components/InvoiceEditor";
 import { VersionBar } from "./components/ui/VersionBar";
-import { extractInvoiceData } from "./services/geminiService";
-import { processFilesToBase64 } from "./services/fileService";
-import { exportToExcel, exportToPDF } from "./services/exportService";
-import { handlePLIExport } from "./services/PLIService";
-import { generateValidationErrors } from "./utils/validators";
-import { InvoiceData, initialInvoiceData, SavedInvoice } from "./types";
+import { generateValidationErrors } from "./domain/validation/invoiceValidator";
+
 import {
   INCOTERMS_LIST,
   CURRENCIES_LIST,
   COUNTRIES_LIST,
 } from "./utils/validationConstants";
 import { ncmService } from "./services/ncmService";
-import { formatNcmString } from "./utils/ncmValidator";
-import { suggestionService } from "./services/suggestionService";
 import { logger } from "./services/loggerService";
-import { invoiceService } from "./services/invoiceService";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UsageWidget } from "./components/ui/UsageWidget";
 import { LanguageSelector } from "./components/ui/LanguageSelector";
@@ -42,7 +34,6 @@ import {
   Settings,
 } from "lucide-react";
 import { APP_VERSION, CHANGE_LOG } from "./version";
-import { mockInvoiceData } from "./mocks/mockInvoice";
 import { useSettings } from "./contexts/SettingsContext";
 import { DeveloperMenu } from "./components/developer/DeveloperMenu";
 
@@ -92,27 +83,6 @@ const SettingsModal = React.lazy(() =>
 );
 
 const App: React.FC = () => {
-  // --- File & Processing State ---
-  const [files, setFiles] = useState<File[]>([]);
-  const [selectedModel, setSelectedModel] =
-    useState<string>("gemini-2.5-flash");
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasProcessed, setHasProcessed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [progressMessage, setProgressMessage] = useState<string>("");
-  const [refreshUsage, setRefreshUsage] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showDebugger, setShowDebugger] = useState(false);
-  const [showDevMenu, setShowDevMenu] = useState(false);
-  const [devMenuTab, setDevMenuTab] = useState<
-    "general" | "state" | "debug" | "usage"
-  >("general");
-
-  // --- Data State (Simplified) ---
-  const [data, setData] = useState<InvoiceData>(initialInvoiceData); // Current Editing State
-  const [originalData, setOriginalData] =
-    useState<InvoiceData>(initialInvoiceData); // AI Result (Immutable)
-
   // --- View Control ---
   const [showOriginal, setShowOriginal] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -126,6 +96,72 @@ const App: React.FC = () => {
   const [importModalMode, setImportModalMode] = useState<
     "import" | "overwrite"
   >("import");
+  const [showDebugger, setShowDebugger] = useState(false);
+  const [showDevMenu, setShowDevMenu] = useState(false);
+  const [devMenuTab, setDevMenuTab] = useState<
+    "general" | "state" | "debug" | "usage"
+  >("general");
+
+  const {
+    files,
+    selectedModel,
+    setSelectedModel,
+    isLoading,
+    hasProcessed,
+    error,
+    progressMessage,
+    refreshUsage,
+    data,
+    setData,
+    originalData,
+    handleFilesSelect,
+    handleImportInvoice,
+    handleReset,
+    handleDevBypass,
+    handleCreateBlank,
+    handleLoadPartialData,
+  } = useInvoiceProcessor({ apiKey, isConfigured, setShowSettings, t });
+
+  const { user, signOut, isLoading: authLoading } = useAuth();
+
+  const {
+    isSaving,
+    handleExportExcel,
+    handleExportPLIButton,
+    handleExportPDF,
+    handleSaveToCloud,
+    handleOverwriteInvoice,
+  } = useInvoiceActions({
+    data,
+    user,
+    t,
+    setImportModalMode,
+    setShowImportModal,
+  });
+
+  const handleOpenUsage = () => {
+    setDevMenuTab("usage");
+    setShowDevMenu(true);
+  };
+
+  const handleAppReset = () => {
+    handleReset();
+    setShowOriginal(false);
+  };
+
+  // Active Data Logic
+  const activeData = showOriginal ? originalData : data;
+  const validationErrors = React.useMemo(
+    () =>
+      generateValidationErrors(activeData, {
+        incoterms: INCOTERMS_LIST,
+        currencies: CURRENCIES_LIST,
+        countries: COUNTRIES_LIST,
+      }),
+    [activeData],
+  );
+
+  const isValid = validationErrors.length === 0;
 
   // --- Initialization ---
   useEffect(() => {
@@ -140,192 +176,7 @@ const App: React.FC = () => {
     initServices();
   }, []);
 
-  const sanitizeInvoiceData = (data: InvoiceData): InvoiceData => {
-    if (!data.lineItems) return data;
-    const sanitizedItems = data.lineItems.map((item) => ({
-      ...item,
-      ncm: item.ncm ? formatNcmString(item.ncm) : item.ncm,
-    }));
-    return { ...data, lineItems: sanitizedItems };
-  };
-
-  const handleFilesSelect = async (selectedFiles: File[]) => {
-    if (!isConfigured) {
-      setShowSettings(true);
-      return;
-    }
-    setFiles(selectedFiles);
-    setIsLoading(true);
-    setError(null);
-    setProgressMessage(t.app.starting);
-
-    try {
-      const fileParts = await processFilesToBase64(selectedFiles, (msg) =>
-        setProgressMessage(msg),
-      );
-
-      // Use the selected model from state, default to 2.5 flash if undefined
-      const modelToUse = selectedModel || "gemini-2.5-flash";
-
-      const extractedData = await extractInvoiceData(
-        fileParts,
-        apiKey,
-        (msg) => setProgressMessage(msg),
-        modelToUse,
-      );
-
-      setOriginalData(extractedData);
-      setData(sanitizeInvoiceData(extractedData));
-      setHasProcessed(true);
-      setRefreshUsage((prev) => prev + 1);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t.app.error;
-      setError(msg);
-      logger.error("Processing failed", { error: msg });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Learning triggers
-  const learn = () => {
-    if (data.lineItems?.length) suggestionService.learnBatch(data.lineItems);
-  };
-
-  const handleExportExcel = () => {
-    learn();
-    exportToExcel(data);
-  };
-  // Using the new service for PLI
-  const handleExportPLIButton = () => {
-    learn();
-    handlePLIExport(data);
-  };
-  const handleExportPDF = () => {
-    learn();
-    exportToPDF(data);
-  };
-
-  const handleImportInvoice = (importedData: InvoiceData) => {
-    // Ensure we have valid data structure before setting state
-    const validData = { ...initialInvoiceData, ...importedData };
-    const sanitizedData = sanitizeInvoiceData(validData);
-    setOriginalData(sanitizedData);
-    setData(sanitizedData);
-    setHasProcessed(true);
-    setRefreshUsage((prev) => prev + 1);
-    setShowImportModal(false);
-  };
-
-  const handleSaveToCloud = async () => {
-    if (!user) return;
-    setIsSaving(true);
-    try {
-      await invoiceService.saveInvoice(data);
-      alert(t.app.actions?.saveSuccess || "Invoice saved to cloud!");
-    } catch (err: unknown) {
-      if ((err as { code?: string }).code === "LIMIT_REACHED") {
-        setImportModalMode("overwrite");
-        // Use timeout to ensure state update propagates before showing modal
-        setTimeout(() => setShowImportModal(true), 0);
-      } else {
-        logger.error("Save failed", err);
-        alert(t.app.actions?.saveError || "Failed to save invoice.");
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleOverwriteInvoice = async (invoice: SavedInvoice) => {
-    setIsSaving(true);
-    try {
-      await invoiceService.updateInvoice(invoice.id, data);
-      alert(t.app.actions?.saveSuccess || "Invoice updated successfully!");
-      setShowImportModal(false);
-      setImportModalMode("import");
-    } catch (err) {
-      logger.error("Overwrite failed", err);
-      alert(t.app.actions?.saveError || "Failed to update invoice.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleReset = () => {
-    if (window.confirm(t.app.actions.reset)) {
-      const cleanData = JSON.parse(JSON.stringify(initialInvoiceData));
-      setData(cleanData);
-      setOriginalData(cleanData);
-      setFiles([]);
-      setError(null);
-      setHasProcessed(false);
-      setShowOriginal(false);
-    }
-  };
-
-  const handleDevBypass = () => {
-    // Kept for DeveloperMenu
-    setOriginalData(mockInvoiceData);
-    setData(mockInvoiceData);
-    setHasProcessed(true);
-    setHasProcessed(true);
-    setRefreshUsage((prev) => prev + 1);
-  };
-
-  const handleCreateBlank = () => {
-    setOriginalData(initialInvoiceData);
-    setData(initialInvoiceData);
-    setHasProcessed(true); // Switch to editor view
-    setRefreshUsage((prev) => prev + 1);
-  };
-
-  const handleOpenUsage = () => {
-    setDevMenuTab("usage");
-    setShowDevMenu(true);
-  };
-
-  // Handler for loading partial extraction data from debugger
-  const handleLoadPartialData = (partialData: {
-    metadata?: Record<string, unknown>;
-    lineItems?: Record<string, unknown>[];
-  }) => {
-    // Merge partial data with initial structure
-    const mergedData: InvoiceData = {
-      ...initialInvoiceData,
-      ...(partialData.metadata || {}),
-      lineItems: (partialData.lineItems || []) as InvoiceData["lineItems"],
-    };
-
-    const sanitized = sanitizeInvoiceData(mergedData);
-    setOriginalData(sanitized);
-    setData(sanitized);
-    setHasProcessed(true);
-    setError(null);
-    setRefreshUsage((prev) => prev + 1);
-
-    logger.info("Loaded partial extraction data", {
-      hasMetadata: !!partialData.metadata,
-      lineItemCount: partialData.lineItems?.length || 0,
-    });
-  };
-
-  // Active Data Logic
-  const activeData = showOriginal ? originalData : data;
-  const validationErrors = useMemo(
-    () =>
-      generateValidationErrors(activeData, {
-        incoterms: INCOTERMS_LIST,
-        currencies: CURRENCIES_LIST,
-        countries: COUNTRIES_LIST,
-      }),
-    [activeData],
-  );
-
-  const isValid = validationErrors.length === 0;
-
   // --- Auth Protection ---
-  const { user, signOut, isLoading: authLoading } = useAuth();
 
   if (authLoading) {
     return (
@@ -627,7 +478,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={handleReset}
+              onClick={handleAppReset}
               className="p-3 rounded-m3-full bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
               title={t.app.actions.backToUpload}
             >

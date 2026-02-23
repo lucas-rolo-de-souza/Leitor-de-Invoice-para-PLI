@@ -66,7 +66,7 @@ export type LineItem = {
 
   /**
    * NCM Code (Nomenclatura Comum do Mercosul).
-   * Not present in Invoice. Manual Input.
+   * Usually not present in Invoice. Manual Input.
    */
   ncm: string | null;
 

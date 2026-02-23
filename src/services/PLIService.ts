@@ -1,5 +1,5 @@
 import { InvoiceData } from "../types";
-import { validatePliData } from "./PLIValidator";
+import { validatePliData } from "../domain/validation/pliValidator";
 
 /**
  * Downloads a text string as a .txt file (UTF-8 BOM included for Windows compatibility).

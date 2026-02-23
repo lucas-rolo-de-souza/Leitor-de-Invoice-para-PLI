@@ -9,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { InvoiceData } from "../../../types";
-import { isValidNCM } from "../../../utils/validators";
+import { isValidNCM } from "../../../domain/validation/invoiceValidator";
 import { ncmService, NcmHierarchyItem } from "../../../services/ncmService";
 
 type NcmSummaryProps = {

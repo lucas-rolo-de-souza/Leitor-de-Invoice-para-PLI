@@ -1,10 +1,26 @@
 import { InvoiceData, LineItem } from "../types";
-import { generateValidationErrors } from "../utils/validators";
+import { generateValidationErrors } from "../domain/validation/invoiceValidator";
 import {
   INCOTERMS_LIST,
   CURRENCIES_LIST,
   COUNTRIES_LIST,
 } from "../utils/validationConstants";
+import { handlePLIExport } from "./PLIService";
+
+export type ExportType = "excel" | "pdf" | "pli";
+
+export const exportDocument = async (data: InvoiceData, type: ExportType) => {
+  switch (type) {
+    case "excel":
+      return await exportToExcel(data);
+    case "pdf":
+      return await exportToPDF(data);
+    case "pli":
+      return await handlePLIExport(data);
+    default:
+      throw new Error(`Unsupported export type: ${type}`);
+  }
+};
 
 /**
  * Helper to calculate subtotal locally

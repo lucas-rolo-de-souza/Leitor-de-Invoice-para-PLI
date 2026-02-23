@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { InvoiceData, LineItem } from "../../../types";
 import { ValidatedInput, ValidatedTextArea } from "../../ui/FormElements";
-import { isFieldInvalid, isValidNCM } from "../../../utils/validators";
+import { isFieldInvalid, isValidNCM } from "../../../domain/validation/invoiceValidator";
 import { ncmService } from "../../../services/ncmService";
 import { CalculatedTotals } from "./types";
 
