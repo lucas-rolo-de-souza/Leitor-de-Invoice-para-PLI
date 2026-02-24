@@ -56,7 +56,8 @@ export async function extractInvoiceData(
   try {
     const startTime = Date.now();
 
-    const response = await fetch("/api/extract", {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/leitor";
+    const response = await fetch(`${baseUrl}/extract`, {
       method: "POST",
       body: formData,
     });
