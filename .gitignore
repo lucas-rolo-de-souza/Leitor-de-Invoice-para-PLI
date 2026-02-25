@@ -45,6 +45,10 @@ artifacts/
 dummy_invoice.csv
 current_lint_errors.txt
 
+# Backend Cache and Logs
+backend/__pycache__/
+backend/services/__pycache__/
+
 # Automation / Server Data
 server/temp_data/
 public/Tabela_NCM_*.json
